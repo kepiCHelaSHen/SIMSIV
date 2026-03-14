@@ -19,17 +19,21 @@ class ReproductionEngine:
         deaths_infant = 0
 
         for female in females:
-            # Conception chance based on fertility and resources
-            fertility_mod = female.fertility_base * 0.5 + 0.5  # range [0.5, 1.0]
-            resource_mod = min(1.0, female.current_resources / 8.0)  # well-resourced = better
-            conception_chance = config.base_conception_chance * fertility_mod * resource_mod
+            # Conception chance based on fertility, resources, and health
+            fertility_mod = female.fertility_base * 0.4 + 0.6  # range [0.6, 1.0]
+            resource_mod = min(1.0, 0.5 + female.current_resources / 16.0)  # range [0.5, 1.0]
+            # Health penalty only kicks in when seriously injured (below 0.5)
+            health_mod = 1.0 if female.health > 0.5 else female.health * 2.0
+            conception_chance = config.base_conception_chance * fertility_mod * resource_mod * health_mod
 
             # Paired females have higher conception (stable partnership)
             partner = None
             if female.pair_bond_id is not None:
                 partner = society.get_by_id(female.pair_bond_id)
                 if partner and partner.alive:
-                    conception_chance *= 1.3  # pair bond bonus
+                    # Partner health matters — but only if seriously injured
+                    partner_health_mod = 1.0 if partner.health > 0.5 else 0.5 + partner.health
+                    conception_chance *= 1.3 * partner_health_mod
                 else:
                     partner = None
 

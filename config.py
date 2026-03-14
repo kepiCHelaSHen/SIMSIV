@@ -28,14 +28,14 @@ class Config:
     pair_bond_strength: float = 0.5
     pair_bond_dissolution_rate: float = 0.1  # per year probability of bond breaking
     max_mates_per_male: int = 999  # effectively unlimited for unrestricted
-    mating_pool_fraction: float = 0.5  # fraction of eligible agents who attempt mating each tick
+    mating_pool_fraction: float = 0.7  # fraction of eligible agents who attempt mating each tick
 
     # ── Reproduction ─────────────────────────────────────────────────
     age_first_reproduction: int = 15
     age_max_reproduction_female: int = 45
     age_max_reproduction_male: int = 65
     child_dependency_years: int = 5
-    base_conception_chance: float = 0.3  # per mating attempt per year
+    base_conception_chance: float = 0.5  # per mating attempt per year (pre-industrial ~5-7 children/woman)
     mutation_sigma: float = 0.05  # Gaussian noise on heritable traits
     child_survival_base: float = 0.85  # baseline child survival to adulthood
 

@@ -14,7 +14,7 @@ See `STATUS.md` for what to work on next.
 ## Architecture Rules
 - **Pure library**: Simulation engine has NO UI, NO print statements, NO matplotlib calls. All IO at the edges.
 - **Tick returns data**: `sim.tick()` returns pure state — any frontend (CLI, Streamlit, game) consumes it.
-- **Engine order per tick**: environment → resources → institutions → mating → reproduction → conflict → age/mortality → metrics
+- **Engine order per tick**: environment → resources → **conflict** → institutions → mating → reproduction → age/mortality → metrics (conflict before mating so violence has reproductive cost)
 - **Models know nothing about engines** — no circular imports.
 - **All randomness** via `numpy.random.Generator` seeded from config. Same seed = identical results.
 - **Events are dicts**: `{type, year, agent_ids, description, outcome}`
@@ -26,9 +26,14 @@ risk_tolerance, jealousy_sensitivity, fertility_base, intelligence_proxy — all
 ## Tech Stack
 Python 3.11+, numpy, pandas, matplotlib, pyyaml. Streamlit for UI (later). No external APIs.
 
-## Design Improvements to Apply During Build
+## Design Improvements Applied
 - Sparse reputation ledger (only store agents actually interacted with, cap at ~100)
 - Realistic age pyramid initialization (not all same age)
 - Extinction guard (min_viable_population ~20)
 - Trait correlation matrix for initial generation (aggression/cooperation negative, etc.)
 - Equilibrium detection (flag when metrics stabilize)
+- Conflict before mating (violence = reproductive cost)
+- Female mate choice penalizes aggression, rewards cooperation
+- Violence destabilizes pair bonds (aggressive agents lose mates)
+- Cooperation networks share resources (fitness benefit for cooperators)
+- Health directly affects conception chance (injured agents less fertile)

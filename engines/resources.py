@@ -47,12 +47,40 @@ class ResourceEngine:
             agent.current_resources *= 0.5  # retain half from last year
             agent.current_resources += share
 
+        # ── Cooperation bonus: mutual aid among trusted allies ───────
+        # Cooperative agents share resources with agents they trust,
+        # creating a fitness advantage for cooperation networks.
+        for agent in living:
+            if agent.cooperation_propensity < 0.3:
+                continue  # low-coop agents don't share
+            # Find trusted allies
+            allies = []
+            for other_id, trust in agent.reputation_ledger.items():
+                if trust > 0.6:
+                    other = society.get_by_id(other_id)
+                    if other and other.alive and other.cooperation_propensity > 0.3:
+                        allies.append(other)
+            if allies:
+                # Share a small fraction of resources with needy allies
+                share_rate = agent.cooperation_propensity * 0.05
+                share_amount = agent.current_resources * share_rate
+                if share_amount > 0.5:  # only share if you have enough
+                    per_ally = share_amount / len(allies)
+                    agent.current_resources -= share_amount
+                    for ally in allies:
+                        ally.current_resources += per_ally
+                        # Strengthen mutual trust
+                        agent.remember(ally.id, 0.03)
+                        ally.remember(agent.id, 0.03)
+
         # ── Status resources: winner-take-more ───────────────────────
         # Status-driven agents compete; top agents get disproportionate share
+        # Cooperation also contributes to status (social capital)
         status_scores = []
         for a in living:
-            score = (a.status_drive * 0.4 + a.current_status * 0.3 +
-                     a.aggression_propensity * 0.15 + a.intelligence_proxy * 0.15)
+            score = (a.status_drive * 0.35 + a.current_status * 0.25 +
+                     a.cooperation_propensity * 0.15 +
+                     a.aggression_propensity * 0.1 + a.intelligence_proxy * 0.15)
             status_scores.append((a, score))
 
         total_score = sum(s for _, s in status_scores) or 1.0

@@ -144,8 +144,25 @@ class ConflictEngine:
                     partner.pair_bond_strength = 0.0
 
         # ── Reputation updates ───────────────────────────────────────
+        # Both fighters' public reputation suffers (violence is socially costly)
+        aggressor.reputation = max(0.0, aggressor.reputation - 0.05)
         aggressor.remember(target.id, -0.2)
         target.remember(aggressor.id, -0.3)
+
+        # ── Pair bond destabilization ────────────────────────────────
+        # Violence threatens pair bonds — partner may leave
+        for fighter in [aggressor, target]:
+            if fighter.alive and fighter.pair_bond_id is not None:
+                partner = society.get_by_id(fighter.pair_bond_id)
+                if partner and partner.alive:
+                    # Partner's tolerance depends on fighter's aggression history
+                    leave_chance = fighter.aggression_propensity * 0.15
+                    if rng.random() < leave_chance:
+                        fighter.pair_bond_id = None
+                        fighter.pair_bond_strength = 0.0
+                        partner.pair_bond_id = None
+                        partner.pair_bond_strength = 0.0
+                        partner.remember(fighter.id, -0.25)
 
         # Institutional punishment for aggressor
         if config.violence_punishment_strength > 0:

@@ -120,6 +120,12 @@ class MatingEngine:
                 trust = female.trust_of(m.id)
                 weights[i] *= (0.7 + trust * 0.6)  # range [0.7, 1.3]
 
+                # Aggression penalty — females avoid overtly aggressive males
+                # High aggression is risky for pair bond stability and offspring safety
+                agg_penalty = 1.0 - m.aggression_propensity * 0.3  # range [0.7, 1.0]
+                coop_bonus = 1.0 + m.cooperation_propensity * 0.2  # range [1.0, 1.2]
+                weights[i] *= agg_penalty * coop_bonus
+
             # Apply female choice strength (0=random, 1=deterministic best)
             if config.female_choice_strength < 1.0:
                 # Soften weights — blend toward uniform

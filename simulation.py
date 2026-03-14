@@ -48,6 +48,9 @@ class Simulation:
             self.society.inject_migrants(deficit)
 
         # ── Engine execution order ───────────────────────────────────
+        # Conflict runs BEFORE mating/reproduction so that violence
+        # has real fitness costs — dead agents can't reproduce.
+        #
         # 1. Environment
         env_events = self.society.environment.tick(self.society.population_size())
         for e in env_events:
@@ -58,24 +61,24 @@ class Simulation:
         for e in res_events:
             self.society.add_event(e)
 
-        # 3. Institutions
+        # 3. Conflict (before mating — violence has reproductive cost)
+        conflict_events = self.conflict_engine.run(self.society, self.config, self.rng)
+        for e in conflict_events:
+            self.society.add_event(e)
+
+        # 4. Institutions
         inst_events = self.institution_engine.run(self.society, self.config, self.rng)
         for e in inst_events:
             self.society.add_event(e)
 
-        # 4. Mating
+        # 5. Mating
         mate_events = self.mating_engine.run(self.society, self.config, self.rng)
         for e in mate_events:
             self.society.add_event(e)
 
-        # 5. Reproduction
+        # 6. Reproduction
         repro_events = self.reproduction_engine.run(self.society, self.config, self.rng)
         for e in repro_events:
-            self.society.add_event(e)
-
-        # 6. Conflict
-        conflict_events = self.conflict_engine.run(self.society, self.config, self.rng)
-        for e in conflict_events:
             self.society.add_event(e)
 
         # 7. Aging and mortality
