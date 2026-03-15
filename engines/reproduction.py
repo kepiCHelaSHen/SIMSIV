@@ -43,7 +43,7 @@ class ReproductionEngine:
                 continue
 
             # Conception chance based on fertility, resources, and health
-            fertility_mod = female.fertility_base * 0.4 + 0.6  # range [0.6, 1.0]
+            fertility_mod = female.fertility_base * 0.6 + 0.4  # range [0.4, 1.0]
             resource_mod = min(1.0, 0.5 + female.current_resources / 16.0)  # range [0.5, 1.0]
             # Health penalty only kicks in when seriously injured (below 0.5)
             health_mod = 1.0 if female.health > 0.5 else female.health * 2.0
@@ -116,8 +116,10 @@ class ReproductionEngine:
                          id_counter=society.id_counter,
                          scarcity=society.environment.get_scarcity_level(),
                          pop_trait_means=pop_trait_means)
-            # Social father also tracks child (for investment/kin support)
+            # Social parentage: child's parent_ids reflect social (not genetic) father
+            # since paternity is uncertain. Genetic inheritance already happened in breed().
             if social_father and social_father.id != genetic_father.id:
+                child.parent_ids = (female.id, social_father.id)
                 social_father.offspring_ids.append(child.id)
             society.add_agent(child)
             births += 1

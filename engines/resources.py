@@ -116,8 +116,12 @@ class ResourceEngine:
             effective_decay = min(0.95, effective_decay)
 
             if resource_types:
-                # DD21: Type-specific decay rates
-                agent.current_resources *= getattr(config, 'subsistence_decay_rate', 0.4)
+                # DD21: Type-specific decay, modified by agent storage ability
+                base_sub_decay = getattr(config, 'subsistence_decay_rate', 0.4)
+                # Apply intelligence/future_orientation storage bonuses to subsistence
+                sub_retention = base_sub_decay + (effective_decay - config.resource_decay_rate)
+                sub_retention = max(base_sub_decay, min(0.95, sub_retention))
+                agent.current_resources *= sub_retention
                 agent.current_tools *= (1.0 - getattr(config, 'tools_decay_rate', 0.1))
                 agent.current_prestige_goods *= (1.0 - getattr(config, 'prestige_goods_decay_rate', 0.05))
                 # Caps

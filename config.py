@@ -116,11 +116,11 @@ class Config:
     inheritance_law_enabled: bool = True  # DD05: changed default True (resources shouldn't vanish)
     violence_punishment_strength: float = 0.0  # 0=none, 1=severe
 
-    institutional_drift_rate: float = 0.0      # max change in law_strength per year (0=static)
+    institutional_drift_rate: float = 0.01     # max change in law_strength per year (0=static)
     institutional_inertia: float = 0.8         # resistance to change (0=fluid, 1=rigid)
     cooperation_institution_boost: float = 2.0   # cooperation weight in drift (applied to coop-0.4)
     violence_institution_decay: float = 3.0    # violence weight in drift (applied to violence_rate)
-    emergent_institutions_enabled: bool = False  # allow spontaneous institution formation
+    emergent_institutions_enabled: bool = True   # allow spontaneous institution formation
     property_rights_strength: float = 0.0      # modulates conflict resource transfer (0=free loot, 1=protected)
     inheritance_prestige_fraction: float = 0.0  # fraction of deceased's status inherited by heirs
 

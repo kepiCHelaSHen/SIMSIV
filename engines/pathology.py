@@ -275,16 +275,15 @@ class PathologyEngine:
                     agent.health - config.cardiovascular_health_decay_boost)
 
         if "mental_illness" in agent.active_conditions:
-            # Erratic behavioral output — random trait spikes
+            # Erratic behavioral output — temporary modifier via trauma, not trait mutation.
+            # We do NOT modify heritable traits (cooperation/aggression) directly,
+            # as that would contaminate genotype/phenotype separation.
             noise = config.mental_illness_decision_noise
             if rng.random() < 0.3:  # 30% chance per tick of episode
-                # Randomly spike either cooperation or aggression
-                if rng.random() < 0.5:
-                    agent.cooperation_propensity = min(1.0,
-                        agent.cooperation_propensity + rng.normal(0, noise))
-                else:
-                    agent.aggression_propensity = min(1.0,
-                        agent.aggression_propensity + rng.normal(0, noise))
+                # Increase trauma (behavioral modifier) instead of mutating traits
+                agent.trauma_score = min(1.0, agent.trauma_score + abs(rng.normal(0, noise)))
+                # Reputation suffers from erratic behavior
+                agent.reputation = max(0.0, agent.reputation - 0.02)
 
         # autoimmune: handled in mortality.py epidemic section
         # metabolic: handled in resources.py competitive weights

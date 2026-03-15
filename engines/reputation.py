@@ -53,17 +53,8 @@ class ReputationEngine:
                     elif val < 0.5:
                         agent.reputation_ledger[other_id] = min(0.5, val + effective_decay)
 
-        # ── Phase 2: Dead agent cleanup ──────────────────────────────
-        # Remove dead agents from ledgers to free slots.
-        if getattr(config, 'dead_agent_ledger_cleanup', True):
-            for agent in living:
-                dead_ids = []
-                for other_id in agent.reputation_ledger:
-                    other = society.get_by_id(other_id)
-                    if other is None or not other.alive:
-                        dead_ids.append(other_id)
-                for did in dead_ids:
-                    del agent.reputation_ledger[did]
+        # Phase 2 (dead agent cleanup) removed — now handled by
+        # purge_dead_from_ledgers() in Phase 0 above (more efficient).
 
         # ── Phase 3: Gossip ──────────────────────────────────────────
         # Agents share trust information with their allies.
@@ -279,13 +270,23 @@ class ReputationEngine:
                             agent.cooperation_norm + exp_rate * 0.67, -1.0, 1.0))
 
         # ── Cooperation sharing: direct experience update ───────────
-        # Agents who shared resources this tick get a cooperation_norm boost
-        for agent in living:
-            if agent.age < 15:
-                continue
-            if (agent.cooperation_propensity > 0.3
-                    and agent.current_resources > 3.0):
-                # Proxy for having participated in sharing
+        # Only agents who actually participated in resource transfers get boost
+        sharing_agent_ids = set()
+        for e in society.tick_events:
+            if e.get("type") == "resource_transfers":
+                for aid in e.get("agent_ids", []):
+                    sharing_agent_ids.add(aid)
+        # If no specific agent IDs logged, use agents with allies who shared
+        if not sharing_agent_ids:
+            for agent in living:
+                if agent.age >= 15 and agent.cooperation_propensity > 0.3:
+                    # Check if they have allies (actual sharing participants)
+                    ally_count = sum(1 for t in agent.reputation_ledger.values() if t > 0.6)
+                    if ally_count >= 2 and agent.current_resources > 3.0:
+                        sharing_agent_ids.add(agent.id)
+        for aid in sharing_agent_ids:
+            agent = society.get_by_id(aid)
+            if agent and agent.alive and agent.age >= 15:
                 agent.cooperation_norm = float(np.clip(
                     agent.cooperation_norm + exp_rate * 0.33
                     * agent.cooperation_propensity, -1.0, 1.0))

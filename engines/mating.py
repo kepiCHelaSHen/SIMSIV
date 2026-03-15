@@ -84,16 +84,14 @@ class MatingEngine:
                 combined_res = agent.current_resources + partner.current_resources
                 resource_stress = max(0, 1.0 - combined_res / 10.0)
 
-                # Partner quality: low mate value increases dissolution
-                female = agent if agent.sex == Sex.FEMALE else partner
-                male = partner if agent.sex == Sex.FEMALE else agent
-                quality_factor = max(0, 0.5 - male.mate_value) * 0.3
+                # Partner quality: low mate value of EITHER partner increases dissolution
+                quality_factor = max(0, 0.5 - partner.mate_value) * 0.15 + max(0, 0.5 - agent.mate_value) * 0.15
 
                 dissolution_chance = base_rate * strength_factor * (
                     1.0 + resource_stress * 0.5 + quality_factor
                 )
                 # DD27: Future-oriented agents resist dissolution
-                dissolution_chance *= max(0.5, 1.0 - female.future_orientation * 0.3)
+                dissolution_chance *= max(0.5, 1.0 - agent.future_orientation * 0.3)
                 # DD27: Psychopathy accelerates dissolution
                 dissolution_chance *= (1.0 + agent.psychopathy_tendency * 0.5)
                 # DD27: Paternal investment preference resists dissolution (male)
@@ -368,8 +366,8 @@ class MatingEngine:
             if partner_value <= 0:
                 gap = 1.0
             else:
-                gap = max(0, best_available - partner_value) / partner_value
-            gap = min(2.0, gap)
+                gap = max(0, best_available - partner_value)  # absolute gap, no division
+            gap = min(1.0, gap)  # cap at 1.0 for reasonable EPC rates
 
             bond_str = female.bond_strength_with(partner_id)
             epc_chance = config.infidelity_base_rate * gap * (1.0 - bond_str * 0.5)
@@ -432,12 +430,22 @@ class MatingEngine:
     # ── Phase 5: Strengthen bonds ──────────────────────────────────
 
     def _strengthen_bonds(self, society, config):
-        """Surviving bonds grow stronger (diminishing returns)."""
+        """Surviving bonds grow stronger (diminishing returns). Symmetric update."""
+        processed = set()
         for agent in society.get_living():
             for pid in agent.partner_ids:
+                pair_key = (min(agent.id, pid), max(agent.id, pid))
+                if pair_key in processed:
+                    continue
+                processed.add(pair_key)
+                partner = society.get_by_id(pid)
+                if not partner or not partner.alive:
+                    continue
                 strength = agent.pair_bond_strengths.get(pid, 0.0)
                 growth = 0.05 * (1.0 - strength * 0.8)
-                agent.pair_bond_strengths[pid] = min(1.0, strength + growth)
+                new_strength = min(1.0, strength + growth)
+                agent.pair_bond_strengths[pid] = new_strength
+                partner.pair_bond_strengths[agent.id] = new_strength
 
         # Paternity confidence slowly recovers (if no new incidents)
         for agent in society.get_living():

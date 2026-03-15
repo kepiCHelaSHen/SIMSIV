@@ -229,8 +229,7 @@ class ConflictEngine:
                        ally_counts: dict) -> Agent | None:
         """Pick a conflict target with network deterrence and proximity weighting."""
         candidates = [a for a in living
-                      if a.id != aggressor.id and a.alive
-                      and a.sex == aggressor.sex]
+                      if a.id != aggressor.id and a.alive]
         if not candidates:
             return None
 
@@ -244,6 +243,9 @@ class ConflictEngine:
 
         weights = np.ones(len(candidates))
         for i, c in enumerate(candidates):
+            # Cross-sex targeting is less common (0.3x weight)
+            if c.sex != aggressor.sex:
+                weights[i] *= 0.3
             # DD18: Apply proximity tier weight
             if proximity_enabled:
                 if c.id in household:
@@ -501,7 +503,7 @@ class ConflictEngine:
                 for pid in list(fighter.partner_ids):
                     partner = society.get_by_id(pid)
                     if partner and partner.alive:
-                        leave_chance = fighter.aggression_propensity * 0.15
+                        leave_chance = partner.jealousy_sensitivity * 0.1 * (1.0 + fighter.aggression_propensity * 0.5)
                         if rng.random() < leave_chance:
                             fighter.remove_bond(pid)
                             partner.remove_bond(fighter.id)

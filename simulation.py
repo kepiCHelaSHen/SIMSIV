@@ -54,6 +54,10 @@ class Simulation:
             deficit = self.config.min_viable_population - pop + 10
             self.society.inject_migrants(deficit)
 
+        # ── Age all agents (consistent across all engines this tick) ──
+        for a in self.society.get_living():
+            a.age += 1
+
         # ── Engine execution order (steps 1-12) ─────────────────────
         # Conflict runs BEFORE mating/reproduction so that violence
         # has real fitness costs — dead agents can't reproduce.

@@ -415,9 +415,18 @@ class Agent:
 
     @current_status.setter
     def current_status(self, value: float):
-        """Backward-compatible setter: distribute to both tracks."""
-        self.prestige_score = value * 0.6
-        self.dominance_score = value * 0.4
+        """Backward-compatible setter: scales both tracks proportionally.
+        Preserves the ratio between prestige and dominance.
+        """
+        current = self.prestige_score * 0.6 + self.dominance_score * 0.4
+        if current > 1e-8:
+            scale = value / current
+            self.prestige_score = min(1.0, self.prestige_score * scale)
+            self.dominance_score = min(1.0, self.dominance_score * scale)
+        else:
+            # No existing status — split evenly
+            self.prestige_score = value * 0.6
+            self.dominance_score = value * 0.4
 
     @property
     def mate_value(self) -> float:
@@ -426,11 +435,17 @@ class Agent:
         """
         if not self.alive:
             return 0.0
-        age_factor = 1.0
+        # Age factor peaks at 27, ramps up from 15, declines after 35
         if self.age < 15:
             age_factor = 0.1
-        elif self.age > 50:
-            age_factor = max(0.3, 1.0 - (self.age - 50) * 0.03)
+        elif self.age <= 27:
+            age_factor = 0.6 + (self.age - 15) * 0.033  # 0.6 at 15, 1.0 at 27
+        elif self.age <= 35:
+            age_factor = 1.0  # peak plateau
+        elif self.age <= 50:
+            age_factor = 1.0 - (self.age - 35) * 0.02  # 1.0 at 35, 0.7 at 50
+        else:
+            age_factor = max(0.3, 0.7 - (self.age - 50) * 0.03)
 
         resource_component = min(self.current_resources / 20.0, 1.0)  # normalize
         # DD08: prestige weighted more than dominance in mate value

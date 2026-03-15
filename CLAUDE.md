@@ -1,9 +1,9 @@
 # SIMSIV — Simulation of Intersecting Social and Institutional Variables
 
-Emergent social simulation: 500+ agents with 26 heritable traits compete for resources, mates, and status. All social patterns EMERGE from rules — never hardwired. Phase C complete (DD01-DD26).
+Emergent social simulation: 500+ agents with 35 heritable traits compete for resources, mates, and status. All social patterns EMERGE from rules — never hardwired. DD01-DD27 complete.
 
 ## Current Status
-Phase E complete (Engineering hardening: IdCounter, event window, partner index, logging, test suite). Ready for v2 multi-band or autosim scale-up.
+Phase E.1 complete (Model quality review: 25 fixes across all engines). Institutional drift now active by default. Re-run autosim calibration, then v2 multi-band.
 See `STATUS.md` for what to work on next.
 
 ## Key Files

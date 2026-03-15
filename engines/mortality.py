@@ -31,7 +31,7 @@ class MortalityEngine:
                         [getattr(a, trait) for a in children_near_maturity]))
 
         for agent in living:
-            agent.age += 1
+            # NOTE: age was already incremented at start of tick in simulation.py
 
             # DD16: Maturation event at age 15
             if (agent.age == 15

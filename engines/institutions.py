@@ -252,10 +252,14 @@ class InstitutionEngine:
                 # High tradition_adherence increases inertia
                 if avg_tradition > 0:
                     resistance *= (1.0 + avg_tradition * bi * 0.5)
-                # High hierarchy_belief drifts elite_privilege upward
-                if hasattr(config, 'elite_privilege_multiplier') and avg_hierarchy > 0.2:
-                    config.elite_privilege_multiplier = min(2.0,
-                        config.elite_privilege_multiplier + avg_hierarchy * bi * 0.01)
+                # Hierarchy belief drifts elite_privilege (bidirectional)
+                if hasattr(config, 'elite_privilege_multiplier'):
+                    if avg_hierarchy > 0.2:
+                        config.elite_privilege_multiplier = min(2.0,
+                            config.elite_privilege_multiplier + avg_hierarchy * bi * 0.01)
+                    elif avg_hierarchy < -0.1:
+                        config.elite_privilege_multiplier = max(1.0,
+                            config.elite_privilege_multiplier + avg_hierarchy * bi * 0.01)
 
         delta_law = (drift_rate * (coop_factor - violence_factor + belief_influence)
                      * max(0.05, resistance))
