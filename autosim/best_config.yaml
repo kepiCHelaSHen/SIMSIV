@@ -1,15 +1,15 @@
-autosim_best_score: 0.962774
+autosim_best_score: 0.975706
 autosim_key_metrics:
-  population: 734.4
-  child_survival_to_15: 0.7091
-  violence_death_fraction: 0.0902
-  avg_lifetime_births: 4.1333
-  avg_cooperation: 0.5096
-  avg_aggression: 0.4858
-  mating_inequality: 0.6088
-  pop_growth_rate: 0.0233
-  resource_gini: 0.3453
-  bond_dissolution_rate: 0.1139
+  population: 603.475
+  child_survival_to_15: 0.6618
+  violence_death_fraction: 0.0379
+  avg_lifetime_births: 4.0262
+  avg_cooperation: 0.5074
+  avg_aggression: 0.4786
+  mating_inequality: 0.5751
+  pop_growth_rate: -0.0005
+  resource_gini: 0.3358
+  bond_dissolution_rate: 0.1277
 parameters:
   resource_equal_floor: 0.23595
   resource_abundance: 1.219122
@@ -30,9 +30,9 @@ parameters:
   pair_bond_strength: 0.3
   base_conception_chance: 0.673243
   female_choice_strength: 0.882349
-  infidelity_base_rate: 0.071351
+  infidelity_base_rate: 0.037558
   maternal_age_fertility_decline: 0.032982
-  maternal_health_cost: 0.049069
+  maternal_health_cost: 0.041508
   birth_interval_years: 1
   age_first_reproduction: 15
   age_max_reproduction_female: 42
