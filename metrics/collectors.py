@@ -476,9 +476,239 @@ class MetricsCollector:
             "avg_dominance_drive": trait_means.get("dominance_drive", 0.5),
             "avg_maternal_investment": trait_means.get("maternal_investment", 0.5),
             "avg_sexual_maturation": trait_means.get("sexual_maturation_rate", 0.5),
+            # DD18: Proximity tier metrics
+            "avg_household_size": float(np.mean([
+                len(society.household_of(a)) for a in living
+            ])) if living and hasattr(society, 'household_of') else 0.0,
+            "avg_neighborhood_size": float(np.mean([
+                len(a.neighborhood_ids) for a in living
+            ])) if living else 0.0,
+            "cross_tier_conflict_rate": (
+                sum(1 for e in society.tick_events
+                    if e.get("type") == "conflict"
+                    and self._is_cross_neighborhood(e, society))
+                / max(1, conflicts)
+            ) if conflicts > 0 else 0.0,
+            # DD19: Migration metrics
+            "emigration_count": sum(
+                1 for e in society.tick_events if e.get("type") == "emigration"),
+            "immigration_count": sum(
+                1 for e in society.tick_events if e.get("type") == "immigration"),
+            "immigrant_fraction": (
+                sum(1 for a in living if a.origin_band_id > 0) / max(1, pop)),
+            "avg_generation_in_band": float(np.mean(
+                [a.generation_in_band for a in living])) if living else 0.0,
+            # DD20: Leadership metrics
+            "war_leader_count": sum(
+                1 for fl in getattr(society, 'faction_leaders', {}).values()
+                if fl.get('war_leader') is not None),
+            "peace_chief_count": sum(
+                1 for fl in getattr(society, 'faction_leaders', {}).values()
+                if fl.get('peace_chief') is not None),
+            "leadership_arbitrations": sum(
+                1 for e in society.tick_events
+                if e.get("type") == "leadership_arbitration"),
+            # DD21: Resource type metrics
+            "avg_tools": float(np.mean(
+                [a.current_tools for a in living])) if living else 0.0,
+            "avg_prestige_goods": float(np.mean(
+                [a.current_prestige_goods for a in living])) if living else 0.0,
+            "trade_events": sum(
+                1 for e in society.tick_events if e.get("type") == "trade_summary"),
+            "tool_gini": _gini([a.current_tools for a in living]),
+            "prestige_goods_gini": _gini(
+                [a.current_prestige_goods for a in living]),
+            # DD22: Life stage metrics
+            "youth_conflict_rate": (
+                sum(1 for e in society.tick_events
+                    if e.get("type") == "conflict"
+                    and any((a := society.get_by_id(aid))
+                            and a and a.life_stage == "YOUTH"
+                            for aid in [e.get("outcome", {}).get("aggressor", -1)]))
+                / max(1, sum(1 for a in living if a.life_stage == "YOUTH"))
+            ) if any(a.life_stage == "YOUTH" for a in living) else 0.0,
+            "elder_count": sum(1 for a in living if a.life_stage == "ELDER"),
+            "life_stage_youth_frac": sum(
+                1 for a in living if a.life_stage == "YOUTH") / max(1, pop),
+            "life_stage_prime_frac": sum(
+                1 for a in living if a.life_stage == "PRIME") / max(1, pop),
+            "life_stage_mature_frac": sum(
+                1 for a in living if a.life_stage == "MATURE") / max(1, pop),
+            "life_stage_elder_frac": sum(
+                1 for a in living if a.life_stage == "ELDER") / max(1, pop),
+            # DD24: Epigenetics metrics
+            "avg_epigenetic_load": float(np.mean(
+                [a.epigenetic_stress_load for a in living])) if living else 0.0,
+            "epigenetic_lineages": sum(
+                1 for a in living if a.epigenetic_stress_load > 0.2),
+            "trauma_contagion_events": sum(
+                1 for e in society.tick_events
+                if e.get("type") == "pathology_summary"
+                and "contagion" in e.get("description", "")),
+            "band_trauma_index": float(np.mean(
+                [a.trauma_score for a in living if a.age >= 15]
+            )) if any(a.age >= 15 for a in living) else 0.0,
+            "local_mate_rate": (
+                sum(1 for e in society.tick_events
+                    if e.get("type") == "pair_bond_formed"
+                    and self._is_local_bond(e, society))
+                / max(1, bonds_formed)
+            ) if bonds_formed > 0 else 0.0,
+            # DD25: Belief metrics
+            **self._collect_belief_metrics(living, society, pop),
+            # DD26: Skill metrics
+            **self._collect_skill_metrics(living, society, pop),
         }
         self.rows.append(row)
         return row
+
+    @staticmethod
+    def _collect_belief_metrics(living: list, society, pop: int) -> dict:
+        """DD25: Collect belief system metrics."""
+        adults = [a for a in living if a.age >= 15]
+        if not adults:
+            return {
+                "avg_hierarchy_belief": 0.0,
+                "avg_cooperation_norm": 0.0,
+                "avg_violence_acceptability": 0.0,
+                "avg_tradition_adherence": 0.0,
+                "avg_kinship_obligation": 0.0,
+                "belief_polarization": 0.0,
+                "dominant_ideology": "none",
+                "belief_revolution_events": 0,
+                "belief_fitness_correlation": 0.0,
+            }
+
+        belief_fields = ['hierarchy_belief', 'cooperation_norm',
+                         'violence_acceptability', 'tradition_adherence',
+                         'kinship_obligation']
+        means = {}
+        stds = {}
+        for bf in belief_fields:
+            vals = [getattr(a, bf) for a in adults]
+            means[bf] = float(np.mean(vals))
+            stds[bf] = float(np.std(vals))
+
+        # Belief polarization: average std across dimensions
+        polarization = float(np.mean(list(stds.values())))
+
+        # Dominant ideology: label based on strongest mean
+        ideology = "neutral"
+        dominant_dims = {bf: m for bf, m in means.items() if abs(m) > 0.5}
+        if dominant_dims:
+            if (means.get('hierarchy_belief', 0) < -0.3
+                    and means.get('violence_acceptability', 0) > 0.3):
+                ideology = "egalitarian_warrior"
+            elif (means.get('cooperation_norm', 0) > 0.3
+                  and means.get('hierarchy_belief', 0) < -0.3):
+                ideology = "cooperative_collective"
+            elif (means.get('hierarchy_belief', 0) > 0.3
+                  and means.get('tradition_adherence', 0) > 0.3):
+                ideology = "hierarchical_tradition"
+            elif (means.get('tradition_adherence', 0) < -0.3
+                  and means.get('kinship_obligation', 0) < -0.3):
+                ideology = "innovative_expansionist"
+            else:
+                # Just name the strongest dimension
+                strongest = max(dominant_dims, key=lambda k: abs(dominant_dims[k]))
+                ideology = f"high_{strongest}" if means[strongest] > 0 else f"low_{strongest}"
+
+        # Belief revolution events this tick
+        revolutions = sum(1 for e in society.tick_events
+                          if e.get("type") == "belief_revolution")
+
+        # Belief-fitness correlation: cooperation_norm vs offspring count
+        fitness_corr = 0.0
+        if len(adults) >= 10:
+            coop_norms = [a.cooperation_norm for a in adults]
+            offspring = [len(a.offspring_ids) for a in adults]
+            if np.std(coop_norms) > 0 and np.std(offspring) > 0:
+                fitness_corr = float(np.corrcoef(coop_norms, offspring)[0, 1])
+
+        return {
+            "avg_hierarchy_belief": means['hierarchy_belief'],
+            "avg_cooperation_norm": means['cooperation_norm'],
+            "avg_violence_acceptability": means['violence_acceptability'],
+            "avg_tradition_adherence": means['tradition_adherence'],
+            "avg_kinship_obligation": means['kinship_obligation'],
+            "belief_polarization": polarization,
+            "dominant_ideology": ideology,
+            "belief_revolution_events": revolutions,
+            "belief_fitness_correlation": fitness_corr,
+        }
+
+    @staticmethod
+    def _collect_skill_metrics(living: list, society, pop: int) -> dict:
+        """DD26: Collect skill system metrics."""
+        adults = [a for a in living if a.age >= 15]
+        if not adults:
+            return {
+                "avg_foraging_skill": 0.0, "avg_combat_skill": 0.0,
+                "avg_social_skill": 0.0, "avg_craft_skill": 0.0,
+                "foraging_skill_gini": 0.0, "combat_skill_gini": 0.0,
+                "social_skill_gini": 0.0, "craft_skill_gini": 0.0,
+                "skill_age_correlation": 0.0, "mentor_events": 0,
+                "specialist_count": 0,
+            }
+
+        forage = [a.foraging_skill for a in adults]
+        combat = [a.combat_skill for a in adults]
+        social = [a.social_skill for a in adults]
+        craft = [a.craft_skill for a in adults]
+
+        # Skill-age correlation (social skill)
+        skill_age_corr = 0.0
+        if len(adults) >= 10:
+            ages = [float(a.age) for a in adults]
+            if np.std(ages) > 0 and np.std(social) > 0:
+                skill_age_corr = float(np.corrcoef(ages, social)[0, 1])
+
+        mentor_events = sum(1 for e in society.tick_events
+                            if e.get("type") == "mentor_events")
+        specialist_count = sum(
+            1 for a in adults
+            if max(a.foraging_skill, a.combat_skill,
+                   a.social_skill, a.craft_skill) > 0.7)
+
+        return {
+            "avg_foraging_skill": float(np.mean(forage)),
+            "avg_combat_skill": float(np.mean(combat)),
+            "avg_social_skill": float(np.mean(social)),
+            "avg_craft_skill": float(np.mean(craft)),
+            "foraging_skill_gini": _gini(forage),
+            "combat_skill_gini": _gini(combat),
+            "social_skill_gini": _gini(social),
+            "craft_skill_gini": _gini(craft),
+            "skill_age_correlation": skill_age_corr,
+            "mentor_events": mentor_events,
+            "specialist_count": specialist_count,
+        }
+
+    @staticmethod
+    def _is_cross_neighborhood(event: dict, society) -> bool:
+        """Check if a conflict occurred across neighborhoods (DD18)."""
+        outcome = event.get("outcome", {})
+        agg_id = outcome.get("aggressor")
+        tgt_id = outcome.get("target")
+        if agg_id is None or tgt_id is None:
+            return False
+        agg = society.get_by_id(agg_id)
+        if not agg:
+            return False
+        neighborhood = set(agg.neighborhood_ids)
+        household = society.household_of(agg) if hasattr(society, 'household_of') else set()
+        return tgt_id not in (neighborhood | household)
+
+    @staticmethod
+    def _is_local_bond(event: dict, society) -> bool:
+        """Check if a bond formed within neighborhood (DD18)."""
+        agent_ids = event.get("agent_ids", [])
+        if len(agent_ids) < 2:
+            return False
+        a = society.get_by_id(agent_ids[0])
+        if not a:
+            return False
+        return agent_ids[1] in set(a.neighborhood_ids)
 
     def to_dataframe(self) -> pd.DataFrame:
         return pd.DataFrame(self.rows)

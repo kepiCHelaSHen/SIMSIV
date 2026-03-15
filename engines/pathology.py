@@ -164,13 +164,94 @@ class PathologyEngine:
                             child.trauma_score = min(1.0,
                                 child.trauma_score + config.trauma_grief_increment)
 
-        if activations > 0 or remissions > 0:
+        # ── DD24: Epigenetic stress load accumulation ────────────────
+        if getattr(config, 'epigenetics_enabled', False):
+            for agent in living:
+                if agent.age < 15 or agent.age > 45:
+                    continue  # only reproductive-age agents accumulate
+                # Scarcity event
+                if scarcity > 0.5:
+                    agent.epigenetic_stress_load = min(1.0,
+                        agent.epigenetic_stress_load
+                        + getattr(config, 'epigenetic_scarcity_load', 0.3) * scarcity)
+                # Epidemic
+                if getattr(society.environment, 'in_epidemic', False):
+                    agent.epigenetic_stress_load = min(1.0,
+                        agent.epigenetic_stress_load
+                        + getattr(config, 'epigenetic_epidemic_load', 0.2))
+                # High trauma
+                if agent.trauma_score > 0.7:
+                    agent.epigenetic_stress_load = min(1.0,
+                        agent.epigenetic_stress_load
+                        + getattr(config, 'epigenetic_trauma_load', 0.25))
+                # Natural decay in non-stressed conditions
+                if scarcity < 0.2 and agent.trauma_score < 0.3:
+                    agent.epigenetic_stress_load = max(0.0,
+                        agent.epigenetic_stress_load - 0.1)
+
+        # ── DD24: Trauma contagion ────────────────────────────────────
+        contagion_events = 0
+        if getattr(config, 'trauma_contagion_enabled', False):
+            contagion_rate = getattr(config, 'trauma_contagion_rate', 0.1)
+            spread_amount = getattr(config, 'trauma_spread_amount', 0.02)
+            for agent in living:
+                if agent.trauma_score < 0.6:
+                    continue
+                # Spread to close contacts (household first, then neighborhood)
+                contacts = []
+                if hasattr(society, 'household_of'):
+                    for hid in society.household_of(agent):
+                        if hid != agent.id:
+                            contacts.append((hid, 2.0))  # 2x for household
+                for nid in agent.neighborhood_ids:
+                    if nid != agent.id and nid not in {c[0] for c in contacts}:
+                        contacts.append((nid, 1.0))
+
+                for contact_id, proximity_mult in contacts[:5]:
+                    contact = society.get_by_id(contact_id)
+                    if not contact or not contact.alive:
+                        continue
+                    spread_p = (contagion_rate * agent.trauma_score
+                                * (1.0 - contact.mental_health_baseline * 0.5)
+                                * (1.0 + contact.empathy_capacity * 0.3)
+                                * max(0.5, 1.0 - contact.impulse_control * 0.3)
+                                * proximity_mult)
+                    if rng.random() < spread_p:
+                        contact.trauma_score = min(1.0,
+                            contact.trauma_score + spread_amount)
+                        contagion_events += 1
+
+        # ── DD24: Faction trauma buffer ───────────────────────────────
+        if getattr(config, 'trauma_contagion_enabled', False):
+            faction_buffer = getattr(config, 'faction_trauma_buffer', 0.02)
+            for fid, fdata in getattr(society, 'factions', {}).items():
+                members = [society.get_by_id(aid) for aid in fdata.get('members', [])]
+                members = [a for a in members if a and a.alive]
+                if not members:
+                    continue
+                avg_trust = 0.0
+                trust_count = 0
+                for m in members:
+                    for other in members:
+                        if other.id != m.id and other.id in m.reputation_ledger:
+                            avg_trust += m.reputation_ledger[other.id]
+                            trust_count += 1
+                if trust_count > 0:
+                    avg_trust /= trust_count
+                if avg_trust > 0.65:
+                    for m in members:
+                        if m.trauma_score > 0:
+                            m.trauma_score = max(0.0,
+                                m.trauma_score - faction_buffer)
+
+        if activations > 0 or remissions > 0 or contagion_events > 0:
             events.append({
                 "type": "pathology_summary",
                 "year": society.year,
                 "agent_ids": [],
                 "description": (f"Pathology: {activations} activations, "
-                                f"{remissions} remissions"),
+                                f"{remissions} remissions"
+                                + (f", {contagion_events} contagion" if contagion_events > 0 else "")),
             })
 
         return events

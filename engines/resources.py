@@ -97,13 +97,26 @@ class ResourceEngine:
         # DD10: Intelligence-mediated storage efficiency
         storage_intel_bonus = getattr(config, 'storage_intelligence_bonus', 0.0)
         storage_cap = getattr(config, 'resource_storage_cap', 20.0)
+        resource_types = getattr(config, 'resource_types_enabled', False)
         for agent in living:
             # Smarter agents preserve more (better storage)
             effective_decay = config.resource_decay_rate
             if storage_intel_bonus > 0:
                 effective_decay += agent.intelligence_proxy * storage_intel_bonus
                 effective_decay = min(0.9, effective_decay)  # can't keep more than 90%
-            agent.current_resources *= effective_decay
+
+            if resource_types:
+                # DD21: Type-specific decay rates
+                agent.current_resources *= getattr(config, 'subsistence_decay_rate', 0.4)
+                agent.current_tools *= (1.0 - getattr(config, 'tools_decay_rate', 0.1))
+                agent.current_prestige_goods *= (1.0 - getattr(config, 'prestige_goods_decay_rate', 0.05))
+                # Caps
+                agent.current_tools = min(agent.current_tools,
+                                          getattr(config, 'tools_per_agent_cap', 10.0))
+                agent.current_prestige_goods = min(agent.current_prestige_goods,
+                                                   getattr(config, 'prestige_goods_per_agent_cap', 5.0))
+            else:
+                agent.current_resources *= effective_decay
             # DD10: Storage cap prevents runaway accumulation
             if storage_cap > 0:
                 agent.current_resources = min(agent.current_resources, storage_cap)
@@ -132,7 +145,12 @@ class ResourceEngine:
         # DD08: prestige matters more than dominance for resource acquisition
         comp_weights = np.zeros(pop_size)
         for i, a in enumerate(living):
-            intelligence = a.intelligence_proxy * 0.25
+            # DD23: Diminishing returns on intelligence in competitive weight
+            # DD26: Foraging skill multiplies effective intelligence
+            effective_intel = a.intelligence_proxy
+            if getattr(config, 'skills_enabled', False):
+                effective_intel *= (0.6 + a.foraging_skill * 0.8)
+            intelligence = min(effective_intel ** 0.7, 0.8) * 0.25
             status = (a.prestige_score * 0.7 + a.dominance_score * 0.3) * 0.25
             experience = min(a.age, 50) / 50.0 * 0.15
 
@@ -144,6 +162,12 @@ class ResourceEngine:
             network = min(network_sizes[a.id], 5) * config.cooperation_network_bonus
 
             raw_weight = intelligence + status + experience + wealth + network
+
+            # DD21: Tools multiply subsistence production
+            if resource_types:
+                tool_mult = 1.0 + a.current_tools * getattr(
+                    config, 'tool_production_multiplier', 0.3)
+                raw_weight *= tool_mult
 
             # Aggression production penalty: fighters are less efficient
             agg_penalty = 1.0 - a.aggression_propensity * config.aggression_production_penalty
@@ -174,6 +198,10 @@ class ResourceEngine:
                     dependents += 1
             if dependents > 0:
                 cost_per_child = config.child_investment_per_year
+                # DD22: Prime adults invest more in children
+                if (getattr(config, 'life_stages_enabled', False)
+                        and agent.life_stage == "PRIME"):
+                    cost_per_child *= getattr(config, 'prime_parenting_multiplier', 1.2)
                 if agent.sex == Sex.MALE and config.infidelity_enabled:
                     cost_per_child *= agent.paternity_confidence
                 total_cost = cost_per_child * dependents
@@ -191,6 +219,8 @@ class ResourceEngine:
         factions_active = getattr(config, 'factions_enabled', False)
         in_group_trust_red = getattr(config, 'in_group_trust_threshold_reduction', 0.0)
         in_group_bonus = getattr(config, 'in_group_sharing_bonus', 0.0)
+        # DD18: Proximity tier filtering for sharing
+        proximity_enabled = getattr(config, 'proximity_tiers_enabled', False)
         for agent in living:
             if agent.cooperation_propensity < config.cooperation_min_propensity:
                 continue
@@ -198,11 +228,26 @@ class ResourceEngine:
             if ostracism_enabled and agent.reputation < ostracism_thresh:
                 continue
             allies = []
+            # DD18: Precompute household + neighborhood for proximity filter
+            if proximity_enabled:
+                household = society.household_of(agent)
+                neighborhood_set = set(agent.neighborhood_ids) | household
             for other_id, trust in agent.reputation_ledger.items():
                 other = society.get_by_id(other_id)
                 if not (other and other.alive
                         and other.cooperation_propensity > config.cooperation_min_propensity):
                     continue
+                # DD18: Restrict sharing to household + neighborhood
+                # High cooperation agents can still share with band (tier 3)
+                # DD25: Low kinship_obligation extends sharing beyond neighborhood
+                if proximity_enabled and other_id not in neighborhood_set:
+                    coop_thresh = 0.7
+                    if (getattr(config, 'beliefs_enabled', False)
+                            and agent.age >= 15
+                            and agent.kinship_obligation < 0):
+                        coop_thresh -= abs(agent.kinship_obligation) * 0.2
+                    if agent.cooperation_propensity < coop_thresh:
+                        continue
                 # DD14: Lower trust threshold for same-faction members
                 eff_thresh = config.cooperation_trust_threshold
                 if (factions_active and agent.faction_id is not None
@@ -216,6 +261,15 @@ class ResourceEngine:
             share_rate = agent.cooperation_propensity * config.cooperation_sharing_rate
             # DD15: Empathy extends sharing to non-kin (broader altruism radius)
             share_rate *= (1.0 + agent.empathy_capacity * 0.15)
+            # DD25: cooperation_norm belief boosts sharing rate
+            if getattr(config, 'beliefs_enabled', False) and agent.age >= 15:
+                share_rate *= (1.0 + agent.cooperation_norm * 0.1)
+            # DD20: Peace chief sharing boost — faction with peace chief shares more
+            if (getattr(config, 'leadership_enabled', False)
+                    and agent.faction_id is not None):
+                leaders = getattr(society, 'faction_leaders', {}).get(agent.faction_id)
+                if leaders and leaders.get('peace_chief') is not None:
+                    share_rate *= (1.0 + config.peace_chief_sharing_boost)
             # DD14: Boost sharing rate for agents with in-group allies
             if factions_active and in_group_bonus > 0 and agent.faction_id is not None:
                 n_in = sum(1 for a in allies if a.faction_id == agent.faction_id)
@@ -396,6 +450,70 @@ class ResourceEngine:
                     "description": (f"Signals: {display_events} displays, "
                                     f"{bluff_attempts} bluffs, "
                                     f"{bluff_detections} detected"),
+                })
+
+        # ── Phase 7b (DD21): Tool production + prestige generation + trade ──
+        if resource_types:
+            trade_count = 0
+            for a in living:
+                # Tool production: intelligence + status_drive
+                tool_gain = (a.intelligence_proxy * 0.5
+                             + a.status_drive * 0.3
+                             + min(a.age, 50) / 50.0 * 0.2) * 0.2
+                # DD26: Craft skill multiplies tool production
+                if getattr(config, 'skills_enabled', False):
+                    tool_gain *= (0.5 + a.craft_skill * 1.0)
+                a.current_tools = min(
+                    a.current_tools + tool_gain,
+                    getattr(config, 'tools_per_agent_cap', 10.0))
+
+                # Prestige goods: generated from generous sharing (proxy: cooperation * trust)
+                if a.cooperation_propensity > 0.5 and a.current_resources > 3.0:
+                    pg_gain = (a.cooperation_propensity - 0.5) * 0.1
+                    a.current_prestige_goods = min(
+                        a.current_prestige_goods + pg_gain,
+                        getattr(config, 'prestige_goods_per_agent_cap', 5.0))
+                    # Prestige goods also boost prestige_score
+                    a.prestige_score = min(1.0,
+                        a.prestige_score + a.current_prestige_goods * 0.005)
+
+            # Intra-band trade: tool surplus ↔ subsistence surplus
+            trade_prob = getattr(config, 'intraband_trade_probability', 0.1)
+            exchange_rate = getattr(config, 'tool_subsistence_exchange_rate', 3.0)
+            for a in living:
+                if rng.random() > trade_prob:
+                    continue
+                if a.current_tools < 1.0 or a.current_resources < 2.0:
+                    continue
+                # Find a trade partner in neighborhood who needs tools
+                candidates = []
+                for other_id in a.neighborhood_ids if proximity_enabled else []:
+                    other = society.get_by_id(other_id)
+                    if (other and other.alive
+                            and other.current_tools < a.current_tools * 0.5
+                            and other.current_resources > exchange_rate):
+                        trust = a.trust_of(other_id)
+                        if trust > 0.4:
+                            candidates.append(other)
+                if not candidates:
+                    continue
+                partner = candidates[rng.choice(len(candidates))]
+                # Trade: 1 tool for exchange_rate subsistence
+                a.current_tools -= 1.0
+                a.current_resources += exchange_rate
+                partner.current_tools += 1.0
+                partner.current_resources -= exchange_rate
+                # Trust boost from trade
+                a.remember(partner.id, 0.03)
+                partner.remember(a.id, 0.03)
+                trade_count += 1
+
+            if trade_count > 0:
+                events.append({
+                    "type": "trade_summary",
+                    "year": society.year,
+                    "agent_ids": [],
+                    "description": f"Trade: {trade_count} tool-subsistence exchanges",
                 })
 
         # ── Phase 8: Subsistence floor ─────────────────────────────────

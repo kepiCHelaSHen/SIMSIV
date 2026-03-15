@@ -108,6 +108,27 @@ class InstitutionEngine:
                 heir.prestige_score = min(1.0,
                     heir.prestige_score + status_share)
 
+        # DD21: Tools and prestige goods inheritance
+        if getattr(config, 'resource_types_enabled', False):
+            # Tools: primary inheritance good (durable, splits equally)
+            if deceased.current_tools > 0:
+                tool_share = deceased.current_tools / len(heirs)
+                for heir in heirs:
+                    heir.current_tools = min(
+                        heir.current_tools + tool_share,
+                        getattr(config, 'tools_per_agent_cap', 10.0))
+                deceased.current_tools = 0
+            # Prestige goods: heirs gain prestige_score boost
+            if deceased.current_prestige_goods > 0:
+                pg_share = deceased.current_prestige_goods / len(heirs)
+                for heir in heirs:
+                    heir.current_prestige_goods = min(
+                        heir.current_prestige_goods + pg_share,
+                        getattr(config, 'prestige_goods_per_agent_cap', 5.0))
+                    heir.prestige_score = min(1.0,
+                        heir.prestige_score + pg_share * 0.02)
+                deceased.current_prestige_goods = 0
+
         deceased.current_resources = 0
         events.append({
             "type": "inheritance",
@@ -189,7 +210,39 @@ class InstitutionEngine:
             # Eroding: inertia resists decrease from already-low levels
             resistance = 1.0 - inertia * (1.0 - current_law)
 
-        delta_law = (drift_rate * (coop_factor - violence_factor)
+        # DD22: Elder norm anchor — respected elders slow institutional drift
+        if getattr(config, 'life_stages_enabled', False):
+            elder_count = sum(
+                1 for a in living
+                if a.life_stage == "ELDER" and a.reputation > 0.4)
+            if elder_count > 0:
+                anchor = getattr(config, 'elder_norm_anchor_strength', 0.3)
+                resistance *= (1.0 + anchor * min(5, elder_count) / 5.0)
+
+        # DD25: Belief aggregate effects on institutional drift
+        belief_influence = 0.0
+        if getattr(config, 'beliefs_enabled', False):
+            adults = [a for a in living if a.age >= 15]
+            if adults:
+                bi = getattr(config, 'belief_institutional_influence', 0.3)
+                avg_hierarchy = float(np.mean([a.hierarchy_belief for a in adults]))
+                avg_coop_norm = float(np.mean([a.cooperation_norm for a in adults]))
+                avg_violence_acc = float(np.mean([a.violence_acceptability for a in adults]))
+                avg_tradition = float(np.mean([a.tradition_adherence for a in adults]))
+
+                # High cooperation_norm accelerates law_strength growth
+                belief_influence += avg_coop_norm * bi * 0.3
+                # High violence_acceptability undermines punishment
+                belief_influence -= avg_violence_acc * bi * 0.2
+                # High tradition_adherence increases inertia
+                if avg_tradition > 0:
+                    resistance *= (1.0 + avg_tradition * bi * 0.5)
+                # High hierarchy_belief drifts elite_privilege upward
+                if hasattr(config, 'elite_privilege_multiplier') and avg_hierarchy > 0.2:
+                    config.elite_privilege_multiplier = min(2.0,
+                        config.elite_privilege_multiplier + avg_hierarchy * bi * 0.01)
+
+        delta_law = (drift_rate * (coop_factor - violence_factor + belief_influence)
                      * max(0.05, resistance))
         delta_law = max(-drift_rate, min(drift_rate, delta_law))
 

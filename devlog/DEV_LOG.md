@@ -31,6 +31,79 @@ LOG ENTRIES
 
 ---
 DATE: 2026-03-14
+SESSION: chain_runner_dd18_26
+AUTHOR: claude
+TYPE: CODE
+SUMMARY: DD18-DD26 Chain Runner — Proximity, Migration, Leadership, Resource Types, Life Stages, Intelligence Audit, Epigenetics, Beliefs, Skills
+DETAILS:
+  Executed 9 deep dives (DD18-DD26) in continuous chain runner mode.
+
+  DD18 (Proximity Tiers): Three-tier proximity model — household/neighborhood/band.
+  Proximity-weighted conflict targeting, mate evaluation, cooperation sharing, gossip noise.
+  Society gets household_of() and refresh_neighborhoods() methods.
+  8 new config params, 4 new metrics.
+
+  DD19 (Migration): Emigration push factors (resource stress, ostracism, unmated, overcrowding)
+  and immigration pull factors (resource surplus, vacancy). Agents track origin_band_id,
+  immigration_year, generation_in_band. Runs at step 6.3. 12 new config params, 4 new metrics.
+
+  DD20 (Leadership): War leader (dominance-based) and peace chief (prestige-based) per faction.
+  War leaders boost faction aggression, combat bonus, deterrence. Peace chiefs mediate
+  intra-faction conflict, boost sharing. 9 new config params, 3 new metrics.
+
+  DD21 (Resource Types): Three resource types — subsistence (perishable, 0.4 retention),
+  tools (durable, 10% decay), prestige goods (5% decay). Tool production multiplier,
+  intra-band trade, tool looting in conflict, prestige goods mate signal.
+  11 new config params, 5 new metrics.
+
+  DD22 (Life Stages): Five computed stages — CHILDHOOD/YOUTH/PRIME/MATURE/ELDER.
+  Youth +25% conflict, mature -20%, elder -50%. Prime parenting +20%.
+  Elder norm anchor slows institutional drift. Expanded memory for mature/elder.
+  10 new config params, 6 new metrics.
+
+  DD23 (Intelligence Audit): Diminishing returns on intelligence competitive weight:
+  min(intel^0.7, 0.8) * 0.25. Prevents intelligence runaway (+0.05/100yr → stable).
+
+  DD24 (Epigenetics): Transgenerational stress load from scarcity/epidemic/trauma.
+  Epigenetic sigma boost amplifies offspring trait mutation. Trauma contagion spreads
+  from high-trauma agents to contacts. Faction trauma buffer for strong factions.
+  11 new config params, 4 new metrics.
+
+  DD25 (Beliefs): 5 non-heritable belief dimensions [-1,+1]: hierarchy, cooperation_norm,
+  violence_acceptability, tradition_adherence, kinship_obligation. Initialized from traits
+  + parent beliefs at maturation. Evolves via social influence (prestige-biased),
+  experience, and cultural mutation every 3 ticks. Effects on conflict (violence_acceptability),
+  resources (cooperation_norm, kinship_obligation), mating (endogamy), institutions
+  (belief aggregate drift). Ideological tension and belief revolution detection.
+  7 new config params, 9 new metrics.
+
+  DD26 (Skills): 4 non-heritable skill domains [0-1]: foraging, combat, social, craft.
+  Initialized at maturation from intelligence + parent transmission. Grows through
+  exercise, decays without use. Foraging multiplies effective intelligence in resource
+  competition. Combat adds to power calculation. Social boosts gossip and mate assessment.
+  Craft multiplies tool production. Faction-based mentoring system.
+  11 new config params, 11 new metrics.
+
+DECISIONS MADE:
+  - All 26 deep dives now complete (DD01-DD26)
+  - 26 heritable traits, 5 belief dimensions, 4 skill domains
+  - Tick order: env(1)→res(2)→conflict(3)→mating(4)→repro(5)→mortality(6)→
+    migration(6.3)→pathology(6.5)→institutions(7)→reputation(8)→factions(8.5)→
+    neighborhoods(8.6)→metrics(9)→equilibrium(10)
+FILES CHANGED:
+  models/agent.py, models/society.py, config.py, simulation.py,
+  engines/resources.py, engines/conflict.py, engines/mating.py,
+  engines/reputation.py, engines/institutions.py, engines/mortality.py,
+  engines/pathology.py, metrics/collectors.py,
+  docs/deep_dive_18_proximity.md through docs/deep_dive_26_skills.md
+NEXT ACTIONS:
+  - Phase D or v2 planning
+  - Multi-band / inter-band dynamics
+  - Performance optimization for large populations
+---
+
+---
+DATE: 2026-03-14
 SESSION: chain_runner_dd17
 AUTHOR: claude
 TYPE: CODE
@@ -1154,6 +1227,73 @@ NEXT ACTIONS:
   - All Phase B deep dives (DD01-DD14) COMPLETE
   - Phase C or v2 planning
 ---
+
+---
+DATE: 2026-03-14
+SESSION: cleanup
+AUTHOR: claude
+TYPE: REFACTOR
+SUMMARY: Project cleanup — README, requirements, tick renumber, STATUS archive, docs reorganization
+DETAILS:
+  Archived historical results from STATUS.md into this log (below).
+  Rewrote README.md with current state (26 traits, 9 engines, 26 deep dives).
+  Updated requirements.txt with version pins (added scipy, streamlit).
+  Renumbered simulation.py tick loop to clean steps 1-12 (no fractions).
+  Replaced all getattr(config, field, default) with direct config field access.
+  Moved AUTOSIM.md and MISSION.md to docs/.
+  Created docs/deep_dive_01_mating.md (was missing from docs/).
+  Created prompts/README.md (index of all 26 deep dive prompts).
+  Updated CHAIN_PROMPT.md file tree and change log.
+  Created sandbox/explore.py (IPython harness).
+FILES CHANGED:
+  README.md, requirements.txt, simulation.py, STATUS.md, devlog/DEV_LOG.md,
+  CHAIN_PROMPT.md, docs/AUTOSIM.md, docs/MISSION.md, docs/deep_dive_01_mating.md,
+  prompts/README.md, sandbox/explore.py
+---
+
+================================================================================
+ARCHIVED STATUS.MD RESULTS (moved 2026-03-14)
+================================================================================
+
+Key results (Session 009, 200 pop x 50yr) — Post-DD06 household mechanics:
+  - Childhood deaths: 128 total over 50yr (~2-5/yr at 200 pop)
+  - Orphans: 12 among 245 children (~5%)
+  - Avg lifetime births: 3.17, max observed 8 (below cap of 12)
+  - Maternal health: avg 0.427 (visible cumulative cost of reproduction)
+  - Birth interval working: 2yr minimum between births
+  - Maternal age decline: gradual fertility reduction past 30
+  - Grandparent bonus: reduces infant/childhood mortality when grandparent alive
+  - Sibling trust: co-living siblings build mutual trust (+0.01/yr)
+  - Population stable at ~440 (no collapse from added mortality)
+
+Key results (Session 008, 500 pop x 200yr) — Post-DD05 institutional comparison:
+  - BASELINE: Pop=609, Gini=0.306, Vio=0.054, Law=0.000 (anarchy), inheritance working (5100 events)
+  - STRONG_STATE: Pop=1177, Gini=0.250, Vio=0.024 (lowest), Law=0.800, PropRights=0.5
+  - EMERGENT: Pop=941, Gini=0.268, Vio=0.050, Law grows 0->0.484 organically, 24 emergence events
+  - ENFORCED_MONOGAMY: Pop=740, Gini=0.317, Vio=0.033, Law=0.700 (static)
+  - Emergent institutions: law_strength self-organizes from 0 to 0.48 over 200yr
+  - Institutions substitute for traits: STRONG_STATE coop=0.527 (lower than BASELINE 0.564)
+  - Inheritance now working by default: 5100 events/200yr (was 0 pre-DD05)
+
+Key results (Session 007, 500 pop x 200yr) — Post-DD04 trait evolution:
+  - BASELINE: agg -0.036, coop +0.058, intel +0.071, fert +0.014, std~0.09
+  - STRICT_MONOGAMY: agg -0.053, coop +0.074, intel +0.093 (strongest coop+intel)
+  - ELITE_POLYGYNY: agg -0.086, coop +0.029, intel +0.080 (strongest anti-aggression)
+  - HIGH_VIOLENCE: agg -0.069, coop +0.059, intel +0.014 (stress reduces intel selection)
+  - Trait diversity improved: std ~0.09 (was ~0.07 pre-DD04) due to rare mutations
+
+Key results (Session 006, 500 pop x 100yr) — Post-DD03 four-scenario comparison:
+  - BASELINE: Pop=623, Gini=0.345, violence=0.056, v-deaths=159, flees=72
+  - STRICT_MONOGAMY: Pop=912, Gini=0.286, violence=0.051, v-deaths=118
+  - ELITE_POLYGYNY: Pop=1248, Gini=0.327, violence=0.053, v-deaths=144
+  - HIGH_VIOLENCE: Pop=490, Gini=0.367, violence=0.074, v-deaths=275
+
+Key results (Session 005, 3 seeds x 200yr x 500 pop) — Post-DD02 four-way comparison:
+  - FREE_COMPETITION: Gini=0.335, violence=0.057, unmated_m=41%, network=3.4
+  - ENFORCED_MONOGAMY: Gini=0.328, violence -37%, unmated males -40%
+  - ELITE_POLYGYNY: Gini=0.468, violence=0.064, unmated_m=43%
+  - RESOURCE_SCARCITY: Gini=0.283, pop=609 (no longer collapses)
+  - Aggression-pays-cost signal confirmed across all scenarios
 
 ================================================================================
 END OF LOG

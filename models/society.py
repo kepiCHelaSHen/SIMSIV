@@ -29,6 +29,12 @@ class Society:
         self._next_faction_id: int = 1
         self._last_faction_detection: int = -999
 
+        # DD18: Proximity tiers — neighborhood refresh tracking
+        self._last_neighborhood_refresh: int = -999
+
+        # DD20: Leadership tracking
+        self.faction_leaders: dict[int, dict] = {}  # faction_id → {war_leader, peace_chief, ...}
+
         # Initialize population
         pop = create_initial_population(rng, config, config.population_size)
         for a in pop:
@@ -92,7 +98,10 @@ class Society:
                     setattr(a, trait, float(np.clip(val, 0.0, 1.0)))
                 else:
                     setattr(a, trait, float(self.rng.uniform(0.2, 0.8)))
-            a.current_resources = float(self.rng.uniform(3, 8))
+            total_res = float(self.rng.uniform(3, 8))
+            a.current_resources = total_res * 0.6  # DD21
+            a.current_tools = total_res * 0.3
+            a.current_prestige_goods = total_res * 0.1
             a.health = float(self.rng.uniform(0.7, 1.0))
             self.add_agent(a)
         self.add_event({
@@ -100,6 +109,253 @@ class Society:
             "year": self.year,
             "description": f"{count} migrants injected (population rescue)",
         })
+
+    # ── DD18: Proximity tier helpers ──────────────────────────────
+
+    def household_of(self, agent: Agent) -> set[int]:
+        """Return set of agent IDs in same household (tier 1).
+
+        Household = current partners + dependent children + living parents.
+        Dynamically computed each time (not stored).
+        """
+        hh = {agent.id}
+        # Partners (symmetric)
+        for pid in agent.partner_ids:
+            p = self.get_by_id(pid)
+            if p and p.alive:
+                hh.add(pid)
+        # Dependent children
+        child_dep = getattr(self.config, 'child_dependency_years', 5)
+        for oid in agent.offspring_ids:
+            child = self.get_by_id(oid)
+            if child and child.alive and child.age < child_dep:
+                hh.add(oid)
+        # Living parents
+        for pid in agent.parent_ids:
+            if pid is not None:
+                parent = self.get_by_id(pid)
+                if parent and parent.alive:
+                    hh.add(pid)
+        # Reverse partner lookup — agents who list us as partner
+        for a in self.agents.values():
+            if a.alive and agent.id in a.partner_ids:
+                hh.add(a.id)
+        return hh
+
+    def refresh_neighborhoods(self, config, rng):
+        """Recompute neighborhood_ids for all living agents (DD18).
+
+        Called periodically (every neighborhood_refresh_interval years).
+        Neighborhood = trusted allies + same-faction + siblings, capped.
+        """
+        interval = getattr(config, 'neighborhood_refresh_interval', 3)
+        if self.year - self._last_neighborhood_refresh < interval:
+            return
+        self._last_neighborhood_refresh = self.year
+
+        trust_thresh = getattr(config, 'neighborhood_trust_threshold', 0.5)
+        max_size = getattr(config, 'neighborhood_size_max', 40)
+        living = self.get_living()
+        living_ids = {a.id for a in living}
+
+        for agent in living:
+            candidates = set()
+
+            # 1. Agents in ledger with trust > threshold
+            for other_id, trust_val in agent.reputation_ledger.items():
+                if trust_val > trust_thresh and other_id in living_ids:
+                    candidates.add(other_id)
+
+            # 2. Same faction members
+            if agent.faction_id is not None:
+                for a in living:
+                    if a.id != agent.id and a.faction_id == agent.faction_id:
+                        candidates.add(a.id)
+
+            # 3. Siblings (shared parent_ids)
+            if agent.parent_ids != (None, None):
+                for a in living:
+                    if a.id == agent.id:
+                        continue
+                    for pid in agent.parent_ids:
+                        if pid is not None and pid in a.parent_ids:
+                            candidates.add(a.id)
+                            break
+
+            # Remove self
+            candidates.discard(agent.id)
+
+            # Cap at max_size; if over, keep trusted first
+            if len(candidates) > max_size:
+                scored = []
+                for cid in candidates:
+                    trust = agent.reputation_ledger.get(cid, 0.5)
+                    scored.append((cid, trust))
+                scored.sort(key=lambda x: x[1], reverse=True)
+                candidates = {cid for cid, _ in scored[:max_size]}
+
+            agent.neighborhood_ids = list(candidates)
+
+    # ── DD19: Migration ──────────────────────────────────────────
+
+    def process_migration(self, config, rng) -> list[dict]:
+        """Process emigration and immigration for this tick (DD19).
+
+        Returns list of events.
+        """
+        events = []
+        if not getattr(config, 'migration_enabled', False):
+            return events
+
+        # ── Emigration ──────────────────────────────────────────
+        living = self.get_living()
+        pop = len(living)
+        if pop == 0:
+            return events
+
+        emigrated = []
+        for agent in living:
+            p = config.base_emigration_rate
+
+            # Push: resource stress
+            if agent.current_resources < config.emigration_resource_threshold:
+                stress = max(0, config.emigration_resource_threshold - agent.current_resources)
+                p += 0.01 * stress
+
+            # Push: ostracism
+            if agent.reputation < config.emigration_reputation_threshold:
+                p += 0.02
+
+            # Push: mating failure (young unmated males)
+            if (agent.sex == Sex.MALE and agent.age >= 18 and not agent.is_bonded
+                    and agent.age <= 35 and agent.status_drive > 0.4):
+                years_adult = agent.age - max(15, getattr(config, 'age_first_reproduction', 15))
+                if years_adult >= config.emigration_unmated_years:
+                    p += 0.03
+
+            # Push: overcrowding
+            cap_ratio = pop / config.carrying_capacity
+            if cap_ratio > config.overcrowding_emigration_threshold:
+                p += 0.01 * (cap_ratio - config.overcrowding_emigration_threshold)
+
+            # Anchor: bonded with children = much less likely to leave
+            if agent.is_bonded and agent.offspring_ids:
+                has_dep = any(
+                    (c := self.get_by_id(oid)) and c.alive
+                    and c.age < config.child_dependency_years
+                    for oid in agent.offspring_ids
+                )
+                if has_dep:
+                    p *= config.emigration_family_anchor
+
+            # Children don't emigrate alone
+            if agent.age < 15:
+                continue
+
+            p = max(0.0, min(0.2, p))
+            if rng.random() < p:
+                emigrated.append(agent)
+
+        for agent in emigrated:
+            agent.die("emigration", self.year)
+            # Remove from partners
+            for pid in list(agent.partner_ids):
+                partner = self.get_by_id(pid)
+                if partner and partner.alive:
+                    partner.remove_bond(agent.id)
+            events.append({
+                "type": "emigration",
+                "year": self.year,
+                "agent_ids": [agent.id],
+                "description": f"Agent {agent.id} emigrated (age {agent.age})",
+            })
+
+        # ── Immigration ─────────────────────────────────────────
+        living = self.get_living()  # refresh after emigration
+        pop = len(living)
+        if pop == 0:
+            return events
+
+        avg_res = float(np.mean([a.current_resources for a in living]))
+        cap_ratio = pop / config.carrying_capacity
+
+        p_imm = config.base_immigration_rate
+        # Pull: resource surplus
+        if avg_res > config.immigration_resource_threshold:
+            p_imm *= 1.5
+        # Pull: population vacancy
+        vacancy = max(0, 1.0 - cap_ratio)
+        p_imm *= (1.0 + vacancy * 0.5)
+        # Pull: cooperation
+        avg_coop = float(np.mean([a.cooperation_propensity for a in living]))
+        p_imm *= (1.0 + avg_coop * 0.5)
+
+        p_imm = max(0.0, min(0.1, p_imm))
+
+        # Number of immigrants this tick (Poisson-like)
+        n_immigrants = 0
+        while rng.random() < p_imm and n_immigrants < 3:
+            n_immigrants += 1
+            p_imm *= 0.3  # diminishing returns for multiple immigrants
+
+        if n_immigrants > 0:
+            trait_source = getattr(config, 'immigrant_trait_source', 'population_mean')
+
+            # Precompute population trait stats
+            if trait_source == 'population_mean' and len(living) >= 5:
+                trait_stats = {}
+                for trait in HERITABLE_TRAITS:
+                    vals = [getattr(a, trait) for a in living]
+                    trait_stats[trait] = (float(np.mean(vals)),
+                                         max(0.05, float(np.std(vals))))
+
+            for _ in range(n_immigrants):
+                sex = Sex.FEMALE if rng.random() < 0.5 else Sex.MALE
+                age = int(rng.integers(18, 35))
+                a = Agent(sex=sex, age=age, generation=0)
+
+                for trait in HERITABLE_TRAITS:
+                    if trait_source == 'population_mean' and len(living) >= 5:
+                        mean, std = trait_stats[trait]
+                        val = rng.normal(mean, std)
+                    elif trait_source == 'external':
+                        val = rng.normal(0.5, 0.15)
+                        if trait == 'aggression_propensity':
+                            val += getattr(config, 'external_trait_aggression_offset', 0.0)
+                    else:  # random
+                        val = rng.uniform(0.0, 1.0)
+                    setattr(a, trait, float(np.clip(val, 0.0, 1.0)))
+
+                total_res = float(rng.uniform(3, 8))
+                a.current_resources = total_res * 0.6  # DD21
+                a.current_tools = total_res * 0.3
+                a.current_prestige_goods = total_res * 0.1
+                a.health = float(rng.uniform(0.7, 1.0))
+                a.prestige_score = float(rng.uniform(0, 0.1))
+                a.dominance_score = float(rng.uniform(0, 0.1))
+
+                # DD19: Migration tracking
+                a.origin_band_id = 1
+                a.immigration_year = self.year
+                a.generation_in_band = 0
+
+                # Set initial trust toward existing members
+                init_trust = getattr(config, 'immigrant_initial_trust', 0.4)
+                sample_size = min(10, len(living))
+                if sample_size > 0:
+                    contacts = rng.choice(living, size=sample_size, replace=False)
+                    for contact in contacts:
+                        a.remember(contact.id, init_trust - 0.5)  # delta from 0.5
+
+                self.add_agent(a)
+                events.append({
+                    "type": "immigration",
+                    "year": self.year,
+                    "agent_ids": [a.id],
+                    "description": f"Immigrant {a.id} arrived (age {age}, {sex.value})",
+                })
+
+        return events
 
     def detect_factions(self, config, rng) -> list[dict]:
         """Detect emergent factions from trust network (DD14).
@@ -298,4 +554,56 @@ class Society:
                         a.faction_id = None
 
         self.factions = new_factions
+
+        # DD20: Update faction leaders after re-detection
+        if getattr(config, 'leadership_enabled', False):
+            self._update_faction_leaders(config)
+
         return events
+
+    def _update_faction_leaders(self, config):
+        """Select war leaders and peace chiefs for each faction (DD20).
+
+        War leader: highest dominance_score in faction.
+        Peace chief: highest prestige_score in faction.
+        Must exceed faction average * leadership_minimum_threshold.
+        """
+        threshold = getattr(config, 'leadership_minimum_threshold', 1.2)
+        age_limit = getattr(config, 'leadership_age_limit', 55)
+        new_leaders = {}
+
+        for fid, fdata in self.factions.items():
+            members = [self.get_by_id(aid) for aid in fdata.get('members', [])]
+            members = [a for a in members if a and a.alive]
+            if not members:
+                continue
+
+            eligible = [a for a in members
+                        if not (a.age > age_limit and a.health < 0.5)]
+
+            if not eligible:
+                continue
+
+            # War leader: highest dominance
+            avg_dom = float(np.mean([a.dominance_score for a in members]))
+            war_candidates = [a for a in eligible
+                              if a.dominance_score > avg_dom * threshold]
+            war_leader = None
+            if war_candidates:
+                war_leader = max(war_candidates, key=lambda a: a.dominance_score)
+
+            # Peace chief: highest prestige
+            avg_pres = float(np.mean([a.prestige_score for a in members]))
+            peace_candidates = [a for a in eligible
+                                if a.prestige_score > avg_pres * threshold]
+            peace_chief = None
+            if peace_candidates:
+                peace_chief = max(peace_candidates, key=lambda a: a.prestige_score)
+
+            new_leaders[fid] = {
+                'war_leader': war_leader.id if war_leader else None,
+                'peace_chief': peace_chief.id if peace_chief else None,
+                'established_year': self.year,
+            }
+
+        self.faction_leaders = new_leaders

@@ -208,7 +208,9 @@ class Agent:
     # ── Non-heritable (earned/contextual) ────────────────────────────
     health: float = 1.0
     reputation: float = 0.5
-    current_resources: float = 0.0
+    current_resources: float = 0.0  # DD21: now = subsistence resources (backward compat)
+    current_tools: float = 0.0     # DD21: durable, low decay, multiplies subsistence
+    current_prestige_goods: float = 0.0  # DD21: social value, boosts prestige/mate value
     prestige_score: float = 0.0   # DD08: earned through cooperation, skill, generosity
     dominance_score: float = 0.0  # DD08: earned through conflict victories, intimidation
 
@@ -250,10 +252,50 @@ class Agent:
     # ── Faction membership ─────────────────────────────────────────
     faction_id: Optional[int] = None  # DD14: emergent faction assignment
 
+    # ── DD25: Beliefs (non-heritable, culturally transmitted) ──────
+    hierarchy_belief: float = 0.0        # [-1=egalitarian, +1=hierarchical]
+    cooperation_norm: float = 0.0        # [-1=defection, +1=prosocial]
+    violence_acceptability: float = 0.0  # [-1=pacifist, +1=violence is honorable]
+    tradition_adherence: float = 0.0     # [-1=innovator, +1=conservative]
+    kinship_obligation: float = 0.0      # [-1=universalist, +1=in-group only]
+
+    # ── DD26: Skills (non-heritable, acquired through experience) ──
+    foraging_skill: float = 0.0
+    combat_skill: float = 0.0
+    social_skill: float = 0.0
+    craft_skill: float = 0.0
+
+    # ── DD24: Epigenetics ───────────────────────────────────────────
+    epigenetic_stress_load: float = 0.0           # accumulated transgenerational stress
+    epigenetic_generation_decay: int = 0           # generations since stress event
+
+    # ── DD18: Proximity tiers ─────────────────────────────────────
+    neighborhood_ids: list[int] = field(default_factory=list)  # refreshed every N years
+
+    # ── DD19: Migration tracking ─────────────────────────────────
+    origin_band_id: int = 0                      # 0=native, 1=immigrant from external pool
+    immigration_year: Optional[int] = None       # year arrived (None = native)
+    generation_in_band: int = 0                  # 0=immigrant, 1=child of immigrant, etc.
+
     # ── State flags ──────────────────────────────────────────────────
     alive: bool = True
     cause_of_death: Optional[str] = None
     year_of_death: Optional[int] = None
+
+    @property
+    def life_stage(self) -> str:
+        """Computed life stage based on age (DD22). Never stored."""
+        afr = 15  # default age_first_reproduction
+        if self.age < afr:
+            return "CHILDHOOD"
+        elif self.age < afr + 10:
+            return "YOUTH"
+        elif self.age < 45:
+            return "PRIME"
+        elif self.age < 60:
+            return "MATURE"
+        else:
+            return "ELDER"
 
     @property
     def current_status(self) -> float:
@@ -351,7 +393,12 @@ class Agent:
         return {t: getattr(self, t) for t in HERITABLE_TRAITS}
 
     def remember(self, other_id: int, delta: float, max_memory: int = 100):
-        """Update reputation ledger for another agent. Sparse, capped."""
+        """Update reputation ledger for another agent. Sparse, capped.
+        DD22: Mature/elder agents get expanded memory (150 slots).
+        """
+        # DD22: Life stage expanded memory
+        if self.life_stage in ("MATURE", "ELDER"):
+            max_memory = max(max_memory, 150)
         if other_id in self.reputation_ledger:
             old = self.reputation_ledger[other_id]
             self.reputation_ledger[other_id] = max(0.0, min(1.0, old + delta))
@@ -418,10 +465,31 @@ def create_initial_population(
             a.health = max(0.3, 1.0 - (age - 40) * 0.02)
 
         # Initial resources proportional to age (older = more accumulated)
-        a.current_resources = float(rng.uniform(1, 5) + age * 0.2)
+        total_res = float(rng.uniform(1, 5) + age * 0.2)
+        a.current_resources = total_res * 0.6   # DD21: 60% subsistence
+        a.current_tools = total_res * 0.3        # DD21: 30% tools
+        a.current_prestige_goods = total_res * 0.1  # DD21: 10% prestige goods
         # DD08: initialize prestige and dominance separately
         a.prestige_score = float(rng.uniform(0, 0.2))
         a.dominance_score = float(rng.uniform(0, 0.2))
+
+        # DD25: Initialize beliefs from traits (adults only, children develop at maturation)
+        if getattr(config, 'beliefs_enabled', False) and age >= 15:
+            a.hierarchy_belief = float(np.clip(
+                a.status_drive * 0.6 + a.dominance_score * 0.4 - 0.3
+                + rng.normal(0, 0.15), -1.0, 1.0))
+            a.cooperation_norm = float(np.clip(
+                a.cooperation_propensity * 0.8 + a.reputation * 0.2 - 0.3
+                + rng.normal(0, 0.15), -1.0, 1.0))
+            a.violence_acceptability = float(np.clip(
+                a.aggression_propensity * 0.7 + a.dominance_score * 0.3 - 0.3
+                + rng.normal(0, 0.15), -1.0, 1.0))
+            a.tradition_adherence = float(np.clip(
+                a.conformity_bias * 0.8 - a.novelty_seeking * 0.4
+                + rng.normal(0, 0.15), -1.0, 1.0))
+            a.kinship_obligation = float(np.clip(
+                a.jealousy_sensitivity * 0.3 + 0.2
+                + rng.normal(0, 0.15), -1.0, 1.0))
 
         agents.append(a)
 
@@ -455,6 +523,18 @@ def breed(parent1: Agent, parent2: Agent, rng: np.random.Generator,
         sigma = base_sigma * (1.0 + (config.stress_mutation_multiplier - 1.0) * scarcity)
     else:
         sigma = base_sigma
+
+    # DD24: Epigenetic sigma boost from parental stress load
+    if getattr(config, 'epigenetics_enabled', False):
+        parent_load = max(
+            getattr(parent1, 'epigenetic_stress_load', 0.0),
+            getattr(parent2, 'epigenetic_stress_load', 0.0))
+        if parent_load > 0.2:
+            boost = getattr(config, 'epigenetic_sigma_boost', 0.3)
+            parent_mhb = (parent1.mental_health_baseline
+                          + parent2.mental_health_baseline) / 2.0
+            effective_boost = boost * (1.0 - parent_mhb * 0.5)
+            sigma *= (1.0 + parent_load * effective_boost)
 
     # Parent weight variance: 0 = exact 50/50, >0 = random blend per trait
     pwv = getattr(config, 'parent_weight_variance', 0.0)
@@ -504,6 +584,30 @@ def breed(parent1: Agent, parent2: Agent, rng: np.random.Generator,
     child.developmental_parent_cooperation = (
         getattr(parent1, 'cooperation_propensity', 0.5)
         + getattr(parent2, 'cooperation_propensity', 0.5)) / 2.0
+
+    # DD24: Inherit epigenetic load (decays each generation)
+    if getattr(config, 'epigenetics_enabled', False):
+        inherit_frac = getattr(config, 'epigenetic_inheritance_fraction', 0.5)
+        child.epigenetic_stress_load = parent_load * inherit_frac
+        child.epigenetic_generation_decay = max(
+            getattr(parent1, 'epigenetic_generation_decay', 0),
+            getattr(parent2, 'epigenetic_generation_decay', 0)) + 1
+
+    # DD19: Track generational depth since immigration
+    child.generation_in_band = min(
+        getattr(parent1, 'generation_in_band', 0),
+        getattr(parent2, 'generation_in_band', 0)) + 1
+
+    # DD25: Cultural belief transmission from parents
+    # Children don't get beliefs at birth — they develop at maturation (age 15)
+    # But we store parent belief averages for later use in maturation
+    if getattr(config, 'beliefs_enabled', False):
+        for bfield in ('hierarchy_belief', 'cooperation_norm',
+                        'violence_acceptability', 'tradition_adherence',
+                        'kinship_obligation'):
+            p_avg = (getattr(parent1, bfield, 0.0) + getattr(parent2, bfield, 0.0)) / 2.0
+            # Store as _parent_belief_* for maturation to use
+            setattr(child, f'_parent_{bfield}', p_avg)
 
     parent1.offspring_ids.append(child.id)
     parent2.offspring_ids.append(child.id)

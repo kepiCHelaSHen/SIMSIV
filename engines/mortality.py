@@ -45,6 +45,14 @@ class MortalityEngine:
                                     f"resource_q={agent.childhood_resource_quality:.2f}"),
                 })
 
+            # DD25: Belief initialization at maturation (age 15)
+            if agent.age == 15 and getattr(config, 'beliefs_enabled', False):
+                self._initialize_beliefs(agent, rng)
+
+            # DD26: Skill initialization at maturation (age 15)
+            if agent.age == 15 and getattr(config, 'skills_enabled', False):
+                self._initialize_skills(agent, society, config)
+
             # Health decay — accelerates with age
             age_factor = max(0, agent.age - 30) * 0.002  # faster after 30
             decay = config.health_decay_per_year + age_factor
@@ -307,3 +315,54 @@ class MortalityEngine:
                 _modify('novelty_seeking', bo_effect)
 
         agent.traits_finalized = True
+
+    def _initialize_beliefs(self, agent, rng):
+        """DD25: Initialize beliefs at maturation (age 15).
+
+        Formula: belief = conformity_bias * parent_avg_belief
+                        + (1 - conformity_bias) * trait_derived_belief
+                        + novelty_seeking * N(0, 0.15)
+        """
+        import numpy as np
+        cb = agent.conformity_bias
+
+        belief_specs = {
+            'hierarchy_belief': agent.status_drive * 0.6 + agent.dominance_score * 0.4 - 0.3,
+            'cooperation_norm': agent.cooperation_propensity * 0.8 + agent.reputation * 0.2 - 0.3,
+            'violence_acceptability': agent.aggression_propensity * 0.7 + agent.dominance_score * 0.3 - 0.3,
+            'tradition_adherence': agent.conformity_bias * 0.8 - agent.novelty_seeking * 0.4,
+            'kinship_obligation': agent.jealousy_sensitivity * 0.3 + 0.2,
+        }
+
+        for bfield, trait_derived in belief_specs.items():
+            parent_avg = getattr(agent, f'_parent_{bfield}', 0.0)
+            belief = cb * parent_avg + (1.0 - cb) * trait_derived
+            noise = agent.novelty_seeking * rng.normal(0, 0.15)
+            setattr(agent, bfield, float(np.clip(belief + noise, -1.0, 1.0)))
+
+    def _initialize_skills(self, agent, society, config):
+        """DD26: Initialize skills at maturation. Base from intelligence + parent transmission."""
+        base = agent.intelligence_proxy * 0.2
+        agent.foraging_skill = base
+        agent.combat_skill = base
+        agent.social_skill = base
+        agent.craft_skill = base if getattr(config, 'resource_types_enabled', False) else 0.0
+
+        # Parent skill transmission
+        transmission = config.skill_parent_transmission
+        # conformity_bias increases transmission fraction
+        transmission *= (0.8 + agent.conformity_bias * 0.4)
+        for pid in agent.parent_ids:
+            if pid is None:
+                continue
+            parent = society.get_by_id(pid)
+            if parent and parent.alive:
+                agent.foraging_skill = min(1.0,
+                    agent.foraging_skill + parent.foraging_skill * transmission * 0.5)
+                agent.combat_skill = min(1.0,
+                    agent.combat_skill + parent.combat_skill * transmission * 0.5)
+                agent.social_skill = min(1.0,
+                    agent.social_skill + parent.social_skill * transmission * 0.5)
+                if getattr(config, 'resource_types_enabled', False):
+                    agent.craft_skill = min(1.0,
+                        agent.craft_skill + parent.craft_skill * transmission * 0.5)

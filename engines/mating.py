@@ -154,8 +154,19 @@ class MatingEngine:
             if not candidates:
                 break
 
+            # DD18: Proximity-weighted mate evaluation
+            proximity_enabled = getattr(config, 'proximity_tiers_enabled', False)
+            if proximity_enabled:
+                female_household = society.household_of(female)
+                female_neighborhood = set(female.neighborhood_ids) | female_household
+                band_weight = getattr(config, 'band_mate_weight', 0.3)
+
             # ── Female choice: age-dependent choosiness ────────────
             choosiness = config.female_choice_strength
+            # DD22: Youth females are more choosy
+            if (getattr(config, 'life_stages_enabled', False)
+                    and female.life_stage == "YOUTH"):
+                choosiness = min(1.0, choosiness * 1.15)
             if female.age > 30:
                 choosiness += config.female_choosiness_age_effect * (female.age - 30)
             choosiness = max(0.1, min(1.0, choosiness))
@@ -170,7 +181,11 @@ class MatingEngine:
                 # Trust bonus — DD15: emotional intelligence amplifies trust reading
                 trust = female.trust_of(m.id)
                 ei_boost = 1.0 + female.emotional_intelligence * 0.3  # [1.0, 1.3]
-                weights[i] *= (0.6 + trust * 0.8) * ei_boost
+                # DD26: Social skill sharpens female's character assessment
+                social_boost = 1.0
+                if getattr(config, 'skills_enabled', False):
+                    social_boost = 1.0 + female.social_skill * 0.2
+                weights[i] *= (0.6 + trust * 0.8) * ei_boost * social_boost
 
                 # Aggression penalty (STRONG — key sexual selection driver)
                 agg_penalty = 1.0 - m.aggression_propensity * 0.5  # [0.5, 1.0]
@@ -188,11 +203,28 @@ class MatingEngine:
                     ei_detect = 1.0 + female.emotional_intelligence * 0.3
                     weights[i] *= max(0.5, 1.0 - condition_penalty * ei_detect)
 
+                # DD21: Prestige goods boost mate attractiveness signal
+                if getattr(config, 'resource_types_enabled', False):
+                    pg_signal = getattr(config, 'prestige_goods_mate_signal', 0.05)
+                    weights[i] *= (1.0 + m.current_prestige_goods * pg_signal)
+
                 # DD14: Endogamy preference (mild same-faction bonus)
                 if (getattr(config, 'factions_enabled', False)
                         and female.faction_id is not None
                         and m.faction_id == female.faction_id):
-                    weights[i] *= (1.0 + getattr(config, 'endogamy_preference', 0.0))
+                    endogamy = getattr(config, 'endogamy_preference', 0.0)
+                    # DD25: High kinship_obligation amplifies endogamy
+                    if (getattr(config, 'beliefs_enabled', False)
+                            and female.age >= 15):
+                        endogamy *= (1.0 + max(0, female.kinship_obligation) * 0.5)
+                    weights[i] *= (1.0 + endogamy)
+
+                # DD18: Proximity tier weight — neighborhood males preferred
+                if proximity_enabled:
+                    if m.id in female_neighborhood:
+                        pass  # full weight (neighborhood = 1.0x for mate choice)
+                    else:
+                        weights[i] *= band_weight  # band tier = reduced visibility
 
             # Apply choosiness (blend toward uniform)
             if choosiness < 1.0:

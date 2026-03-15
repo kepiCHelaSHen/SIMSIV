@@ -228,6 +228,103 @@ class Config:
     faction_schism_pressure: float = 0.01        # annual schism probability above max_size
     faction_merge_trust: float = 0.8             # inter-leader trust required for faction merge
 
+    # DD18: Proximity tiers
+    proximity_tiers_enabled: bool = True
+    household_interaction_multiplier: float = 4.0
+    neighborhood_interaction_multiplier: float = 2.0
+    neighborhood_size_max: int = 40
+    neighborhood_refresh_interval: int = 3       # years between recomputation
+    neighborhood_trust_threshold: float = 0.5    # min trust to be in neighborhood
+    band_mate_weight: float = 0.3               # mate weight for out-of-neighborhood males
+    cross_tier_gossip_noise_multiplier: float = 2.0
+
+    # DD19: Migration dynamics
+    migration_enabled: bool = True
+    base_emigration_rate: float = 0.005          # annual base emigration probability per agent
+    base_immigration_rate: float = 0.008         # annual base immigration probability (band level)
+    emigration_resource_threshold: float = 3.0   # below this resources → push factor
+    emigration_reputation_threshold: float = 0.2 # below this reputation → push factor
+    emigration_unmated_years: int = 5            # years unmated before mating-push emigration
+    emigration_family_anchor: float = 0.3        # multiplier reducing emigration if bonded+children
+    immigration_resource_threshold: float = 8.0  # above this resources → pull factor
+    immigrant_trait_source: str = "population_mean"  # "population_mean", "external", "random"
+    external_trait_aggression_offset: float = 0.0   # trait offset for "external" immigrants
+    immigrant_initial_trust: float = 0.4        # starting trust level toward all band members
+    overcrowding_emigration_threshold: float = 0.9  # fraction of carrying capacity triggering push
+
+    # DD20: Leadership
+    leadership_enabled: bool = True
+    war_leader_aggression_boost: float = 0.2     # faction member aggression boost when active
+    war_leader_combat_bonus: float = 0.05        # combat power boost alongside leader
+    war_leader_deterrence: float = 0.2           # reduction in being targeted by rivals
+    peace_chief_arbitration_probability: float = 0.4  # chance to intervene in intra-faction conflict
+    peace_chief_sharing_boost: float = 0.1       # cooperation sharing rate boost
+    leadership_minimum_threshold: float = 1.2    # must exceed avg * this to be recognized
+    war_leader_tenure_years: int = 5             # years before must re-demonstrate
+    peace_chief_tenure_years: int = 5            # years before must re-demonstrate
+    leadership_age_limit: int = 55              # age above which health-declining leaders step down
+
+    # DD21: Resource type differentiation
+    resource_types_enabled: bool = True
+    subsistence_decay_rate: float = 0.4          # higher decay than tools
+    tools_decay_rate: float = 0.1                # very durable
+    prestige_goods_decay_rate: float = 0.05      # nearly permanent
+    tool_production_multiplier: float = 0.3      # tools boost subsistence production
+    tools_per_agent_cap: float = 10.0            # max tools any agent can hold
+    prestige_goods_per_agent_cap: float = 5.0    # max prestige goods
+    intraband_trade_probability: float = 0.1     # annual trade attempt probability
+    tool_subsistence_exchange_rate: float = 3.0  # 1 tool = 3 subsistence
+    prestige_goods_mate_signal: float = 0.05     # prestige goods → attractiveness boost
+    tool_conflict_loot_chance: float = 0.2       # chance winner takes a tool
+
+    # DD22: Life stage social roles
+    life_stages_enabled: bool = True
+    youth_conflict_multiplier: float = 1.25      # elevated conflict initiation for youth
+    youth_risk_multiplier: float = 1.4           # amplified risk tolerance expression
+    youth_trust_building_multiplier: float = 1.5 # faster trust with same-cohort peers
+    prime_parenting_multiplier: float = 1.2      # peak parenting investment expression
+    mature_conflict_dampening: float = 0.8       # reduced conflict initiation for mature adults
+    mature_ledger_cap: int = 150                 # expanded social memory for mature+
+    elder_norm_anchor_strength: float = 0.3      # elder effect on institutional inertia
+    elder_conflict_damping: float = 0.15         # elder presence reduces out-group conflict
+    cohort_range_years: int = 3                  # age range defining a cohort
+
+    # DD24: Epigenetics and social pathology spread
+    epigenetics_enabled: bool = True
+    epigenetic_sigma_boost: float = 0.3          # max mutation rate increase from stress load
+    epigenetic_scarcity_load: float = 0.3        # load added from scarcity event
+    epigenetic_epidemic_load: float = 0.2        # load added from epidemic survival
+    epigenetic_trauma_load: float = 0.25         # load added from trauma threshold crossing
+    epigenetic_inheritance_fraction: float = 0.5 # fraction of load passed to offspring
+    trauma_contagion_enabled: bool = True
+    trauma_contagion_rate: float = 0.1           # base annual spread probability
+    trauma_spread_amount: float = 0.02           # trauma points transferred per event
+    trauma_epidemic_threshold: float = 0.3       # fraction of band in crisis to trigger epidemic
+    faction_trauma_buffer: float = 0.02          # annual trauma decay boost in strong factions
+
+    # DD26: Skill acquisition and cultural knowledge
+    skills_enabled: bool = True
+    skill_learning_rate_base: float = 0.01          # base annual skill gain rate
+    skill_foraging_decay: float = 0.02              # annual foraging skill decay
+    skill_combat_decay: float = 0.03                # annual combat skill decay
+    skill_social_decay: float = 0.01                # annual social skill decay
+    skill_craft_decay: float = 0.02                 # annual craft skill decay
+    skill_parent_transmission: float = 0.30         # fraction of parent skill to child at maturation
+    skill_mentor_transfer_rate: float = 0.05        # annual transfer from mentor to apprentice
+    skill_age_learning_decline_start: int = 45      # age at which learning slows
+    combat_skill_weight: float = 0.15               # combat skill contribution to power
+    skill_learning_intelligence_multiplier: float = 0.6  # how much intel boosts learning
+
+    # DD25: Belief and ideology system
+    beliefs_enabled: bool = True
+    belief_social_influence_rate: float = 0.05   # strength of conformity pressure per tick
+    belief_experience_update_rate: float = 0.03  # belief change from direct experience
+    belief_mutation_rate: float = 0.03           # novelty_seeking-scaled random drift
+    belief_ideological_tension_threshold: float = 0.6  # abs diff triggering tension
+    belief_revolution_threshold: float = 0.3     # shift magnitude triggering revolution event
+    belief_institutional_influence: float = 0.3  # weight of belief aggregate in inst drift
+    prestige_transmission_weight: float = 0.6    # how much more prestigious agents influence beliefs
+
     # ── Environment ─────────────────────────────────────────────
     scarcity_event_probability: float = 0.03  # base annual chance of scarcity shock
 

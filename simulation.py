@@ -51,10 +51,10 @@ class Simulation:
             deficit = self.config.min_viable_population - pop + 10
             self.society.inject_migrants(deficit)
 
-        # ── Engine execution order ───────────────────────────────────
+        # ── Engine execution order (steps 1-12) ─────────────────────
         # Conflict runs BEFORE mating/reproduction so that violence
         # has real fitness costs — dead agents can't reproduce.
-        #
+
         # 1. Environment
         env_events = self.society.environment.tick(self.society.population_size())
         for e in env_events:
@@ -85,31 +85,40 @@ class Simulation:
         for e in mort_events:
             self.society.add_event(e)
 
-        # 6.5. Pathology (condition activation, trauma — after mortality)
+        # 7. Migration (after mortality — emigration/immigration)
+        if self.config.migration_enabled:
+            mig_events = self.society.process_migration(self.config, self.rng)
+            for e in mig_events:
+                self.society.add_event(e)
+
+        # 8. Pathology (condition activation, trauma — after mortality)
         path_events = self.pathology_engine.run(self.society, self.config, self.rng)
         for e in path_events:
             self.society.add_event(e)
 
-        # 7. Institutions (after mortality — inheritance sees ALL deaths)
+        # 9. Institutions (after mortality — inheritance sees ALL deaths)
         inst_events = self.institution_engine.run(self.society, self.config, self.rng)
         for e in inst_events:
             self.society.add_event(e)
 
-        # 8. Reputation (gossip, trust decay, cleanup — after all interactions)
+        # 10. Reputation (gossip, trust decay, beliefs, skills — after all interactions)
         rep_events = self.reputation_engine.run(self.society, self.config, self.rng)
         for e in rep_events:
             self.society.add_event(e)
 
-        # 8.5. Faction detection (periodic — after all trust updates)
-        if getattr(self.config, 'factions_enabled', False):
+        # 11. Faction detection and neighborhood refresh (periodic — after trust updates)
+        if self.config.factions_enabled:
             faction_events = self.society.detect_factions(self.config, self.rng)
             for e in faction_events:
                 self.society.add_event(e)
 
-        # 9. Collect metrics
+        if self.config.proximity_tiers_enabled:
+            self.society.refresh_neighborhoods(self.config, self.rng)
+
+        # 12. Collect metrics
         row = self.metrics.collect(self.society, self.year)
 
-        # 10. Equilibrium check
+        # Equilibrium check
         if not self.society.equilibrium_flagged:
             if self.metrics.check_equilibrium(self.config):
                 self.society.equilibrium_flagged = True

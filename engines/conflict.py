@@ -87,6 +87,31 @@ class ConflictEngine:
             if agent.conflict_cooldown > 0:
                 total_p *= config.subordination_dampening
 
+            # DD22: Life stage conflict modifiers
+            if getattr(config, 'life_stages_enabled', False):
+                stage = agent.life_stage
+                if stage == "YOUTH":
+                    total_p *= config.youth_conflict_multiplier  # +25% for youth
+                elif stage == "MATURE":
+                    total_p *= config.mature_conflict_dampening  # -20% for mature
+                elif stage == "ELDER":
+                    total_p *= 0.5  # elders rarely initiate
+
+            # DD25: Violence acceptability belief modifier
+            if getattr(config, 'beliefs_enabled', False) and agent.age >= 15:
+                va = agent.violence_acceptability
+                if va > 0:
+                    total_p *= (1.0 + va * 0.1)   # up to +10%
+                else:
+                    total_p *= (1.0 + va * 0.15)  # up to -15%
+
+            # DD20: War leader inspiration — faction members fight more under active war leader
+            if (getattr(config, 'leadership_enabled', False)
+                    and agent.faction_id is not None):
+                leaders = getattr(society, 'faction_leaders', {}).get(agent.faction_id)
+                if leaders and leaders.get('war_leader') is not None:
+                    total_p *= (1.0 + config.war_leader_aggression_boost)
+
             total_p = max(0.0, min(0.5, total_p))
 
             if rng.random() > total_p:
@@ -156,6 +181,30 @@ class ConflictEngine:
                 if defended:
                     continue  # conflict averted
 
+            # ── DD20: Peace chief arbitration — intra-faction conflict mediation
+            if (getattr(config, 'leadership_enabled', False)
+                    and agent.faction_id is not None
+                    and agent.faction_id == getattr(target, 'faction_id', None)):
+                leaders = getattr(society, 'faction_leaders', {}).get(agent.faction_id)
+                if leaders and leaders.get('peace_chief') is not None:
+                    chief = society.get_by_id(leaders['peace_chief'])
+                    if (chief and chief.alive
+                            and chief.id != agent.id and chief.id != target.id):
+                        arb_p = (chief.prestige_score
+                                 * config.peace_chief_arbitration_probability)
+                        if rng.random() < arb_p:
+                            # Mediation successful — conflict averted
+                            chief.prestige_score = min(1.0,
+                                chief.prestige_score + 0.02)
+                            events.append({
+                                "type": "leadership_arbitration",
+                                "year": society.year,
+                                "agent_ids": [chief.id, agent.id, target.id],
+                                "description": (f"Peace chief {chief.id} mediated "
+                                                f"conflict between {agent.id} and {target.id}"),
+                            })
+                            continue
+
             # ── Resolve conflict ─────────────────────────────────────
             conflict_events = self._resolve_conflict(
                 agent, target, society, config, rng, living, ally_counts)
@@ -166,15 +215,30 @@ class ConflictEngine:
     def _select_target(self, aggressor: Agent, living: list[Agent],
                        society, config, rng: np.random.Generator,
                        ally_counts: dict) -> Agent | None:
-        """Pick a conflict target with network deterrence."""
+        """Pick a conflict target with network deterrence and proximity weighting."""
         candidates = [a for a in living
                       if a.id != aggressor.id and a.alive
                       and a.sex == aggressor.sex]
         if not candidates:
             return None
 
+        # DD18: Precompute proximity sets for tier weighting
+        proximity_enabled = getattr(config, 'proximity_tiers_enabled', False)
+        if proximity_enabled:
+            household = society.household_of(aggressor)
+            neighborhood_set = set(aggressor.neighborhood_ids) | household
+            hh_mult = getattr(config, 'household_interaction_multiplier', 4.0)
+            nb_mult = getattr(config, 'neighborhood_interaction_multiplier', 2.0)
+
         weights = np.ones(len(candidates))
         for i, c in enumerate(candidates):
+            # DD18: Apply proximity tier weight
+            if proximity_enabled:
+                if c.id in household:
+                    weights[i] *= hh_mult
+                elif c.id in neighborhood_set:
+                    weights[i] *= nb_mult
+                # else: band tier = 1.0x (default)
             # Low trust = more likely target
             trust = aggressor.trust_of(c.id)
             weights[i] *= (1.5 - trust)
@@ -197,6 +261,11 @@ class ConflictEngine:
             if c.current_resources > aggressor.current_resources * 1.5:
                 weights[i] *= 1.3
 
+            # DD21: Tool envy — target with superior tools
+            if (getattr(config, 'resource_types_enabled', False)
+                    and c.current_tools > aggressor.current_tools * 1.5):
+                weights[i] *= 1.4
+
             # Network deterrence: well-connected agents are harder targets
             target_allies = ally_counts.get(c.id, 0)
             weights[i] *= 1.0 / (1.0 + target_allies
@@ -213,6 +282,29 @@ class ConflictEngine:
                     and c.faction_id is not None
                     and aggressor.faction_id != c.faction_id):
                 weights[i] *= getattr(config, 'out_group_conflict_multiplier', 1.0)
+
+            # DD20: War leader deterrence — faction with war leader harder to target
+            if (getattr(config, 'leadership_enabled', False)
+                    and c.faction_id is not None):
+                c_leaders = getattr(society, 'faction_leaders', {}).get(c.faction_id)
+                if c_leaders and c_leaders.get('war_leader') is not None:
+                    weights[i] *= (1.0 - config.war_leader_deterrence)
+
+        # DD22: Elder presence in aggressor's faction reduces out-group conflict
+        if getattr(config, 'life_stages_enabled', False):
+            if aggressor.faction_id is not None:
+                faction_data = society.factions.get(aggressor.faction_id)
+                if faction_data:
+                    elder_count = sum(
+                        1 for aid in faction_data.get('members', [])
+                        if (a := society.get_by_id(aid)) and a.alive
+                        and a.life_stage == "ELDER" and a.reputation > 0.4)
+                    if elder_count > 0:
+                        for i, c in enumerate(candidates):
+                            if (c.faction_id is not None
+                                    and c.faction_id != aggressor.faction_id):
+                                weights[i] *= (1.0 - config.elder_conflict_damping
+                                               * min(3, elder_count))
 
         total = weights.sum()
         if total <= 0:
@@ -256,11 +348,31 @@ class ConflictEngine:
                      + target.dominance_drive * 0.10          # DD15
                      + target.pain_tolerance * 0.05)          # DD15
 
+        # DD26: Combat skill contributes to power
+        if getattr(config, 'skills_enabled', False):
+            csw = config.combat_skill_weight
+            agg_power += aggressor.combat_skill * csw
+            tgt_power += target.combat_skill * csw
+
         # Small ally bonus (allies don't fight but boost confidence)
         agg_allies = min(ally_counts.get(aggressor.id, 0), 3) * 0.03
         tgt_allies = min(ally_counts.get(target.id, 0), 3) * 0.03
         agg_power += agg_allies
         tgt_power += tgt_allies
+
+        # DD20: War leader combat bonus — fighting alongside faction war leader
+        if getattr(config, 'leadership_enabled', False):
+            for fighter, power_ref in [(aggressor, 'agg'), (target, 'tgt')]:
+                if fighter.faction_id is not None:
+                    leaders = getattr(society, 'faction_leaders', {}).get(
+                        fighter.faction_id)
+                    if leaders and leaders.get('war_leader') is not None:
+                        wl = society.get_by_id(leaders['war_leader'])
+                        if wl and wl.alive and wl.faction_id == fighter.faction_id:
+                            if power_ref == 'agg':
+                                agg_power += config.war_leader_combat_bonus
+                            else:
+                                tgt_power += config.war_leader_combat_bonus
 
         # Probabilistic outcome
         agg_chance = agg_power / (agg_power + tgt_power + 0.01)
@@ -286,6 +398,15 @@ class ConflictEngine:
         # DD05: Property rights reduce looting
         loot_fraction = 0.5 * (1.0 - getattr(config, 'property_rights_strength', 0.0))
         winner.current_resources += resource_loss * loot_fraction
+
+        # DD21: Tool looting — winner may take a tool from loser
+        if (getattr(config, 'resource_types_enabled', False)
+                and loser.current_tools >= 1.0
+                and rng.random() < getattr(config, 'tool_conflict_loot_chance', 0.2)):
+            loser.current_tools -= 1.0
+            winner.current_tools = min(
+                winner.current_tools + 1.0,
+                getattr(config, 'tools_per_agent_cap', 10.0))
 
         # DD08: Victory/defeat shifts dominance (not prestige)
         dom_shift = config.winner_status_scale * (1.0 + power_diff)
@@ -406,6 +527,9 @@ class ConflictEngine:
                         and punisher.trust_of(aggressor.id) < 0.5):
                     # Probability based on cooperation and distrust of aggressor
                     punish_p = (punisher.cooperation_propensity - 0.4) * 0.3
+                    # DD25: Low violence_acceptability → more likely to punish violence
+                    if getattr(config, 'beliefs_enabled', False):
+                        punish_p *= max(0.5, 1.0 - punisher.violence_acceptability * 0.3)
                     if rng.random() < punish_p:
                         # Punisher pays a cost
                         cost = punisher.current_resources * config.punishment_cost_fraction

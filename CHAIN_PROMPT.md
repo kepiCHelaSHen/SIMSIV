@@ -28,7 +28,7 @@ Name:       SIMSIV
 Full name:  Simulation of Intersecting Social and Institutional Variables
 Location:   D:\EXPERIMENTS\SIM\
 Language:   Python 3.11+
-Status:     PHASE C COMPLETE — All 17 deep dives done (DD01-DD17)
+Status:     PHASE C COMPLETE — All 26 deep dives done (DD01-DD26)
 
 Purpose:
   Model how human social structures may emerge from first-principles interactions
@@ -52,7 +52,9 @@ CONFIRMED DESIGN DECISIONS
 
 --- AGENT MODEL ---
 
-  Heritable traits (21 total, h²-weighted inheritance + mutation σ=0.05):
+  Heritable traits (26 total, h²-weighted inheritance + mutation σ=0.05):
+    (First 21 listed below; plus 5 DD17 condition risks: cardiovascular_risk,
+     mental_illness_risk, autoimmune_risk, metabolic_risk, degenerative_risk)
     aggression_propensity      float [0.0-1.0]  h²=0.44  tendency toward conflict
     cooperation_propensity     float [0.0-1.0]  h²=0.40  tendency toward alliance
     attractiveness_base        float [0.0-1.0]  h²=0.50  baseline physical mate value
@@ -233,6 +235,15 @@ PHASE B — DEEP DIVE CHAINS (after skeleton verified):
    15. Extended genomics     → prompts/deep_dive_15_genomics.md [COMPLETE]
    16. Developmental biology → prompts/deep_dive_16_development.md [COMPLETE]
    17. Medical/pathology     → prompts/deep_dive_17_medical.md [COMPLETE]
+   18. Proximity tiers       → prompts/deep_dive_18_proximity.md [COMPLETE]
+   19. Migration dynamics    → prompts/deep_dive_19_migration.md [COMPLETE]
+   20. Leadership            → prompts/deep_dive_20_leadership.md [COMPLETE]
+   21. Resource types        → prompts/deep_dive_21_resource_types.md [COMPLETE]
+   22. Life stages           → prompts/deep_dive_22_life_stages.md [COMPLETE]
+   23. Intelligence audit    → prompts/deep_dive_23_intelligence.md [COMPLETE]
+   24. Epigenetics           → prompts/deep_dive_24_epigenetics.md [COMPLETE]
+   25. Beliefs/ideology      → prompts/deep_dive_25_beliefs.md [COMPLETE]
+   26. Skills/knowledge      → prompts/deep_dive_26_skills.md [COMPLETE]
 
 ================================================================================
 PROMPT LIBRARY — QUICK REFERENCE
@@ -269,46 +280,43 @@ D:\EXPERIMENTS\SIM\
 │
 ├── CHAIN_PROMPT.md              ← THIS FILE — read first every session
 ├── README.md
+├── STATUS.md                    ← current status (trimmed, history in DEV_LOG)
 ├── requirements.txt
 ├── main.py
-├── config.py
+├── config.py                    ← ~250 params, flat dataclass
+├── simulation.py                ← pure library core, tick loop (steps 1-12)
 │
 ├── devlog\
-│   └── DEV_LOG.md               ← all session logs, every decision
+│   └── DEV_LOG.md               ← all session logs + archived results
 │
 ├── prompts\                     ← all Claude prompts, copy-paste ready
+│   ├── README.md                ← index of all 26 deep dive prompts
 │   ├── phase1_design.md
 │   ├── phase2_skeleton.md
 │   ├── phase3_experiments.md
 │   ├── phase4_roadmap.md
 │   ├── deep_dive_template.md
-│   ├── deep_dive_01_mating.md
-│   ├── deep_dive_02_resources.md
+│   ├── deep_dive_01_mating.md .. deep_dive_26_skills.md
+│   ├── run_remaining_dives.md
 │   ├── iteration_template.md
 │   └── debug_template.md
 │
 ├── artifacts\                   ← permanent record of important outputs
-│   ├── design\                  ← design docs, memos, specs
-│   ├── charts\                  ← significant charts worth keeping
-│   └── exports\                 ← JSON summaries, key CSVs
+│   ├── design\
+│   ├── charts\
+│   └── exports\
 │
-├── docs\                        ← generated design documents
-│   ├── design_memo.md
-│   ├── rules_spec.md
-│   ├── assumptions.md
-│   ├── feature_split.md
-│   ├── roadmap_v2_v3.md
-│   ├── validation_strategy.md
-│   ├── architecture_expansion.md
-│   ├── agent_design_notes.md
-│   ├── sprint_next.md
-│   └── deep_dive_*.md           ← one per completed deep dive
+├── docs\                        ← design documents + moved project docs
+│   ├── AUTOSIM.md               ← moved from root
+│   ├── MISSION.md               ← moved from root
+│   ├── deep_dive_01_mating.md .. deep_dive_26_skills.md
+│   └── world_architecture.md
 │
 ├── models\
 │   ├── __init__.py
-│   ├── agent.py
+│   ├── agent.py                 ← 26 heritable traits + 5 beliefs + 4 skills
 │   ├── environment.py
-│   └── society.py
+│   └── society.py               ← proximity tiers, factions, migration
 │
 ├── engines\
 │   ├── __init__.py
@@ -316,11 +324,14 @@ D:\EXPERIMENTS\SIM\
 │   ├── resources.py
 │   ├── conflict.py
 │   ├── reproduction.py
-│   └── institutions.py
+│   ├── mortality.py             ← maturation triggers (beliefs, skills)
+│   ├── pathology.py             ← conditions, trauma
+│   ├── institutions.py
+│   └── reputation.py            ← gossip, beliefs, skills, factions
 │
 ├── metrics\
 │   ├── __init__.py
-│   └── collectors.py
+│   └── collectors.py            ← ~120 metrics per tick
 │
 ├── experiments\
 │   ├── __init__.py
@@ -332,10 +343,13 @@ D:\EXPERIMENTS\SIM\
 │   ├── __init__.py
 │   └── plots.py
 │
+├── sandbox\
+│   └── explore.py               ← IPython exploration harness
+│
 └── outputs\                     ← all run outputs (gitignore this)
-    ├── runs\                    ← timestamped run directories
-    ├── charts\                  ← latest charts
-    └── reports\                 ← experiment reports
+    ├── runs\
+    ├── charts\
+    └── reports\
 
 ================================================================================
 DESIGN Q&A — ANSWER LOG
@@ -481,6 +495,30 @@ Q45: Reproductive age parameters?
 CHANGE LOG
 ================================================================================
 
+2026-03-14 | Session cleanup | PROJECT CLEANUP
+  - README.md rewritten (26 traits, 9 engines, 26 deep dives, quick start)
+  - requirements.txt updated (added scipy, streamlit, version pins)
+  - simulation.py tick loop renumbered to clean steps 1-12 (was fractional)
+  - Replaced all getattr(config, field, default) with direct config access
+  - STATUS.md trimmed to 15 lines (historical results archived to DEV_LOG.md)
+  - Moved AUTOSIM.md, MISSION.md to docs/
+  - Created docs/deep_dive_01_mating.md (was missing)
+  - Created prompts/README.md (index of all 26 deep dive prompts)
+  - Updated CHAIN_PROMPT.md file tree
+  - Created sandbox/explore.py (IPython harness)
+
+2026-03-14 | Session chain_runner_dd18_26 | DD18-DD26 COMPLETE
+  - Proximity tiers (DD18): household/neighborhood/band model
+  - Migration (DD19): emigration push, immigration pull
+  - Leadership (DD20): war leader + peace chief per faction
+  - Resource types (DD21): subsistence/tools/prestige goods
+  - Life stages (DD22): CHILDHOOD/YOUTH/PRIME/MATURE/ELDER
+  - Intelligence audit (DD23): diminishing returns fix
+  - Epigenetics (DD24): transgenerational stress, trauma contagion
+  - Beliefs (DD25): 5 cultural belief dimensions, social influence, belief effects
+  - Skills (DD26): 4 experiential skill domains, mentoring, cultural knowledge
+  - ALL 26 DEEP DIVES COMPLETE
+
 2026-03-13 | Session 001 | DESIGN + SCAFFOLDING
   - Project initiated at D:\EXPERIMENTS\SIM
   - Full brief reviewed
@@ -494,8 +532,8 @@ CHANGE LOG
   - CHAIN_PROMPT.md updated to v2 (this file)
 
 NEXT SESSION OBJECTIVE:
-  Execute Phase 1 using prompts/phase1_design.md
-  Produce: design_memo.md, rules_spec.md, assumptions.md, feature_split.md
+  Phase D or v2 planning — multi-band dynamics, performance optimization,
+  or new experiment runs with full DD01-DD26 feature set.
 
 ================================================================================
 END OF CHAIN PROMPT
