@@ -1,0 +1,42 @@
+autosim_best_score: 0.817529
+autosim_key_metrics:
+  population: 101.85
+  child_survival_to_15: 0.733
+  avg_cooperation: 0.5107
+  avg_lifetime_births: 2.5605
+  resource_gini: 0.3626
+  pop_growth_rate: -0.0028
+  mating_inequality: 0.5524
+  bond_dissolution_rate: 0.3425
+  avg_aggression: 0.5077
+  violence_death_fraction: 0.0039
+parameters:
+  resource_equal_floor: 0.25
+  resource_abundance: 1.0
+  aggression_production_penalty: 0.3
+  cooperation_network_bonus: 0.05
+  cooperation_sharing_rate: 0.08
+  wealth_diminishing_power: 0.557776
+  subsistence_floor: 1.0
+  scarcity_severity: 0.6
+  child_investment_per_year: 0.5
+  conflict_base_probability: 0.05
+  violence_cost_health: 0.15
+  violence_death_chance: 0.05
+  violence_cost_resources: 0.1
+  flee_threshold: 0.3
+  seasonal_conflict_boost: 0.2
+  pair_bond_dissolution_rate: 0.1
+  pair_bond_strength: 0.5
+  base_conception_chance: 0.476604
+  female_choice_strength: 0.573716
+  infidelity_base_rate: 0.05
+  maternal_age_fertility_decline: 0.03
+  maternal_health_cost: 0.03
+  mortality_base: 0.02
+  childhood_mortality_annual: 0.030468
+  health_decay_per_year: 0.01
+  epidemic_base_probability: 0.02
+  epidemic_lethality_base: 0.15
+  male_risk_mortality_multiplier: 1.8
+  childbirth_mortality_rate: 0.02

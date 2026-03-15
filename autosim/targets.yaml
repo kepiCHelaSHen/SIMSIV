@@ -1,0 +1,114 @@
+# AutoSIM Calibration Targets
+# Real-world anthropological/demographic benchmarks for pre-industrial band-level societies.
+# Each target: [low, high] defining the acceptable range.
+# Sources: ethnographic data, behavioral ecology literature, historical demography.
+
+targets:
+  # Resource inequality — pre-industrial Gini coefficients
+  resource_gini:
+    low: 0.30
+    high: 0.50
+    weight: 1.0
+    source: "Pre-industrial societies (Borgerhoff Mulder et al. 2009)"
+
+  # Male reproductive skew — polygynous hunter-gatherers
+  mating_inequality:
+    low: 0.40
+    high: 0.70
+    weight: 1.0
+    source: "Polygynous hunter-gatherers (Betzig 2012)"
+
+  # Violence as fraction of male deaths — ethnographic data
+  violence_death_fraction:
+    low: 0.05
+    high: 0.15
+    weight: 1.5
+    source: "Ethnographic data (!Kung, Yanomamo, Ache)"
+    derived: true
+    formula: "violence_deaths / male_deaths"
+
+  # Population growth at equilibrium
+  pop_growth_rate:
+    low: 0.001
+    high: 0.015
+    weight: 1.0
+    source: "Pre-industrial average (~0.5-1.5%/yr)"
+
+  # Child survival to age 15
+  child_survival_to_15:
+    low: 0.50
+    high: 0.70
+    weight: 1.5
+    source: "Pre-industrial average (Volk & Atkinson 2013)"
+    derived: true
+    formula: "1.0 - childhood_deaths / births"
+
+  # Total fertility rate (avg children per woman who reaches 15)
+  avg_lifetime_births:
+    low: 4.0
+    high: 7.0
+    weight: 1.0
+    source: "Natural fertility populations (Bentley 1996)"
+
+  # Pair bond dissolution over measurement window
+  bond_dissolution_rate:
+    low: 0.10
+    high: 0.30
+    weight: 0.8
+    source: "Cross-cultural average (Betzig 1989)"
+    derived: true
+    formula: "bonds_dissolved / bonds_formed"
+
+  # Cooperation must survive — it exists in real humans
+  avg_cooperation:
+    low: 0.25
+    high: 0.70
+    weight: 0.8
+    source: "Cooperation exists in all human societies"
+
+  # Aggression should be moderate — not eliminated, not dominant
+  avg_aggression:
+    low: 0.30
+    high: 0.60
+    weight: 0.5
+    source: "Aggression exists but is not dominant in most societies"
+
+# Parameters eligible for Mode A optimization with their allowed ranges.
+# Only continuous float parameters — no bools, strings, or ints that change model structure.
+tunable_parameters:
+  # Resources / inequality
+  resource_equal_floor:        { low: 0.10, high: 0.40, default: 0.25 }
+  resource_abundance:          { low: 0.6,  high: 2.0,  default: 1.0 }
+  aggression_production_penalty: { low: 0.1, high: 0.6, default: 0.3 }
+  cooperation_network_bonus:   { low: 0.02, high: 0.15, default: 0.05 }
+  cooperation_sharing_rate:    { low: 0.03, high: 0.20, default: 0.08 }
+  wealth_diminishing_power:    { low: 0.4,  high: 0.9,  default: 0.7 }
+  subsistence_floor:           { low: 0.3,  high: 2.0,  default: 1.0 }
+  scarcity_severity:           { low: 0.3,  high: 0.8,  default: 0.6 }
+  child_investment_per_year:   { low: 0.2,  high: 1.0,  default: 0.5 }
+
+  # Conflict / violence
+  conflict_base_probability:   { low: 0.02, high: 0.15, default: 0.05 }
+  violence_cost_health:        { low: 0.05, high: 0.35, default: 0.15 }
+  violence_death_chance:       { low: 0.02, high: 0.15, default: 0.05 }
+  violence_cost_resources:     { low: 0.05, high: 0.25, default: 0.1 }
+  flee_threshold:              { low: 0.15, high: 0.50, default: 0.3 }
+  seasonal_conflict_boost:     { low: 0.05, high: 0.40, default: 0.2 }
+
+  # Mating / reproduction
+  pair_bond_dissolution_rate:  { low: 0.02, high: 0.20, default: 0.1 }
+  pair_bond_strength:          { low: 0.3,  high: 0.9,  default: 0.5 }
+  base_conception_chance:      { low: 0.3,  high: 0.8,  default: 0.5 }
+  female_choice_strength:      { low: 0.3,  high: 0.9,  default: 0.6 }
+  infidelity_base_rate:        { low: 0.02, high: 0.12, default: 0.05 }
+  maternal_age_fertility_decline: { low: 0.01, high: 0.06, default: 0.03 }
+  maternal_health_cost:        { low: 0.01, high: 0.06, default: 0.03 }
+
+  # Mortality / demographics
+  mortality_base:              { low: 0.005, high: 0.04, default: 0.02 }
+  childhood_mortality_annual:  { low: 0.01,  high: 0.06, default: 0.02 }
+  health_decay_per_year:       { low: 0.005, high: 0.025, default: 0.01 }
+  epidemic_base_probability:   { low: 0.005, high: 0.05, default: 0.02 }
+  epidemic_lethality_base:     { low: 0.05,  high: 0.30, default: 0.15 }
+  male_risk_mortality_multiplier: { low: 1.2, high: 2.5, default: 1.8 }
+  childbirth_mortality_rate:   { low: 0.01, high: 0.05, default: 0.02 }
