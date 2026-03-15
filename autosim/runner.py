@@ -9,6 +9,7 @@ Usage:
     python -m autosim.runner --experiments 100
     python -m autosim.runner --experiments 3 --smoke-test --seeds 2 --years 100
     python -m autosim.runner --experiments 100 --fresh   # clear journal first
+    python -m autosim.runner --experiments 500 --workers 8  # parallel seed eval
 """
 
 from __future__ import annotations
@@ -22,6 +23,8 @@ import os
 import copy
 from dataclasses import asdict
 from pathlib import Path
+
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import numpy as np
 import yaml
@@ -58,32 +61,56 @@ def run_simulation(config: Config) -> list[dict]:
     return sim.metrics.rows
 
 
+def _run_single_seed(config_overrides: dict, sim_years: int, sim_pop: int,
+                     seed: int) -> tuple[dict, bool]:
+    """Run one seed and return (metrics, survived). Runs in worker process."""
+    cfg = Config(years=sim_years, population_size=sim_pop, seed=seed)
+    for param, value in config_overrides.items():
+        if hasattr(cfg, param):
+            setattr(cfg, param, value)
+
+    rows = run_simulation(cfg)
+    final_pop = rows[-1].get("population", 0) if rows else 0
+    metrics = extract_metrics(rows, METRIC_WINDOW)
+    return metrics, final_pop >= 20
+
+
 def score_config(config_overrides: dict, tunable: dict,
                  targets: dict, sim_years: int, sim_pop: int,
-                 seeds: list[int]) -> tuple[float, dict, dict, bool]:
+                 seeds: list[int],
+                 workers: int = 1) -> tuple[float, dict, dict, bool]:
     """Run multi-seed simulation with given parameter overrides.
+
+    Args:
+        workers: Number of parallel processes for seed evaluation.
+                 1 = serial (original behavior), >1 = parallel via ProcessPoolExecutor.
 
     Returns: (score, per_metric_scores, avg_metrics, survived)
     """
     all_metrics = []
     survived = True
 
-    for seed in seeds:
-        cfg = Config(years=sim_years, population_size=sim_pop, seed=seed)
-        # Apply overrides
-        for param, value in config_overrides.items():
-            if hasattr(cfg, param):
-                setattr(cfg, param, value)
-
-        rows = run_simulation(cfg)
-
-        # Check survival: population must be > 20 at end
-        final_pop = rows[-1].get("population", 0) if rows else 0
-        if final_pop < 20:
-            survived = False
-
-        metrics = extract_metrics(rows, METRIC_WINDOW)
-        all_metrics.append(metrics)
+    if workers > 1 and len(seeds) > 1:
+        # Parallel seed evaluation
+        with ProcessPoolExecutor(max_workers=min(workers, len(seeds))) as pool:
+            futures = {
+                pool.submit(_run_single_seed, config_overrides,
+                            sim_years, sim_pop, seed): seed
+                for seed in seeds
+            }
+            for future in as_completed(futures):
+                metrics, seed_survived = future.result()
+                all_metrics.append(metrics)
+                if not seed_survived:
+                    survived = False
+    else:
+        # Serial (original path)
+        for seed in seeds:
+            metrics, seed_survived = _run_single_seed(
+                config_overrides, sim_years, sim_pop, seed)
+            all_metrics.append(metrics)
+            if not seed_survived:
+                survived = False
 
     if not all_metrics:
         return 0.0, {}, {}, False
@@ -135,7 +162,7 @@ def propose_perturbation(current: dict, tunable: dict,
 
 
 def run_experiments(n_experiments: int, sim_years: int, sim_pop: int,
-                    seeds: list[int]):
+                    seeds: list[int], workers: int = 1):
     """Run the full autosim experiment loop with simulated annealing."""
     rng = np.random.default_rng(2026)
     targets = load_targets()
@@ -158,12 +185,14 @@ def run_experiments(n_experiments: int, sim_years: int, sim_pop: int,
     # Score baseline first
     print("=" * 70)
     print("AutoSIM Mode A -- Parameter Optimization (simulated annealing)")
-    print(f"Target: {n_experiments} experiments, {sim_years}yr x {sim_pop}pop x {seed_count} seeds")
+    print(f"Target: {n_experiments} experiments, {sim_years}yr x {sim_pop}pop x {seed_count} seeds"
+          + (f" x {workers} workers" if workers > 1 else ""))
     print("=" * 70)
     print("\nScoring baseline configuration...")
     t0 = time.time()
     best_score, best_per_metric, best_metrics, survived = score_config(
-        best_params, tunable, targets, sim_years, sim_pop, seeds)
+        best_params, tunable, targets, sim_years, sim_pop, seeds,
+        workers=workers)
     current_score = best_score
     elapsed = time.time() - t0
     print(f"Baseline score: {best_score:.4f} ({elapsed:.1f}s)")
@@ -205,7 +234,8 @@ def run_experiments(n_experiments: int, sim_years: int, sim_pop: int,
                                          n_params=n_params,
                                          step_scale=step_scale)
         score, per_metric, metrics, survived = score_config(
-            candidate, tunable, targets, sim_years, sim_pop, seeds)
+            candidate, tunable, targets, sim_years, sim_pop, seeds,
+            workers=workers)
         elapsed = time.time() - t0
 
         delta = score - current_score
@@ -370,6 +400,8 @@ def main():
                         help="Population size (default: 500)")
     parser.add_argument("--fresh", action="store_true",
                         help="Clear journal before starting (default: append)")
+    parser.add_argument("--workers", type=int, default=1,
+                        help="Parallel workers for seed evaluation (default: 1)")
     args = parser.parse_args()
 
     n = 3 if args.smoke_test else args.experiments
@@ -379,7 +411,8 @@ def main():
     if args.fresh and JOURNAL_PATH.exists():
         JOURNAL_PATH.unlink()
 
-    run_experiments(n, sim_years=args.years, sim_pop=args.pop, seeds=seeds)
+    run_experiments(n, sim_years=args.years, sim_pop=args.pop, seeds=seeds,
+                    workers=args.workers)
 
 
 if __name__ == "__main__":

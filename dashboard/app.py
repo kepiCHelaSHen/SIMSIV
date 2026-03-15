@@ -22,6 +22,7 @@ from config import Config
 from simulation import Simulation
 from models.agent import HERITABLE_TRAITS, Sex, reset_id_counter
 from experiments.scenarios import SCENARIOS
+from data.names import namer
 
 # ════════════════════════════════════════════════════════════════════
 # Page config
@@ -328,9 +329,10 @@ def _std_col(col_name):
 # Tabs
 # ════════════════════════════════════════════════════════════════════
 
-tab_pop, tab_econ, tab_violence, tab_mating, tab_traits, tab_inst, tab_agents, tab_network, tab_events = st.tabs([
+tab_pop, tab_econ, tab_violence, tab_mating, tab_traits, tab_inst, tab_agents, tab_network, tab_events, tab_lives, tab_dynasty, tab_genome, tab_race = st.tabs([
     "Population", "Economy", "Violence", "Mating", "Trait Evolution",
     "Institutions", "Agents", "Social Network", "Events",
+    "Life Stories", "Dynasty Tree", "Genome Map", "Trait Race",
 ])
 
 # ── TAB: Population ──────────────────────────────────────────────
@@ -1106,4 +1108,506 @@ with tab_events:
         ))
         fig.update_layout(title="Events by Type (All Years)", height=350, template="plotly_dark",
                           margin=dict(l=40, r=40, t=40, b=40), xaxis_tickangle=-45)
+        st.plotly_chart(fig, use_container_width=True)
+
+# ════════════════════════════════════════════════════════════════════
+# Shared helpers for new tabs
+# ════════════════════════════════════════════════════════════════════
+
+TRAIT_ABBREV = {
+    "aggression_propensity": "Aggression", "cooperation_propensity": "Coop",
+    "attractiveness_base": "Attract", "status_drive": "Status",
+    "risk_tolerance": "Risk", "jealousy_sensitivity": "Jealousy",
+    "fertility_base": "Fertility", "intelligence_proxy": "Intel",
+    "longevity_genes": "Longevity", "disease_resistance": "Disease Res",
+    "physical_robustness": "Robustness", "pain_tolerance": "Pain Tol",
+    "mental_health_baseline": "MH Base", "emotional_intelligence": "Emot Intel",
+    "impulse_control": "Impulse", "novelty_seeking": "Novelty",
+    "empathy_capacity": "Empathy", "conformity_bias": "Conform",
+    "dominance_drive": "Dominance", "maternal_investment": "Maternal",
+    "sexual_maturation_rate": "Sex Mat", "cardiovascular_risk": "Cardio Risk",
+    "mental_illness_risk": "Mental Risk", "autoimmune_risk": "Autoimmune",
+    "metabolic_risk": "Metabolic", "degenerative_risk": "Degen Risk",
+    "physical_strength": "Strength", "endurance": "Endurance",
+    "group_loyalty": "Loyalty", "outgroup_tolerance": "Outgroup",
+    "future_orientation": "Future Or", "conscientiousness": "Conscient",
+    "psychopathy_tendency": "Psychopathy", "anxiety_baseline": "Anxiety",
+    "paternal_investment_preference": "Pat Invest",
+}
+
+TRAIT_DOMAIN_COLORS = {}
+_physical = ["physical_strength", "endurance", "physical_robustness", "pain_tolerance", "longevity_genes", "disease_resistance"]
+_cognitive = ["intelligence_proxy", "emotional_intelligence", "impulse_control", "conscientiousness"]
+_temporal = ["future_orientation"]
+_personality = ["risk_tolerance", "novelty_seeking", "anxiety_baseline", "mental_health_baseline"]
+_social = ["aggression_propensity", "cooperation_propensity", "dominance_drive", "group_loyalty",
+           "outgroup_tolerance", "empathy_capacity", "conformity_bias", "status_drive", "jealousy_sensitivity"]
+_reproductive = ["fertility_base", "sexual_maturation_rate", "maternal_investment",
+                 "paternal_investment_preference", "attractiveness_base"]
+_psychopath = ["psychopathy_tendency", "mental_illness_risk", "cardiovascular_risk",
+               "autoimmune_risk", "metabolic_risk", "degenerative_risk"]
+for t in _physical: TRAIT_DOMAIN_COLORS[t] = "#FF6B35"
+for t in _cognitive: TRAIT_DOMAIN_COLORS[t] = "#4ECDC4"
+for t in _temporal: TRAIT_DOMAIN_COLORS[t] = "#FFE66D"
+for t in _personality: TRAIT_DOMAIN_COLORS[t] = "#C77DFF"
+for t in _social: TRAIT_DOMAIN_COLORS[t] = "#06D6A0"
+for t in _reproductive: TRAIT_DOMAIN_COLORS[t] = "#F72585"
+for t in _psychopath: TRAIT_DOMAIN_COLORS[t] = "#EF233C"
+
+
+def _get_agent_name(agent_id, agent=None):
+    """Get full name for an agent, caching in session state."""
+    cache = st.session_state.setdefault("agent_names", {})
+    if agent_id not in cache:
+        sex = "male"
+        if agent:
+            sex = agent.sex.value if hasattr(agent.sex, "value") else str(agent.sex)
+        else:
+            a = society.get_by_id(agent_id)
+            if a:
+                sex = a.sex.value if hasattr(a.sex, "value") else str(a.sex)
+        cache[agent_id] = namer.get_full_name(agent_id, sex=sex)
+    return cache[agent_id]
+
+
+def _build_biography(agent_id):
+    """Build a markdown biography string for an agent."""
+    a = society.get_by_id(agent_id)
+    if not a:
+        return f"Agent {agent_id} not found."
+
+    name = _get_agent_name(agent_id, a)
+    sex_str = a.sex.value.capitalize()
+
+    # Birth year
+    birth_year = max(1, society.year - a.age) if a.alive else (a.year_of_death - a.age if a.year_of_death else "?")
+
+    # Alive/dead
+    if a.alive:
+        status_str = f"Born Yr {birth_year} | Still Alive (age {a.age})"
+    else:
+        status_str = f"Born Yr {birth_year} → Died Yr {a.year_of_death} ({a.cause_of_death})"
+
+    # Parents
+    p1, p2 = a.parent_ids
+    p1_name = _get_agent_name(p1) if p1 is not None else "Unknown"
+    p2_name = _get_agent_name(p2) if p2 is not None else "Unknown"
+    if p1 is None and p2 is None:
+        parents_str = "Unknown"
+    else:
+        parents_str = f"{p1_name} × {p2_name}"
+
+    children_count = len(a.offspring_ids)
+
+    # Top 3 traits
+    trait_vals = [(t, getattr(a, t, 0.5)) for t in HERITABLE_TRAITS]
+    trait_vals.sort(key=lambda x: x[1], reverse=True)
+    top3 = trait_vals[:3]
+    traits_str = " | ".join(f"{TRAIT_ABBREV.get(t, t)}: {v:.2f}" for t, v in top3)
+
+    # Life events
+    agent_events = [e for e in events if agent_id in e.get("agent_ids", [])]
+    agent_events.sort(key=lambda e: e.get("year", 0))
+    if agent_events:
+        ev_lines = []
+        for e in agent_events[:25]:
+            ev_lines.append(f"Yr {e.get('year', '?')}: {e.get('description', e.get('type', '?'))}")
+        events_str = "\n".join(ev_lines)
+    else:
+        events_str = "No recorded events"
+
+    # Status block
+    faction_str = a.faction_id if a.faction_id is not None else "None"
+    conditions_str = ", ".join(a.active_conditions) if a.active_conditions else "None"
+
+    bio = f"""---
+**{name}** | {sex_str} | {status_str}
+
+**Lineage**
+Parents: {parents_str}
+Children: {children_count} born | Generation {a.generation}
+
+**Dominant Traits**
+{traits_str}
+
+**Life Events**
+{events_str}
+
+**Status**
+Faction: {faction_str} | Reputation: {a.reputation:.2f}
+Foraging: {getattr(a, 'foraging_skill', 0):.2f} | Combat: {getattr(a, 'combat_skill', 0):.2f} | Social: {getattr(a, 'social_skill', 0):.2f}
+Conditions: {conditions_str} | Trauma: {a.trauma_score:.2f}
+
+---"""
+    return bio
+
+
+# ── TAB: Life Stories ────────────────────────────────────────────
+
+with tab_lives:
+    if df is None or len(df) == 0:
+        st.info("Run a simulation first.")
+    else:
+        st.subheader("Featured Lives")
+
+        all_agents = list(society.agents.values())
+        all_ids = [a.id for a in all_agents]
+
+        # Pick 3 random featured agents (deterministic per session)
+        rng_feat = np.random.default_rng(42)
+        featured_ids = list(rng_feat.choice(all_ids, size=min(3, len(all_ids)), replace=False))
+
+        cols = st.columns(3)
+        for i, aid in enumerate(featured_ids):
+            with cols[i]:
+                st.markdown(_build_biography(int(aid)))
+
+        st.markdown("---")
+        st.subheader("View Any Agent")
+
+        col_sel, col_btn = st.columns([3, 1])
+        with col_sel:
+            selected_id = st.selectbox(
+                "Select agent ID",
+                sorted(all_ids),
+                format_func=lambda x: f"{x} — {_get_agent_name(x)}",
+                key="life_story_select",
+            )
+        with col_btn:
+            if st.button("Random Agent", key="random_agent_btn"):
+                selected_id = int(np.random.default_rng().choice(all_ids))
+
+        if selected_id:
+            st.markdown(_build_biography(int(selected_id)))
+
+# ── TAB: Dynasty Tree ────────────────────────────────────────────
+
+with tab_dynasty:
+    if df is None or len(df) == 0:
+        st.info("Run a simulation first.")
+    else:
+        st.subheader("Dynasty Tree — Lineage Sunburst")
+
+        # Build lineage: find founding ancestors and count descendants
+        all_agents_dict = society.agents
+
+        def _count_descendants(agent_id, memo={}):
+            if agent_id in memo:
+                return memo[agent_id]
+            a = all_agents_dict.get(agent_id)
+            if not a:
+                memo[agent_id] = 0
+                return 0
+            total = len(a.offspring_ids)
+            for oid in a.offspring_ids:
+                total += _count_descendants(oid, memo)
+            memo[agent_id] = total
+            return total
+
+        # Find generation-0 agents (founders)
+        founders = [a for a in all_agents_dict.values() if a.generation == 0 and a.offspring_ids]
+        founder_desc = [(a, _count_descendants(a.id, {})) for a in founders]
+        founder_desc.sort(key=lambda x: x[1], reverse=True)
+        top_founders = founder_desc[:8]
+
+        if not top_founders:
+            st.warning("No lineages found (no generation-0 agents with offspring).")
+        else:
+            labels = [f"{_get_agent_name(a.id, a)} line — {d} total descendants"
+                      for a, d in top_founders]
+            chosen_label = st.selectbox("Select lineage", labels, key="dynasty_select")
+            chosen_idx = labels.index(chosen_label)
+            root_agent, _ = top_founders[chosen_idx]
+
+            # Build sunburst data by BFS from root
+            sb_ids, sb_parents, sb_labels, sb_values, sb_colors = [], [], [], [], []
+
+            queue = [(root_agent.id, "")]
+            visited_sb = set()
+            while queue:
+                aid, parent_label = queue.pop(0)
+                if aid in visited_sb:
+                    continue
+                visited_sb.add(aid)
+                a = all_agents_dict.get(aid)
+                if not a:
+                    continue
+                label = _get_agent_name(aid, a)
+                sb_ids.append(label)
+                sb_parents.append(parent_label)
+                sb_values.append(max(1, len(a.offspring_ids)))
+                sb_colors.append(getattr(a, "cooperation_propensity", 0.5))
+                for oid in a.offspring_ids:
+                    queue.append((oid, label))
+
+            if sb_ids:
+                fig = go.Figure(go.Sunburst(
+                    ids=sb_ids, labels=sb_ids, parents=sb_parents,
+                    values=sb_values,
+                    marker=dict(
+                        colors=sb_colors,
+                        colorscale=[[0, "#E53935"], [0.5, "#FFFFFF"], [1, "#1E88E5"]],
+                        showscale=True, colorbar=dict(title="Coop"),
+                    ),
+                    branchvalues="total",
+                    hovertemplate="<b>%{label}</b><br>Offspring: %{value}<extra></extra>",
+                ))
+                fig.update_layout(height=650, template="plotly_dark",
+                                  margin=dict(l=20, r=20, t=30, b=20),
+                                  title=f"Lineage of {_get_agent_name(root_agent.id, root_agent)}")
+                st.plotly_chart(fig, use_container_width=True)
+
+        # Animated scatter: reproductive success by generation
+        st.subheader("Reproductive Success Across Generations")
+        scatter_records = []
+        for a in all_agents_dict.values():
+            birth_year = max(1, society.year - a.age) if a.alive else (
+                a.year_of_death - a.age if a.year_of_death else 1)
+            top_trait_name = max(HERITABLE_TRAITS, key=lambda t: getattr(a, t, 0.5))
+            scatter_records.append({
+                "Name": _get_agent_name(a.id, a),
+                "Birth Year": int(birth_year),
+                "Lifetime Births": a.lifetime_births,
+                "Cooperation": round(a.cooperation_propensity, 3),
+                "Offspring": len(a.offspring_ids),
+                "Generation": a.generation,
+                "Faction": a.faction_id if a.faction_id is not None else -1,
+                "Top Trait": TRAIT_ABBREV.get(top_trait_name, top_trait_name),
+            })
+        sdf = pd.DataFrame(scatter_records)
+        if len(sdf) > 0 and sdf["Generation"].nunique() > 1:
+            fig = px.scatter(
+                sdf, x="Birth Year", y="Lifetime Births",
+                color="Cooperation", size="Offspring",
+                animation_frame="Generation",
+                hover_data=["Name", "Faction", "Top Trait"],
+                color_continuous_scale=[[0, "#E53935"], [0.5, "#FFFFFF"], [1, "#1E88E5"]],
+                title="Reproductive Success by Generation",
+            )
+            fig.update_layout(height=500, template="plotly_dark",
+                              margin=dict(l=40, r=40, t=40, b=40))
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("Not enough generational data for animation.")
+
+# ── TAB: Genome Map ──────────────────────────────────────────────
+
+with tab_genome:
+    if df is None or len(df) == 0:
+        st.info("Run a simulation first.")
+    elif not living:
+        st.warning("No living agents.")
+    else:
+        st.subheader("Agent × Trait Heatmap")
+
+        # Faction filter
+        all_factions = sorted(set(a.faction_id for a in living if a.faction_id is not None))
+        selected_factions = st.multiselect(
+            "Filter by faction (empty = all)", all_factions,
+            default=[], key="genome_faction_filter")
+
+        if selected_factions:
+            display_agents = [a for a in living if a.faction_id in selected_factions]
+        else:
+            display_agents = list(living)
+
+        # Sort by faction then prestige
+        display_agents.sort(key=lambda a: (a.faction_id if a.faction_id is not None else 9999,
+                                           -a.prestige_score))
+
+        # Limit to 300 agents for performance
+        if len(display_agents) > 300:
+            display_agents = display_agents[:300]
+            st.caption(f"Showing top 300 of {len(living)} agents.")
+
+        trait_names = list(HERITABLE_TRAITS)
+        abbrevs = [TRAIT_ABBREV.get(t, t[:10]) for t in trait_names]
+
+        # Build matrix
+        matrix = np.array([[getattr(a, t, 0.5) for t in trait_names] for a in display_agents])
+        agent_labels = [_get_agent_name(a.id, a) for a in display_agents]
+        faction_labels = [str(a.faction_id) if a.faction_id is not None else "None" for a in display_agents]
+
+        hover_text = []
+        for i, a in enumerate(display_agents):
+            row_hover = []
+            for j, t in enumerate(trait_names):
+                row_hover.append(
+                    f"{agent_labels[i]}<br>Faction: {faction_labels[i]}<br>"
+                    f"{TRAIT_ABBREV.get(t, t)}: {matrix[i, j]:.3f}")
+            hover_text.append(row_hover)
+
+        fig = go.Figure(go.Heatmap(
+            z=matrix, x=abbrevs, y=agent_labels,
+            colorscale=[[0, "#1565C0"], [0.5, "#FFFFFF"], [1, "#C62828"]],
+            zmin=0, zmax=1,
+            text=hover_text, hoverinfo="text",
+            colorbar=dict(title="Trait Value"),
+        ))
+
+        # Draw horizontal lines between faction groups
+        prev_faction = None
+        for i, a in enumerate(display_agents):
+            fid = a.faction_id
+            if prev_faction is not None and fid != prev_faction:
+                fig.add_hline(y=i - 0.5, line_width=1, line_color="rgba(255,255,255,0.3)")
+            prev_faction = fid
+
+        fig.update_layout(
+            height=max(400, len(display_agents) * 4 + 100),
+            template="plotly_dark",
+            margin=dict(l=120, r=40, t=40, b=80),
+            title="Agent × Trait Heatmap (sorted by faction, prestige)",
+            xaxis=dict(tickangle=-45),
+            yaxis=dict(showticklabels=len(display_agents) <= 80),
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+        # Chart 2: Trait correlation heatmap
+        st.subheader("Trait Co-evolution Correlation (Living Population)")
+        if len(living) >= 10:
+            corr_matrix_data = np.array([[getattr(a, t, 0.5) for t in trait_names] for a in living])
+            corr = np.corrcoef(corr_matrix_data, rowvar=False)
+
+            fig = go.Figure(go.Heatmap(
+                z=corr, x=abbrevs, y=abbrevs,
+                colorscale=[[0, "#1565C0"], [0.5, "#FFFFFF"], [1, "#C62828"]],
+                zmin=-1, zmax=1,
+                colorbar=dict(title="Correlation"),
+            ))
+            fig.update_layout(
+                height=700, template="plotly_dark",
+                margin=dict(l=100, r=40, t=40, b=100),
+                title="Trait Co-evolution Correlation (Living Population)",
+                xaxis=dict(tickangle=-45),
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("Need at least 10 living agents for correlation matrix.")
+
+# ── TAB: Trait Race ──────────────────────────────────────────────
+
+with tab_race:
+    if df is None or len(df) == 0:
+        st.info("Run a simulation first.")
+    else:
+        st.subheader("Trait Race — Animated Bar Chart")
+
+        # Build trait mean columns from df (use avg_ prefix columns)
+        trait_col_map = {
+            "aggression_propensity": "avg_aggression",
+            "cooperation_propensity": "avg_cooperation",
+            "attractiveness_base": "avg_attractiveness",
+            "status_drive": "avg_status_drive",
+            "risk_tolerance": "avg_risk_tolerance",
+            "jealousy_sensitivity": "avg_jealousy",
+            "fertility_base": "avg_fertility",
+            "intelligence_proxy": "avg_intelligence",
+        }
+        # DD15+ traits use avg_{trait_name} pattern from metrics
+        for t in HERITABLE_TRAITS:
+            if t not in trait_col_map:
+                col_candidate = f"avg_{t.replace('_propensity', '').replace('_proxy', '').replace('_base', '')}"
+                # Check multiple naming patterns
+                for candidate in [f"avg_{t}", col_candidate]:
+                    if candidate in df.columns:
+                        trait_col_map[t] = candidate
+                        break
+
+        # Sample every 5 years if > 100 years
+        if len(df) > 100:
+            race_df = df[df["year"] % 5 == 0].copy()
+        else:
+            race_df = df.copy()
+
+        # Build long-form data for animation
+        race_records = []
+        for _, row in race_df.iterrows():
+            yr = int(row["year"])
+            trait_vals = []
+            for t in HERITABLE_TRAITS:
+                col = trait_col_map.get(t)
+                if col and col in race_df.columns:
+                    val = float(row[col])
+                else:
+                    val = 0.5  # default
+                trait_vals.append((t, val))
+
+            # Sort by value descending for this frame
+            trait_vals.sort(key=lambda x: x[1], reverse=True)
+            for rank, (t, v) in enumerate(trait_vals):
+                race_records.append({
+                    "Year": yr,
+                    "Trait": TRAIT_ABBREV.get(t, t[:12]),
+                    "Value": round(v, 4),
+                    "Color": TRAIT_DOMAIN_COLORS.get(t, "#888888"),
+                    "Domain": next((d for d, ts in [
+                        ("Physical", _physical), ("Cognitive", _cognitive),
+                        ("Temporal", _temporal), ("Personality", _personality),
+                        ("Social", _social), ("Reproductive", _reproductive),
+                        ("Psychopathology", _psychopath),
+                    ] if t in ts), "Other"),
+                })
+
+        rdf = pd.DataFrame(race_records)
+
+        if len(rdf) > 0:
+            fig = px.bar(
+                rdf, x="Value", y="Trait", color="Domain",
+                animation_frame="Year", orientation="h",
+                range_x=[0, 1],
+                color_discrete_map={
+                    "Physical": "#FF6B35", "Cognitive": "#4ECDC4",
+                    "Temporal": "#FFE66D", "Personality": "#C77DFF",
+                    "Social": "#06D6A0", "Reproductive": "#F72585",
+                    "Psychopathology": "#EF233C", "Other": "#888888",
+                },
+                title="Trait Race — Mean Values Over Time",
+            )
+            fig.update_layout(
+                height=800, template="plotly_dark",
+                margin=dict(l=120, r=40, t=60, b=40),
+                yaxis=dict(categoryorder="total ascending"),
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+        # Static multi-line chart for 6 key traits with bands
+        st.subheader("Key Trait Trajectories (±1σ)")
+        key_traits = [
+            ("avg_cooperation", "trait_std_cooperation", "#06D6A0", "Cooperation"),
+            ("avg_aggression", "trait_std_aggression", "#E53935", "Aggression"),
+            ("avg_intelligence", "trait_std_intelligence", "#4ECDC4", "Intelligence"),
+        ]
+        # Add DD27 traits if columns exist
+        for col, label, color in [
+            ("avg_group_loyalty", "Loyalty", "#06D6A0"),
+            ("avg_future_orientation", "Future Or", "#FFE66D"),
+            ("avg_psychopathy_tendency", "Psychopathy", "#EF233C"),
+        ]:
+            if col in df.columns:
+                std_col = col.replace("avg_", "trait_std_") if col.replace("avg_", "trait_std_") in df.columns else None
+                # Try psychopathy_std specifically
+                if col == "avg_psychopathy_tendency" and "psychopathy_std" in df.columns:
+                    std_col = "psychopathy_std"
+                key_traits.append((col, std_col, color, label))
+
+        fig = go.Figure()
+        for mean_col, std_col, color, label in key_traits:
+            if mean_col not in df.columns:
+                continue
+            fig.add_trace(go.Scatter(
+                x=df["year"], y=df[mean_col], name=label,
+                line=dict(color=color, width=2)))
+            # Band from trait std column or multi-run std
+            band_std = None
+            if std_col and std_col in df.columns:
+                band_std = df[std_col]
+            elif is_multi_run and df_std is not None and mean_col in df_std.columns:
+                band_std = df_std[mean_col]
+            if band_std is not None:
+                add_band(fig, df["year"], df[mean_col], band_std, color)
+
+        fig.update_layout(
+            title="Key Trait Trajectories with ±1σ Bands", height=450,
+            template="plotly_dark", margin=dict(l=40, r=40, t=40, b=40))
         st.plotly_chart(fig, use_container_width=True)
