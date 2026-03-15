@@ -1,4 +1,7 @@
-outputs/
+# Git ignore for SIMSIV
+
+# ── Large runtime outputs (exclude by default) ──────────────────────
+outputs/runs/
 __pycache__/
 *.pyc
 *.py[cod]
@@ -10,20 +13,34 @@ build/
 .venv/
 venv/
 
-# Runtime data — never commit
-autosim/journal.jsonl
-data/
+# ── Experiment outputs: INCLUDE selectively ──────────────────────────
+# Scenario experiment results ARE committed — they are scientific data.
+# outputs/experiments/ is tracked.
+# Add outputs/experiments to git with: git add outputs/experiments/
+!outputs/experiments/
 
-# Large runtime files
-*.jsonl
+# ── AutoSIM journal: INCLUDE ─────────────────────────────────────────
+# The autosim journal is scientific data showing the calibration trajectory.
+# It belongs in the repo for reproducibility.
+# journal.jsonl is ~1.6MB — acceptable for git.
+# Remove the exclusion so it gets committed:
+# (autosim/journal.jsonl is now tracked)
+
+# ── Large runtime files ───────────────────────────────────────────────
 *.parquet
 
-# Testing
+# ── Testing ───────────────────────────────────────────────────────────
 .coverage
 htmlcov/
 .pytest_cache/
 
-# OS artifacts
+# ── OS artifacts ──────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# ── Data directory (raw downloads, not generated) ────────────────────
+data/
+
+# ── Claude internal ───────────────────────────────────────────────────
+.claude/

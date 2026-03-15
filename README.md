@@ -2,168 +2,140 @@
 
 ### Simulation of Intersecting Social and Institutional Variables
 
-SIMSIV is an agent-based social simulation grounded in behavioral genetics, evolutionary anthropology, and institutional economics. It models how human social structures emerge from first-principles interactions — reproduction, resource competition, status seeking, cooperation, jealousy, violence, pair bonding, and institutional constraints — with no hardwired outcomes.
+SIMSIV is a calibrated agent-based simulation of band-level human social
+evolution, grounded in behavioral genetics, evolutionary anthropology, and
+institutional economics. Every agent is a complete simulated person with a
+genome, developmental history, medical biography, earned skills, culturally
+transmitted beliefs, and a life story from birth to death.
 
-**Band-level simulator v1.0. All findings are emergent. Nothing is scripted.**
+**Band-level simulator v1.0 — 35 heritable traits, 9 engines, calibrated to
+score 1.000 against 9 anthropological benchmarks.**
 
-The goal is not to recreate history. The goal is to explore how individual-level traits and incentives can generate large-scale social patterns.
+All findings are emergent. Nothing is scripted.
 
 ---
 
-## Scientific Foundation
+## The Central Research Question
 
-Core mechanisms are informed by findings from behavioral genetics, evolutionary anthropology, and institutional economics.
+> *Does institutional governance systematically reduce directional selection on
+> heritable prosocial behavioral traits — providing computational evidence that
+> institutions and genes are substitutes, not complements, in human social
+> evolution?*
 
-**35 heritable traits**
-Each trait has a literature-informed heritability coefficient (h²). Traits cover major behavioral domains including physical performance, cognition, personality, social behavior, reproductive strategy, and psychopathology risk.
-
-**35×35 trait correlation matrix**
-Traits interact through a correlation matrix capturing documented relationships such as aggression/cooperation tradeoffs and empathy/psychopathy opposition.
-
-**Developmental plasticity**
-Genotype and phenotype are separated. Early-life environment modifies trait expression (modeled through developmental baseline parameters).
-
-**Demographic calibration**
-Model parameters are calibrated toward ethnographic benchmarks such as violence rates, inequality levels, and fertility patterns observed in small-scale societies.
-
-**Institutional economics**
-Institutions emerge and evolve through norm enforcement, property rights, taxation, and prestige vs dominance status dynamics.
-
-**Cultural evolution**
-Beliefs spread through prestige bias, conformity pressure, and experience-based updating across five belief dimensions.
+This engages the debate between Camp A (Bowles/Gintis: traits and institutions
+co-evolve upward together) and Camp B (North: institutions substitute for
+internal motivation).
 
 ---
 
 ## Quick Start
 
-Install dependencies:
-
 ```bash
 pip install -r requirements.txt
-```
-
-Run a simulation:
-
-```bash
-python main.py
-```
-
-Custom parameters:
-
-```bash
 python main.py --seed 42 --years 200 --population 500
-```
-
-Launch the dashboard:
-
-```bash
 streamlit run dashboard/app.py
 ```
 
----
+Run scenario experiments:
 
-## What the Simulation Models
+```bash
+python scripts/run_experiments.py --scenarios FREE_COMPETITION STRONG_STATE --seeds 5 --years 200
+python scripts/run_experiments.py --list   # show all scenarios
+```
 
-Each agent represents a full individual with biological, social, and cultural attributes.
+Validate calibration:
 
-Agents include:
-
-- 35 heritable traits
-- genotype / phenotype separation
-- developmental plasticity
-- 5 cultural belief dimensions
-- 4 learnable skill domains
-- medical history and genetic risk factors
-- complete life biography logging
-- bilateral trust ledger (reputation memory)
-- emergent faction membership
-- life stage roles (youth → elder)
-- spatial proximity tiers (household → neighborhood → band)
-
-Agents interact through cooperation, competition, coalition formation, mating dynamics, and institutional enforcement.
+```bash
+python scripts/validate_best_config.py --seeds 10 --years 200
+```
 
 ---
 
 ## The 9 Simulation Engines
 
-Each simulation year runs through nine interacting subsystems.
+Each annual tick runs through nine interacting subsystems in order:
 
 | Step | Engine | Function |
 |------|--------|----------|
 | 1 | Environment | Seasonal cycles, scarcity shocks, epidemic events |
-| 2 | Resources | Multi-phase resource distribution and inequality formation |
-| 3 | Conflict | Violence triggers, coalition defense, punishment systems |
-| 4 | Mating | Female choice, male competition, pair bonding, extra-pair mating |
-| 5 | Reproduction | Heritable trait inheritance with mutation and birth spacing |
-| 6 | Mortality | Aging, health risks, childbirth mortality |
-| 7 | Pathology | Disease activation, trauma accumulation |
-| 8 | Institutions | Norm enforcement, property rights, governance emergence |
-| 9 | Reputation | Gossip networks, trust updates, faction detection |
-
-All dynamics emerge from these mechanisms — nothing is scripted.
+| 2 | Resources | 8-phase distribution across 3 resource types |
+| 3 | Conflict | Violence, deterrence, coalitions, cross-sex dynamics |
+| 4 | Mating | Female choice, male competition, pair bonding, EPC |
+| 5 | Reproduction | h²-weighted trait inheritance, developmental plasticity |
+| 6 | Mortality | Aging, sex-differential mortality, epidemic vulnerability |
+| 6.3 | Migration | Voluntary emigration and immigration |
+| 6.5 | Pathology | Disease activation, trauma, epigenetic stress |
+| 7 | Institutions | Norm enforcement, property rights, institutional drift |
+| 8 | Reputation | Gossip networks, trust, beliefs, skills, faction detection |
 
 ---
 
 ## The 35 Heritable Traits
 
-Traits span several behavioral domains.
+**Physical:** physical_strength, endurance, physical_robustness, pain_tolerance,
+longevity_genes, disease_resistance
 
-**Physical**
-physical_strength, endurance, physical_robustness, pain_tolerance, longevity_genes, disease_resistance
+**Cognitive:** intelligence_proxy (h²=0.65), emotional_intelligence,
+impulse_control, conscientiousness
 
-**Cognitive**
-intelligence_proxy, emotional_intelligence, impulse_control, conscientiousness
+**Temporal:** future_orientation
 
-**Temporal**
-future_orientation
+**Personality:** risk_tolerance, novelty_seeking, anxiety_baseline,
+mental_health_baseline
 
-**Personality**
-risk_tolerance, novelty_seeking, anxiety_baseline, mental_health_baseline
+**Social:** aggression_propensity, cooperation_propensity, dominance_drive,
+group_loyalty, outgroup_tolerance, empathy_capacity, conformity_bias,
+status_drive, jealousy_sensitivity
 
-**Social**
-aggression_propensity, cooperation_propensity, dominance_drive, group_loyalty, outgroup_tolerance, empathy_capacity, conformity_bias, status_drive, jealousy_sensitivity
+**Reproductive:** fertility_base, sexual_maturation_rate, maternal_investment,
+paternal_investment_preference, attractiveness_base
 
-**Reproductive**
-fertility_base, sexual_maturation_rate, maternal_investment, paternal_investment_preference, attractiveness_base
-
-**Health / Psychopathology Risk**
-psychopathy_tendency, mental_illness_risk, cardiovascular_risk, autoimmune_risk, metabolic_risk, degenerative_risk
+**Psychopathology risk:** psychopathy_tendency, mental_illness_risk,
+cardiovascular_risk, autoimmune_risk, metabolic_risk, degenerative_risk
 
 ---
 
-## Emergent Patterns Observed
+## Key Emergent Findings
 
-These patterns arise from the interaction rules rather than explicit programming.
+These arise from interaction rules — not scripted outcomes:
 
-- Cooperation and intelligence tend to increase over time
-- Aggression often declines due to fitness costs
-- Institutions can substitute for cooperative traits
-- Monogamy reduces violence and unmated male populations
-- Institutional strength can self-organize from low initial conditions
-- Factions emerge naturally from trust network clustering
-- Elite polygyny increases inequality without necessarily increasing violence
-- Trait diversity stabilizes through mutation-selection balance
-
-These outcomes vary across seeds and scenarios.
+- Cooperation and intelligence reliably selected for across all scenarios
+- Aggression reliably selected against (5 independent fitness cost channels)
+- ENFORCED_MONOGAMY reduces violence 37%, unmated males 65%
+- STRONG_STATE reduces Gini 40%, violence 49% — without changing cooperation trait
+- Law strength self-organizes from 0 → 0.83 in EMERGENT_INSTITUTIONS over 200yr
+- Resource scarcity produces the highest cooperation (stress-interdependence)
+- Elite polygyny paradox: highest lifespan, near-zero population growth
+- Cooperation trait is a robust emergent attractor (max sensitivity r = 0.20)
 
 ---
 
 ## Scenarios
 
-SIMSIV includes multiple experimental scenarios.
+| Scenario | Purpose |
+|----------|---------|
+| `FREE_COMPETITION` | Null hypothesis — weak endogenous governance |
+| `NO_INSTITUTIONS` | True zero-governance control |
+| `ENFORCED_MONOGAMY` | Mating system effects |
+| `ELITE_POLYGYNY` | Reproductive inequality |
+| `HIGH_FEMALE_CHOICE` | Sexual selection |
+| `RESOURCE_ABUNDANCE` | Ecological effects on cooperation |
+| `RESOURCE_SCARCITY` | Stress-induced cooperation |
+| `HIGH_VIOLENCE_COST` | Aggression selection pressure |
+| `STRONG_PAIR_BONDING` | Family stability effects |
+| `STRONG_STATE` | Strong fixed governance |
+| `EMERGENT_INSTITUTIONS` | Institutional self-organization |
 
-| Scenario | Parameters | Purpose |
-|----------|-----------|---------|
-| `FREE_COMPETITION` | baseline | control scenario |
-| `ENFORCED_MONOGAMY` | strong law + monogamy | mating system effects |
-| `ELITE_POLYGYNY` | elite reproductive privilege | inequality dynamics |
-| `HIGH_FEMALE_CHOICE` | stronger female selection | sexual selection |
-| `RESOURCE_ABUNDANCE` | surplus resources | cooperation effects |
-| `RESOURCE_SCARCITY` | resource shocks | institutional stress |
-| `HIGH_VIOLENCE_COST` | lethal violence | aggression selection |
-| `STRONG_STATE` | strong institutions | governance effects |
-| `EMERGENT_INSTITUTIONS` | zero starting governance | norm emergence |
-| `STRONG_PAIR_BONDING` | stable marriages | family stability |
+---
+
+## Calibration
+
+AutoSIM uses simulated annealing to fit 36 parameters against 9 targets drawn
+from ethnographic and historical demography literature. See `autosim/targets.yaml`
+for sources and `docs/validation.md` for the full calibration report.
+
+Best config: `autosim/best_config.yaml` — score 1.000, Run 3, 816 experiments.
+Held-out validation: 10 seeds × 200yr, mean score 0.934, zero collapses.
 
 ---
 
@@ -171,90 +143,62 @@ SIMSIV includes multiple experimental scenarios.
 
 ```
 SIMSIV/
-├── models/        agent and environment definitions
-├── engines/       nine simulation subsystems
-├── metrics/       ~130 tracked metrics
-├── experiments/   scenario runner
-├── autosim/       automated parameter calibration
-├── dashboard/     Streamlit visualization
-├── sandbox/       exploratory notebooks
-├── tests/         smoke tests
-├── docs/          design deep-dives
-├── devlog/        development history
-├── prompts/       build prompts
-└── outputs/       run outputs
-```
-
-Key files:
-
-- `config.py` — ~257 tunable parameters
-- `simulation.py` — core simulation loop
-- `targets.yaml` — calibration benchmarks
-
----
-
-## Autosim Calibration
-
-SIMSIV includes an automated calibration system.
-
-It uses simulated annealing to search parameter space and match ethnographic targets including:
-
-- inequality
-- reproductive skew
-- violence mortality
-- child survival
-- lifetime births
-- bond dissolution
-- cooperation levels
-- aggression levels
-- population growth
-
-Run calibration:
-
-```bash
-python -m autosim.runner --experiments 500 --seeds 2 --years 150
+├── config.py              # ~257 tunable parameters
+├── simulation.py          # Annual tick orchestrator
+├── models/               # Agent, Society, Environment
+├── engines/              # 9 simulation subsystems
+├── metrics/              # ~130 tracked metrics per tick
+├── experiments/          # Scenario runner and definitions
+├── autosim/              # Calibration engine + results
+├── scripts/              # Validation, experiments, sensitivity analysis
+├── dashboard/            # Streamlit visualization
+├── tests/                # 22 test cases
+├── docs/                 # Architecture, validation, calibration docs
+├── devlog/               # Full development history
+└── prompts/              # Executable build prompts
 ```
 
 ---
 
-## Architecture Guarantees
+## Development Methodology
 
-**Deterministic** — Same seed → identical run.
+Built over 27 deep-dive design sessions (DD01-DD27), each adding a
+scientifically grounded subsystem. Full history in `CHAIN_PROMPT.md`,
+`devlog/`, and `prompts/`.
 
-**Pure library** — Simulation logic is separate from visualization.
+**AI disclosure:** Code development was assisted by Claude (Anthropic). All
+scientific decisions, hypotheses, experimental designs, and interpretations
+are the author's own.
 
-**Modular** — Engines interact through shared society state.
-
-**Reproducible** — All configs are serializable and logged.
-
-**Isolated instances** — Per-simulation `IdCounter`; running N simulations in sequence produces independent, non-colliding agent ID spaces.
-
-**Bounded memory** — Event list capped to a rolling window (500 events); full event-type counts tracked as running totals; no OOM on long runs.
-
-**Typed** — All Agent fields declared in dataclass; no dynamic attribute injection.
-
-**Validated config** — `Config.load()` warns on unrecognized YAML keys.
-
-**Tested** — pytest suite covering IdCounter isolation, Config validation, Society event windowing, partner index correctness, breed(), gini(), 10-tick run, population counting (22 test cases, 4 test files).
+This repository is fully transparent — every design decision, calibration run,
+validation result, and experiment output is committed to git.
 
 ---
 
-## Limitations
+## Known Limitations
 
-SIMSIV currently models band-level societies only.
+- **Single-band only:** Between-group selection (Bowles & Gintis, Choi & Bowles)
+  is absent. All findings reflect within-group dynamics. Addressed in v2.
+- **No spatial structure:** Proximity tiers are abstract, not geographic.
+- **Annual time step:** Sub-annual dynamics are abstracted.
 
-Calibration improves plausibility but does not prove correctness. Results should be interpreted as hypotheses generated by a mechanistic simulation rather than definitive claims about human societies.
-
-Higher-level social structures are planned but not yet implemented.
+Full limitations: `docs/validation.md` Section 4.
 
 ---
 
 ## Roadmap
 
-**v1** — Band-level simulation (current)
+**v1 — Band simulator** (current): Single band, 35 traits, calibrated.
 
-**v2** — Clan and tribe models using band-level aggregates
+**v2 — Clan simulator** (planned): Multiple bands interacting via trade,
+raiding, intermarriage. Adds inter-group competition.
 
-**v3** — Chiefdom and early state formation
+**v3 — Tribe/Chiefdom** (planned): Territorial dynamics, hereditary leadership.
 
-**Future** — A strategy game layer where civilizations emerge dynamically from the simulation.
+**Game layer** (planned): Strategy game built on the simulation engine.
+
+---
+
+## License
+
+See LICENSE file.
