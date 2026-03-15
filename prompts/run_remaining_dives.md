@@ -1,4 +1,4 @@
-# SIMSIV — CHAIN RUNNER: DD15 through DD23
+# SIMSIV — CHAIN RUNNER: DD18 through DD26
 # Execute all remaining deep dives in sequence.
 # Do NOT stop between dives. Do NOT ask for confirmation. NEVER STOP.
 
@@ -23,15 +23,15 @@ For EACH deep dive:
 EXECUTION ORDER
 ================================================================================
 
-DIVE 1:  prompts/deep_dive_15_genomics.md
-DIVE 2:  prompts/deep_dive_16_development.md
-DIVE 3:  prompts/deep_dive_17_medical.md
-DIVE 4:  prompts/deep_dive_18_proximity.md
-DIVE 5:  prompts/deep_dive_19_migration.md
-DIVE 6:  prompts/deep_dive_20_leadership.md
-DIVE 7:  prompts/deep_dive_21_resource_types.md
-DIVE 8:  prompts/deep_dive_22_life_stages.md
-DIVE 9:  prompts/deep_dive_23_intelligence_audit.md
+DIVE 1:  prompts/deep_dive_18_proximity.md
+DIVE 2:  prompts/deep_dive_19_migration.md
+DIVE 3:  prompts/deep_dive_20_leadership.md
+DIVE 4:  prompts/deep_dive_21_resource_types.md
+DIVE 5:  prompts/deep_dive_22_life_stages.md
+DIVE 6:  prompts/deep_dive_23_intelligence_audit.md
+DIVE 7:  prompts/deep_dive_24_epigenetics.md
+DIVE 8:  prompts/deep_dive_25_beliefs.md
+DIVE 9:  prompts/deep_dive_26_skills.md
 
 ================================================================================
 NEVER STOP RULE
