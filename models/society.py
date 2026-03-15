@@ -30,7 +30,6 @@ class Society:
         self.equilibrium_flagged: bool = False
         self.equilibrium_year: Optional[int] = None
 
-        # Per-simulation ID generator (Fix #1)
         self.id_counter = IdCounter()
 
         # DD14: Faction tracking
@@ -44,7 +43,6 @@ class Society:
         # DD20: Leadership tracking
         self.faction_leaders: dict[int, dict] = {}
 
-        # Reverse partnership index (Fix #5)
         self._partner_index: dict[int, set[int]] = {}
 
         # Initialize population
@@ -89,7 +87,7 @@ class Society:
         etype = event.get("type", "unknown")
         self.event_type_counts[etype] = self.event_type_counts.get(etype, 0) + 1
 
-    # ── Partnership index (Fix #5) ─────────────────────────────────
+    # ── Partnership index ────────────────────────────────────────────
 
     def _index_bond(self, a_id: int, b_id: int):
         """Record a bond in the reverse index (both directions)."""
@@ -105,7 +103,7 @@ class Society:
         """O(1) lookup: all agent IDs that have agent_id as a partner."""
         return self._partner_index.get(agent_id, set())
 
-    # ── Dead ledger cleanup (Fix #8) ──────────────────────────────
+    # ── Dead ledger cleanup ─────────────────────────────────────────
 
     def purge_dead_from_ledgers(self, dead_ids: set[int]):
         """Remove dead agent IDs from all living agents' reputation ledgers."""

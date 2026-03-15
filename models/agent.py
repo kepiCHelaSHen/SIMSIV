@@ -249,9 +249,7 @@ class IdCounter:
 
 
 def reset_id_counter():
-    """DEPRECATED: No-op. Use per-Simulation IdCounter instead.
-    Retained only for backward compatibility with old scripts.
-    """
+    """DEPRECATED: No-op. Use IdCounter instead."""
     pass
 
 
@@ -312,7 +310,7 @@ class Agent:
     # ── Non-heritable (earned/contextual) ────────────────────────────
     health: float = 1.0
     reputation: float = 0.5
-    current_resources: float = 0.0  # DD21: now = subsistence resources (backward compat)
+    current_resources: float = 0.0  # DD21: subsistence resources
     current_tools: float = 0.0     # DD21: durable, low decay, multiplies subsistence
     current_prestige_goods: float = 0.0  # DD21: social value, boosts prestige/mate value
     prestige_score: float = 0.0   # DD08: earned through cooperation, skill, generosity

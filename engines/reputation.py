@@ -53,10 +53,7 @@ class ReputationEngine:
                     elif val < 0.5:
                         agent.reputation_ledger[other_id] = min(0.5, val + effective_decay)
 
-        # Phase 2 (dead agent cleanup) removed — now handled by
-        # purge_dead_from_ledgers() in Phase 0 above (more efficient).
-
-        # ── Phase 3: Gossip ──────────────────────────────────────────
+        # ── Phase 2: Gossip ──────────────────────────────────────────
         # Agents share trust information with their allies.
         # Each agent picks one ally and shares one random trust entry.
         # The ally updates their own ledger based on the shared info,
