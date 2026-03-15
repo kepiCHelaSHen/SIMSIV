@@ -1445,10 +1445,250 @@ def _render_biography(agent_id):
 
 # ── TAB: Life Stories ────────────────────────────────────────────
 
+def _compute_hall_of_fame(society):
+    """Compute the 14 Hall of Fame categories. Returns dict of category_key → (agent_id, stat_line)."""
+    agents = society.agents
+    if not agents:
+        return {k: (None, "") for k in [
+            "oldest_ever", "died_youngest_adult", "survived_most_epidemics",
+            "most_offspring", "zero_offspring_elder", "deepest_lineage", "most_partners",
+            "highest_prestige_ever", "most_conflicts_won", "wealthiest_ever",
+            "highest_psychopathy_survivor", "most_cooperative_survivor",
+            "most_aggressive_long_lived", "most_faction_influence",
+        ]}
+
+    all_agents = list(agents.values())
+    living = [a for a in all_agents if a.alive]
+    dead = [a for a in all_agents if not a.alive]
+    result = {}
+
+    # Oldest ever
+    best_id, best_age = None, 0
+    for a in all_agents:
+        age = a.age
+        if age > best_age:
+            best_age, best_id = age, a.id
+    stat = f"Currently age {best_age}" if (agents.get(best_id) and agents[best_id].alive) else f"Lived {best_age} years"
+    result["oldest_ever"] = (best_id, stat)
+
+    # Gone Too Soon
+    best_id, best_age = None, 999
+    for a in dead:
+        if a.cause_of_death in ("childhood_mortality", "emigration"):
+            continue
+        if 18 <= a.age <= 40 and a.age < best_age:
+            best_age, best_id = a.age, a.id
+    result["died_youngest_adult"] = (best_id, f"Died age {best_age} from {agents[best_id].cause_of_death}" if best_id else "")
+
+    # Epidemic Survivor
+    best_id, best_count = None, 0
+    for a in all_agents:
+        count = len([e for e in a.medical_history if "epidemic" in str(e).lower()])
+        if count > best_count:
+            best_count, best_id = count, a.id
+    result["survived_most_epidemics"] = (best_id if best_count > 0 else None,
+                                          f"Survived {best_count} epidemic events" if best_count > 0 else "")
+
+    # Most Prolific
+    best_id, best_n = None, 0
+    for a in all_agents:
+        n = len(a.offspring_ids)
+        if n > best_n:
+            best_n, best_id = n, a.id
+    result["most_offspring"] = (best_id, f"{best_n} total offspring")
+
+    # Celibate Elder
+    best_id, best_age = None, 0
+    for a in all_agents:
+        age = a.age
+        if age >= 55 and a.lifetime_births == 0 and len(a.offspring_ids) == 0:
+            if age > best_age:
+                best_age, best_id = age, a.id
+    result["zero_offspring_elder"] = (best_id, f"Age {best_age}, no offspring" if best_id else "")
+
+    # Deepest Lineage
+    def _max_gen(aid, depth=0):
+        if depth > 20:
+            return 0
+        a = agents.get(aid)
+        if not a or not a.offspring_ids:
+            return a.generation if a else 0
+        return max((_max_gen(oid, depth + 1) for oid in a.offspring_ids), default=0)
+
+    founders = [a for a in all_agents if a.generation == 0 and a.offspring_ids]
+    best_id, best_gen = None, 0
+    for f in founders:
+        mg = _max_gen(f.id)
+        if mg > best_gen:
+            best_gen, best_id = mg, f.id
+    result["deepest_lineage"] = (best_id, f"Line reaches generation {best_gen}" if best_id else "")
+
+    # Most Partners
+    best_id, best_n = None, 0
+    for a in all_agents:
+        n = a.bond_count if a.alive else len(a.death_partner_ids)
+        if n > best_n:
+            best_n, best_id = n, a.id
+    result["most_partners"] = (best_id, f"{best_n} pair bonds" if best_n > 0 else "")
+
+    # Highest Prestige
+    best_id, best_v = None, 0
+    for a in living:
+        if a.prestige_score > best_v:
+            best_v, best_id = a.prestige_score, a.id
+    result["highest_prestige_ever"] = (best_id, f"Prestige score {best_v:.3f}" if best_id else "")
+
+    # Warlord (dominance)
+    best_id, best_v = None, 0
+    for a in living:
+        if a.dominance_score > best_v:
+            best_v, best_id = a.dominance_score, a.id
+    result["most_conflicts_won"] = (best_id, f"Dominance score {best_v:.3f}" if best_id else "")
+
+    # Wealthiest
+    best_id, best_v = None, 0
+    for a in living:
+        wealth = a.current_resources + a.current_tools * 3 + a.current_prestige_goods * 5
+        if wealth > best_v:
+            best_v, best_id = wealth, a.id
+    result["wealthiest_ever"] = (best_id, f"Total wealth {best_v:.1f}" if best_id else "")
+
+    # The Predator (psychopathy survivor)
+    best_id, best_v = None, 0
+    for a in all_agents:
+        eligible = (a.alive and a.life_stage in ("MATURE", "ELDER")) or (not a.alive and a.age >= 45)
+        if eligible and a.psychopathy_tendency > best_v:
+            best_v, best_id = a.psychopathy_tendency, a.id
+            best_stage = a.life_stage if a.alive else f"died age {a.age}"
+    result["highest_psychopathy_survivor"] = (best_id,
+        f"Psychopathy {best_v:.3f}, {best_stage}" if best_id else "")
+
+    # The Peacekeeper
+    best_id, best_v = None, 0
+    for a in all_agents:
+        eligible = (a.alive and a.age >= 55) or (not a.alive and a.age >= 55)
+        if eligible and a.cooperation_propensity > best_v:
+            best_v, best_id = a.cooperation_propensity, a.id
+    result["most_cooperative_survivor"] = (best_id,
+        f"Cooperation {best_v:.3f}, age {agents[best_id].age}" if best_id else "")
+
+    # Aggression Paradox
+    best_id, best_v = None, 0
+    for a in all_agents:
+        eligible = (a.alive and a.age > 60) or (not a.alive and a.age > 60)
+        if eligible and a.aggression_propensity > best_v:
+            best_v, best_id = a.aggression_propensity, a.id
+    result["most_aggressive_long_lived"] = (best_id,
+        f"Aggression {best_v:.3f}, lived to {agents[best_id].age}" if best_id else "")
+
+    # Faction Leader
+    best_id, best_n = None, 0
+    faction_sizes = {}
+    for a in living:
+        if a.faction_id is not None:
+            faction_sizes[a.faction_id] = faction_sizes.get(a.faction_id, 0) + 1
+    if faction_sizes:
+        largest_fid = max(faction_sizes, key=faction_sizes.get)
+        largest_n = faction_sizes[largest_fid]
+        # Try faction_leaders
+        leaders = getattr(society, "faction_leaders", {}).get(largest_fid, {})
+        leader_id = leaders.get("war_leader") or leaders.get("peace_chief")
+        if leader_id and agents.get(leader_id):
+            best_id, best_n = leader_id, largest_n
+        else:
+            # Fallback: highest prestige in faction
+            faction_agents = [a for a in living if a.faction_id == largest_fid]
+            if faction_agents:
+                top = max(faction_agents, key=lambda a: a.prestige_score)
+                best_id, best_n = top.id, largest_n
+    result["most_faction_influence"] = (best_id, f"Leads faction of {best_n} members" if best_id else "")
+
+    return result
+
+
+def _render_hof_card(title, caption, agent_id, stat_line):
+    """Render a single compact Hall of Fame card."""
+    with st.container(border=True):
+        st.markdown(f"**{title}**")
+        st.caption(caption)
+        if agent_id is None:
+            st.info("No qualifying agent yet — run a longer simulation.")
+            return
+        a = society.get_by_id(agent_id)
+        if not a:
+            st.info("Agent no longer in simulation data.")
+            return
+        name = _get_agent_name(agent_id, a)
+        sex_icon = "\u2640" if a.sex.value == "female" else "\u2642"
+        st.markdown(f"{sex_icon} **{name}** — {stat_line}")
+        with st.expander("View Full Profile"):
+            _render_biography(agent_id)
+
+
 with tab_lives:
     if df is None or len(df) == 0:
         st.info("Run a simulation first.")
     else:
+        # ── Hall of Fame ─────────────────────────────────────────
+        st.header("\U0001f3c6 Hall of Fame")
+
+        col_hof_title, col_hof_btn = st.columns([4, 1])
+        with col_hof_btn:
+            if st.button("\U0001f504 Refresh", key="refresh_hof"):
+                st.session_state.pop("hof_data", None)
+
+        if "hof_data" not in st.session_state:
+            st.session_state["hof_data"] = _compute_hall_of_fame(society)
+        hof = st.session_state["hof_data"]
+
+        # Summary ribbon
+        c1, c2, c3, c4 = st.columns(4)
+        oldest = hof.get("oldest_ever", (None, ""))
+        most_off = hof.get("most_offspring", (None, ""))
+        prestige = hof.get("highest_prestige_ever", (None, ""))
+        lineage = hof.get("deepest_lineage", (None, ""))
+        c1.metric("Oldest Age", oldest[1].split()[-1] if oldest[0] else "—")
+        c2.metric("Most Offspring", most_off[1].split()[0] if most_off[0] else "—")
+        c3.metric("Top Prestige", prestige[1].split()[-1] if prestige[0] else "—")
+        c4.metric("Deepest Gen", lineage[1].split()[-1] if lineage[0] else "—")
+
+        # Category definitions
+        HOF_CATEGORIES = [
+            ("\u23f3 Longevity & Survival", [
+                ("oldest_ever", "\U0001f9d3 Oldest Ever", "Lived the longest of anyone in the simulation"),
+                ("died_youngest_adult", "\U0001f480 Gone Too Soon", "Shortest adult life — died between age 18 and 40"),
+                ("survived_most_epidemics", "\U0001f9a0 Epidemic Survivor", "Survived the most epidemic years"),
+            ]),
+            ("\U0001f468\u200d\U0001f469\u200d\U0001f467\u200d\U0001f466 Reproduction & Family", [
+                ("most_offspring", "\U0001f476 Most Prolific", "Most total offspring across entire lifetime"),
+                ("zero_offspring_elder", "\U0001f9d8 The Celibate Elder", "Reached elder stage with zero offspring"),
+                ("deepest_lineage", "\U0001f333 Dynasty Founder", "Founding agent whose line reaches the deepest generation"),
+                ("most_partners", "\U0001f49e Most Bonded", "Formed the most pair bonds across a lifetime"),
+            ]),
+            ("\U0001f451 Status & Power", [
+                ("highest_prestige_ever", "\u2b50 Most Prestigious", "Highest prestige score ever recorded"),
+                ("most_conflicts_won", "\u2694\ufe0f Warlord", "Highest dominance score among living agents"),
+                ("wealthiest_ever", "\U0001f4b0 Wealthiest", "Highest combined resource wealth"),
+            ]),
+            ("\U0001f9ec Extreme Traits", [
+                ("highest_psychopathy_survivor", "\U0001f3ad The Predator", "Highest psychopathy who survived to maturity"),
+                ("most_cooperative_survivor", "\U0001f91d The Peacekeeper", "Highest cooperation who survived to old age"),
+                ("most_aggressive_long_lived", "\U0001f525 Aggression Paradox", "Highest aggression who still lived past 60"),
+                ("most_faction_influence", "\U0001f451 Faction Leader", "Agent who leads the largest active faction"),
+            ]),
+        ]
+
+        for section_title, categories in HOF_CATEGORIES:
+            st.subheader(section_title)
+            cols = st.columns(2)
+            for i, (key, title, caption) in enumerate(categories):
+                aid, stat = hof.get(key, (None, ""))
+                with cols[i % 2]:
+                    _render_hof_card(title, caption, aid, stat)
+
+        st.markdown("---")
+
+        # ── Featured Lives (existing) ────────────────────────────
         st.subheader("Featured Lives")
 
         all_agents = list(society.agents.values())
