@@ -2,38 +2,39 @@
 # The Complete Individual Model and Hierarchical Civilization Framework
 # Location: D:\EXPERIMENTS\SIM\docs\world_architecture.md
 # Last Updated: 2026-03-14
-# Status: Band simulation complete (DD01-DD14), DD15-DD17 in progress
+# Status: Band simulation COMPLETE — DD01-DD26 all done
 #
-# PURPOSE: This document is designed to be shared with any AI or human
-# collaborator to give a complete picture of what has been built and
-# where the project is going. It is the single authoritative reference
-# for architecture decisions at all levels of the simulation hierarchy.
+# PURPOSE: This document is the single authoritative reference for what has
+# been built and where the project is going. Share with any AI or human
+# collaborator to give a complete picture of the architecture.
 
 ================================================================================
 SECTION 1 — PROJECT IDENTITY AND PHILOSOPHY
 ================================================================================
 
 SIMSIV (Simulation of Intersecting Social and Institutional Variables) is a
-Python agent-based simulation that models how human social structures emerge
-from first-principles interactions. It is not political, not ideological, and
-not designed to prove any conclusion. It is a sandbox for discovery.
+Python agent-based simulation grounded in behavioral genetics, evolutionary
+anthropology, and institutional economics. It models how human social structures
+emerge from first-principles interactions among reproduction, resource competition,
+status seeking, cooperation, jealousy, violence, pair bonding, and institutional
+constraints.
 
 Core principle: ALL interesting outcomes must EMERGE from agent-level rules.
 Nothing is hardwired. No civilization is scripted. No outcome is predetermined.
 
-The simulation is designed as the engine for a Civilization-style game, but
-the model is built first — game mechanics come later. The quality of the model
-determines the quality of everything built on top of it.
+The simulation is designed as the engine for a Civilization-style game, but the
+model is built first. The quality of the model determines the quality of
+everything built on top of it.
 
 TECHNICAL STACK:
-  Python 3.11+, NumPy, Pandas, Matplotlib, PyYAML, Streamlit
+  Python 3.11+, NumPy, Pandas, Matplotlib, PyYAML, Streamlit, SciPy
   Location: D:\EXPERIMENTS\SIM
-  Architecture: Pure library simulation, no IO in engines, tick returns data
+  Architecture: Pure library simulation, no IO in engines, tick() returns data
 
 SCALE:
   Default: 500 agents, 200 years, annual tick
   Practical ceiling: 2,000 agents (O(N²) bottlenecks in conflict/mating)
-  Runtime: ~10 seconds for 500 agents / 200 years
+  Runtime: ~60-90 seconds for 500 agents / 200 years / 3 seeds
 
 ================================================================================
 SECTION 2 — THE HIERARCHICAL CIVILIZATION MODEL
@@ -42,14 +43,14 @@ SECTION 2 — THE HIERARCHICAL CIVILIZATION MODEL
 The simulation is designed around a five-level hierarchy, each level running
 its own simulator that consumes aggregate outputs from the level below.
 
-LEVEL 1: BAND (currently being built)
+LEVEL 1: BAND — COMPLETE (v1.0)
   Population: 50-500 individual agents
   Model: Full SIMSIV engine — every person simulated individually
   Time step: Annual tick
-  Key output: Band fingerprint (10-15 aggregate metrics)
+  Key output: Band fingerprint (15 aggregate metrics exported upward)
   Anthropological analog: Hunter-gatherer band, kinship group
 
-LEVEL 2: CLAN (planned — v2)
+LEVEL 2: CLAN — planned (v2)
   Population: 5-15 bands (~750-7,500 people represented)
   Model: Band-level aggregate dynamics — no individual agents
   Inputs: Band fingerprints from member bands
@@ -57,7 +58,7 @@ LEVEL 2: CLAN (planned — v2)
   Key output: Clan fingerprint
   Anthropological analog: Extended kinship network, ~150-500 people
 
-LEVEL 3: TRIBE (planned — v2)
+LEVEL 3: TRIBE — planned (v2)
   Population: 5-15 clans (~3,750-37,500 people represented)
   Model: Clan-level aggregate dynamics
   Simulates: Territorial boundaries, inter-clan warfare, trade networks,
@@ -65,7 +66,7 @@ LEVEL 3: TRIBE (planned — v2)
   Key output: Tribe fingerprint
   Anthropological analog: Linguistically/culturally unified group
 
-LEVEL 4: CHIEFDOM (planned — v3)
+LEVEL 4: CHIEFDOM — planned (v3)
   Population: Multiple tribes (~20,000-200,000 people represented)
   Model: Tribe-level political dynamics
   Simulates: Hereditary leadership, surplus redistribution, tribute,
@@ -73,12 +74,12 @@ LEVEL 4: CHIEFDOM (planned — v3)
   Key output: Chiefdom fingerprint
   Anthropological analog: Ranked society with hereditary hierarchy
 
-LEVEL 5: STATE (planned — v3+)
+LEVEL 5: STATE — planned (v3+)
   Population: Multiple chiefdoms (millions represented statistically)
   Model: Pure historical forces — no individual agent simulation
   Simulates: Laws, armies, cities, taxation, bureaucracy, writing, trade empires
   Key output: State profile for world map
-  Anthropological analog: Civ VI starts here
+  Anthropological analog: This is where Civ VI starts
 
 CRITICAL DESIGN PRINCIPLE:
   Each level ONLY communicates with the level immediately above and below it.
@@ -87,8 +88,7 @@ CRITICAL DESIGN PRINCIPLE:
   Pressure flows DOWN as environmental conditions (drought, war, disease at
   tribal level becomes resource scarcity at band level).
 
-THE BAND FINGERPRINT (what gets exported upward):
-  These 12 values summarize a band for the clan-level simulator:
+THE BAND FINGERPRINT (what gets exported upward — 15 values):
   1.  avg_aggression_index        — how warlike is this band
   2.  avg_cooperation_index       — how tradeable / alliance-worthy
   3.  resource_level              — wealth and desperation
@@ -96,32 +96,36 @@ THE BAND FINGERPRINT (what gets exported upward):
   5.  law_strength                — how organized / law-abiding
   6.  dominant_faction_type       — prestige-led vs dominance-led
   7.  avg_health_index            — disease burden, wellbeing
-  8.  kinship_density             — how related are members (inbreeding coefficient proxy)
-  9.  cultural_identity_score     — faction cohesion, norm strength
+  8.  kinship_density             — how related are members
+  9.  cultural_identity_score     — faction cohesion, dominant belief vector
   10. avg_intelligence_index      — adaptive capacity
   11. reproductive_rate           — population growth trajectory
   12. institutional_stability     — is law_strength rising or falling
+  13. has_war_leader              — bool: formal military coordination exists
+  14. leadership_quality          — combined prestige+dominance of leaders / band avg
+  15. big_man_present             — bool: proto-chiefdom signal (cross-faction influence)
 
 ================================================================================
-SECTION 3 — THE BAND SIMULATION (CURRENT BUILD — DD01-DD17)
+SECTION 3 — THE BAND SIMULATION (DD01-DD26 COMPLETE)
 ================================================================================
 
 The band simulation is the most complex level — it simulates every individual
-person. All other levels are simpler. This is the core engine.
+person. All 26 deep dives are complete. This is the v1.0 core engine.
 
 TICK EXECUTION ORDER (per annual step):
-  1. Environment       — scarcity shocks, seasonal cycles, epidemic triggers
-  2. Resources         — 8-phase distribution engine
-  3. Conflict          — violence, deterrence, coalition defense
-  4. Mating            — pair bond formation, dissolution, infidelity
-  5. Reproduction      — conception, birth, paternity, infant survival
-  6. Mortality         — aging, health decay, natural death, childbirth death
-  7. Institutions      — inheritance, norm enforcement, institutional drift
-  8. Reputation        — gossip, trust decay, aggregate reputation update
-  8.5 Factions         — periodic connected-component detection (every 5yr)
-  9. Pathology         — condition activation, trauma tracking [DD17 — planned]
-  10. Metrics          — collect all 62+ stats for this year
-  11. Equilibrium check
+  1.  Environment       — scarcity shocks, seasonal cycles, epidemic triggers
+  2.  Resources         — 8-phase distribution engine (3 resource types)
+  3.  Conflict          — violence, deterrence, coalition defense, life stage modifiers
+  4.  Mating            — pair bond formation, dissolution, infidelity
+  5.  Reproduction      — h²-weighted inheritance, developmental plasticity
+  6.  Mortality         — aging, health decay, natural death, childbirth death
+  6.3 Migration         — voluntary emigration and immigration (DD19)
+  6.5 Pathology         — condition activation, trauma accumulation (DD17)
+  7.  Institutions      — inheritance, norm enforcement, institutional drift
+  8.  Reputation        — gossip, trust decay, belief updates, skill learning,
+                          faction detection, neighborhood refresh
+  9.  Metrics           — collect all ~120 stats for this year
+  10. Equilibrium check
 
 --------------------------------------------------------------------------------
 3A. THE AGENT — WHAT EVERY PERSON IS
@@ -129,8 +133,8 @@ TICK EXECUTION ORDER (per annual step):
 
 Every agent is a simulated human being with:
 
-HERITABLE TRAITS (passed to offspring via weighted midpoint + mutation):
-  Current 8 traits (DD01-DD14 complete):
+HERITABLE TRAITS — 26 total (passed to offspring via h²-weighted inheritance):
+  Original 8 (DD01-DD04):
     aggression_propensity    [0.0-1.0]  h²~0.44  tendency toward conflict
     cooperation_propensity   [0.0-1.0]  h²~0.40  tendency toward alliance
     attractiveness_base      [0.0-1.0]  h²~0.50  baseline physical mate value
@@ -140,87 +144,134 @@ HERITABLE TRAITS (passed to offspring via weighted midpoint + mutation):
     fertility_base           [0.0-1.0]  h²~0.50  baseline reproductive capacity
     intelligence_proxy       [0.0-1.0]  h²~0.65  resource acquisition efficiency
 
-  Planned DD15 additions (14 new traits, total ~22):
+  DD15 — Biological robustness (4):
     longevity_genes          [0.0-1.0]  h²~0.25  modifies lifespan +/- 10yr
     disease_resistance       [0.0-1.0]  h²~0.40  reduces epidemic vulnerability
     physical_robustness      [0.0-1.0]  h²~0.50  reduces conflict health damage
     pain_tolerance           [0.0-1.0]  h²~0.45  modifies flee threshold
-    mental_health_baseline   [0.0-1.0]  h²~0.40  stress resistance, emotional stability
+
+  DD15 — Psychological (4):
+    mental_health_baseline   [0.0-1.0]  h²~0.40  stress resistance, orchid/dandelion gate
     emotional_intelligence   [0.0-1.0]  h²~0.40  speeds trust formation, gossip acuity
-    impulse_control          [0.0-1.0]  h²~0.50  gates aggression trait → behavior
-    novelty_seeking          [0.0-1.0]  h²~0.40  exploration, mating pool participation
+    impulse_control          [0.0-1.0]  h²~0.50  gates aggression trait → actual behavior
+    novelty_seeking          [0.0-1.0]  h²~0.40  exploration, migration drive
+
+  DD15 — Social (3):
     empathy_capacity         [0.0-1.0]  h²~0.35  extends cooperation altruism radius
     conformity_bias          [0.0-1.0]  h²~0.35  norm adoption speed
     dominance_drive          [0.0-1.0]  h²~0.50  active dominance hierarchy seeking
-    maternal_investment      [0.0-1.0]  h²~0.35  quantity-quality offspring tradeoff
-    sexual_maturation_rate   [0.0-1.0]  h²~0.60  age at first reproduction variance
-    cardiovascular_risk      [0.0-1.0]  h²~0.50  heritable health condition risk [DD17]
-    mental_illness_risk      [0.0-1.0]  h²~0.60  heritable psychiatric condition risk [DD17]
-    autoimmune_risk          [0.0-1.0]  h²~0.40  heritable immune dysfunction risk [DD17]
-    metabolic_risk           [0.0-1.0]  h²~0.45  heritable metabolic condition risk [DD17]
-    degenerative_risk        [0.0-1.0]  h²~0.35  heritable degenerative condition risk [DD17]
 
-INHERITANCE MODEL:
+  DD15 — Reproductive biology (2):
+    maternal_investment      [0.0-1.0]  h²~0.35  quantity vs quality offspring tradeoff
+    sexual_maturation_rate   [0.0-1.0]  h²~0.60  age at first reproduction variance
+
+  DD17 — Heritable condition risks (5):
+    cardiovascular_risk      [0.0-1.0]  h²~0.50  heritable cardiovascular condition risk
+    mental_illness_risk      [0.0-1.0]  h²~0.60  heritable psychiatric condition risk
+    autoimmune_risk          [0.0-1.0]  h²~0.40  heritable immune dysfunction risk
+    metabolic_risk           [0.0-1.0]  h²~0.45  heritable metabolic condition risk
+    degenerative_risk        [0.0-1.0]  h²~0.35  heritable degenerative condition risk
+
+INHERITANCE MODEL (DD15):
   child_val = h² * parent_midpoint + (1 - h²) * population_mean + mutation
   Parent weight: w ~ N(0.5, 0.1) — random blend, not always exact 50/50
   Mutation: 95% at sigma=0.05, 5% rare large jump at sigma=0.15
-  Stress mutation: scarcity amplifies sigma by up to 1.5x
-  Correlation matrix: 8x8 (expanding to ~22x22 in DD15) applied at population init
+  Stress mutation: scarcity amplifies sigma by up to 1.5x (DD04)
+  Epigenetic boost: stressed parents increase offspring mutation sigma (DD24)
+  Correlation matrix: 26x26 built programmatically from behavioral genetics lit
   Migrant traits: drawn from current population distribution (not uniform)
 
-GENOTYPE vs PHENOTYPE (DD16 — planned):
-  Genotype: raw genetic values, passed to offspring unchanged
-  Phenotype: expressed values after developmental modification (age 0-15 effects)
-  Developmental modifiers:
+GENOTYPE vs PHENOTYPE (DD16):
+  Genotype: raw genetic values stored at birth, passed to offspring unchanged
+  Phenotype: expressed values after developmental modification at age 15
+  Developmental modifiers (capped ±0.10 per trait):
     + childhood resource quality → intelligence, impulse control boost
-    + parental trait modeling → social learning component
+    + parental trait modeling → social learning (cooperation, aggression)
     + trauma (parent death before age 10) → aggression boost, trust reduction
     + peer group effects (age 5-15) → conformity_bias weighted average
-  mental_health_baseline gates plasticity (orchid vs dandelion genotypes)
+    + birth order effects → small risk/conscientiousness adjustments
+  mental_health_baseline gates plasticity magnitude (orchid vs dandelion)
+  breed() reads genotype — selection operates on genetic potential, not
+  environmentally modified phenotype
 
 NON-HERITABLE STATE (earned, not passed to offspring):
   health                    [0.0-1.0]  decays with age, damaged by conflict/starvation
   reputation                [0.0-1.0]  public standing — aggregate of how others see you
   prestige_score            [0.0-1.0]  earned through cooperation, generosity, networks
   dominance_score           [0.0-1.0]  earned through conflict victories, intimidation
-  current_resources         float      survival + status wealth
-  current_status            float      computed: prestige*w1 + dominance*w2 (backward compat)
-  paternity_confidence      [0.0-1.0]  male's confidence in offspring paternity
+  current_resources         float      subsistence resources (DD21: food/shelter)
+  current_tools             float      durable tools (DD21: multiplies subsistence)
+  current_prestige_goods    float      social goods (DD21: boosts mate value/prestige)
+  paternity_confidence      [0.0-1.0]  male's confidence in paternity
   conflict_cooldown         int        years of post-combat subordination
-  trauma_score              [0.0-1.0]  accumulated life trauma [DD17 planned]
+  trauma_score              [0.0-1.0]  accumulated life trauma (DD17/DD24)
+  epigenetic_stress_load    [0.0-1.0]  transgenerational stress accumulation (DD24)
   faction_id                int/None   which emergent faction agent belongs to
 
+CULTURAL BELIEFS — 5 dimensions, non-heritable (DD25):
+  Transmitted via social learning, experience, and prestige bias.
+  Range: [-1.0 to +1.0] for all dimensions.
+  hierarchy_belief         [-1=egalitarian → +1=hierarchical]
+  cooperation_norm         [-1=defection acceptable → +1=prosocial obligation]
+  violence_acceptability   [-1=pacifist → +1=violence is honorable]
+  tradition_adherence      [-1=innovator → +1=conservative]
+  kinship_obligation       [-1=universalist → +1=in-group only]
+
+SKILLS — 4 domains, non-heritable, experiential (DD26):
+  Grow through practice, decay without use, transmit via mentoring.
+  Range: [0.0 to 1.0] for all domains.
+  foraging_skill    — resource acquisition efficiency multiplier
+  combat_skill      — combat power additive bonus
+  social_skill      — trust formation and gossip effectiveness
+  craft_skill       — tool production multiplier (active if DD21 enabled)
+
 RELATIONSHIPS:
-  partner_ids               list[int]  current mates (list — supports polygyny)
+  partner_ids               list[int]  current mates (supports polygyny)
   pair_bond_strengths       dict       strength per partner [0.0-1.0]
   offspring_ids             list[int]  all children ever born (incl. dead)
   parent_ids                tuple      (mother_id, father_id) — genetic parents
-  reputation_ledger         dict       sparse bilateral trust scores (cap 100 entries)
+  reputation_ledger         dict       sparse bilateral trust scores (cap 100)
+  neighborhood_ids          list[int]  proximity tier — refreshed every 3yr (DD18)
   epc_partner_id            int/None   extra-pair mate this tick (cleared each tick)
-  last_partner_death_year   int/None   for widowhood mourning calculation
-  faction_id                int/None   emergent group membership
 
-REPRODUCTIVE BIOLOGY:
-  last_birth_year           int/None   for birth spacing (2yr minimum)
-  birth_count               int        total lifetime births
-  childhood_resource_quality float     avg parental resources during age 0-5 [DD16]
-  childhood_trauma          bool       did parent die before age 10 [DD16]
-
-MEDICAL HISTORY (DD17 — planned):
+MEDICAL HISTORY (DD17):
   active_conditions         set[str]   currently active heritable conditions
-  medical_history           list[dict] complete life medical log (max 50 entries)
+  trauma_score              float      accumulated life trauma [0.0-1.0]
+  medical_history           list[dict] life medical log (max 50 entries)
 
-LIVING BIOGRAPHY:
-  Every agent has: year_of_birth (implicit from age), parent IDs, partner history,
-  children list, cause_of_death, year_of_death, faction membership history,
-  complete event log. This constitutes a readable life narrative.
+MIGRATION TRACKING (DD19):
+  origin_band_id            int        0=native, 1=immigrant from external pool
+  immigration_year          int/None   year arrived (None = native)
+  generation_in_band        int        cultural integration depth
+
+DEVELOPMENTAL TRACKING (DD16):
+  genotype                  dict       original genetic values, never modified
+  childhood_resource_quality float     avg parental resources during age 0-5
+  childhood_trauma          bool       parent died before age 10
+  traits_finalized          bool       set True at maturation (age 15)
+
+LIFE STAGE — computed property (DD22):
+  CHILDHOOD  (age < 15)    — learning, trait development, high mortality risk
+  YOUTH      (age 15-24)   — high risk-taking, intense status competition, coalition building
+  PRIME      (age 25-44)   — peak production, parenting, faction leadership eligible
+  MATURE     (age 45-59)   — advisory role, elevated social memory, elder transition
+  ELDER      (age 60+)     — norm anchor, institutional stability, cultural memory
 
 DYNAMIC COMPUTED PROPERTIES:
   mate_value = (health*0.3 + attractiveness*0.25 + prestige*0.12 + dominance*0.08
-               + resources_normalized*0.15 + reputation*0.1) * age_factor
+               + resources_norm*0.15 + reputation*0.1) * age_factor
+               + prestige_goods * prestige_goods_mate_signal
+  life_stage = computed from age (never stored)
   is_fertile = alive AND health > 0.2 AND age in reproductive window
   is_bonded = len(partner_ids) > 0
-  is_in_mourning = last_partner_death_year within mourning_years of current_year
+
+LIVING BIOGRAPHY:
+  Every agent that has ever lived has: year_of_birth, parent IDs, complete
+  partner history with years, all children ever born, cause_of_death,
+  year_of_death, faction membership, complete medical history, all conflict
+  events, all cooperation events, skill trajectory, belief evolution.
+  This constitutes a readable life narrative — the raw material for the
+  biography tab planned for the dashboard.
 
 --------------------------------------------------------------------------------
 3B. THE ENGINES — WHAT DRIVES BEHAVIOR
@@ -228,125 +279,154 @@ DYNAMIC COMPUTED PROPERTIES:
 
 ENGINE 1: ENVIRONMENT
   Scarcity shocks: 3% base annual probability, amplified by overcrowding
-  Seasonal cycles: cosine wave modulation (configurable amplitude + period)
-  Epidemic triggers: 2% base probability, 20yr refractory period
-  Outputs: current_scarcity_level (computed ONCE per tick, used by all engines)
+  Seasonal cycles: cosine wave modulation (amplitude 0.3, period 3yr) [DD10]
+  Epidemic triggers: 2% base probability, 20yr refractory period [DD09]
+  Scarcity computed ONCE per tick — all engines read the same value (determinism guarantee)
 
-ENGINE 2: RESOURCES (8-phase)
-  Phase 0: Kin trust maintenance (parents+children +0.02/yr, siblings +0.01/yr)
-  Phase 1: Resource decay (50% retention, intel-mediated storage bonus up to +20%)
-  Phase 2: Survival distribution (25% equal floor, 75% competitive)
-    Competitive weight = (intel*0.25 + prestige*0.175 + dominance*0.075
-                         + experience*0.15 + wealth^0.7*0.15 + network*0.05)^3
-                         * (1 - aggression * 0.3)
-  Phase 3: Child investment costs (0.5 res/child/yr, scaled by paternity confidence)
-  Phase 4: Cooperation sharing (trust > 0.5, cooperation_propensity > 0.3, +0.05 trust)
-  Phase 5: Status distribution (prestige pool 60%, dominance pool 40%)
-  Phase 6: Elite privilege (top 10% status, additive bonus capped at 2x base)
-  Phase 7: Taxation (top quartile → bottom quartile, gated by law_strength)
-  Phase 8: Subsistence floor (minimum 1.0 resources — prevents death spirals)
+ENGINE 2: RESOURCES (8-phase + DD21 resource types)
+  Three resource types: subsistence (food/shelter), tools (durable multipliers),
+                        prestige goods (social value, near-permanent)
+  Phase 0:  Kin trust maintenance (parents+children +0.02/yr, siblings +0.01/yr)
+  Phase 0b: Childhood quality tracking (resource environment during age 0-5)
+  Phase 1:  Resource decay (type-specific: subsistence 0.4, tools 0.1, prestige 0.05)
+            Intelligence-mediated storage bonus up to +20% [DD10]
+  Phase 2:  Survival distribution (25% equal floor, 75% competitive)
+            Competitive weight = (intel*0.25 + prestige*0.175 + dominance*0.075
+                                 + experience*0.15 + wealth^0.7*0.15 + network*0.05
+                                 + foraging_skill*multiplier)^3
+                                 * (1 - aggression * 0.3)
+                                 * (1 - metabolic_condition_penalty)
+  Phase 3:  Child investment costs (0.5 res/child/yr, scaled by paternity confidence)
+  Phase 4:  Cooperation sharing (neighborhood-tier first [DD18], trust > 0.5,
+            empathy_capacity and emotional_intelligence modulate)
+            Ostracism: low-reputation agents excluded [DD11]
+  Phase 5:  Status distribution (prestige pool 60%, dominance pool 40%)
+  Phase 6:  Elite privilege (top 10% status, additive bonus capped at 2x base)
+  Phase 7:  Taxation (top quartile → bottom quartile, gated by law_strength)
+  Phase 8:  Subsistence floor (minimum resources — prevents death spirals)
   Signaling: Resource display (honest, 5% cost, builds prestige) [DD12]
-  Ostracism: Low-reputation agents excluded from cooperation sharing [DD11]
+  Beliefs effect: cooperation_norm belief modulates sharing rate [DD25]
+  Life stage: mature/elder agents have reduced resource appetite, youth peak
 
 ENGINE 3: CONFLICT
-  Probability: base_p * aggression + jealousy_boost + resource_stress + status_drive
-               * institutional_suppression * cooperation_damping * network_deterrence
-               * subordination_factor * seasonal_lean_boost
-  Target selection: low trust + rival + similar status + resource envy +
-                    - network deterrence - dominance deterrence - strength assessment
-  Flee: target risk_tolerance < flee_threshold → probabilistic escape
-  Coalition defense: trusted allies (trust > 0.65) may intervene before combat [DD11]
+  Probability: base_p * aggression * impulse_control_gate [DD15]
+               + jealousy_boost + resource_stress + status_drive
+               * institutional_suppression * cooperation_damping
+               * network_deterrence * subordination_factor
+               * seasonal_lean_boost * life_stage_modifier [DD22]
+               * violence_acceptability_belief [DD25]
+  Proximity weighting: household 4x, neighborhood 2x, band 1x [DD18]
+  Target selection: low trust + rival + similar status + resource envy
+                    - network deterrence - dominance deterrence
+  Flee: pain_tolerance and risk_tolerance gate escape probability [DD15]
+  Coalition defense: trusted neighborhood allies intervene [DD11/DD18]
+  War leader bonus: faction combat coordination boost [DD20]
   Combat power: aggression*0.25 + status(dom*0.7+pres*0.3)*0.20 + health*0.25
                + risk*0.15 + resource_edge + intel*0.05 + ally_bonus
+               + combat_skill*0.15 [DD26]
   Scaled consequences: 0.7x close fights → 1.5x stomps
-  Subordination: loser enters 2yr cooldown (50% reduced initiation)
-  Bystanders: witnesses distrust aggressor -0.08 (allies -0.1 extra)
-  Prestige cost: aggressors always lose prestige (-0.02) even when winning
-  Third-party punishment: high-cooperation agents pay personal cost to punish [DD11]
+  Trauma accumulation: conflict loss adds to trauma_score [DD17]
+  Skill gain: combat_skill grows from wins (more from beating skilled opponents)
+  Third-party punishment: high-cooperation agents punish at personal cost [DD11]
 
 ENGINE 4: MATING
   Phase 1: Clean stale bonds (dead partners → mourning state)
-  Phase 2: Dissolve bonds (probability = base * strength_factor * resource_stress * quality_factor)
+  Phase 2: Dissolve bonds (probability = base * strength_factor * resource_stress)
   Phase 3: Form pairs
-    Female choosiness: age-adjusted (−0.01/yr over 30), resource desperation modifier
+    Female choosiness: age-adjusted, resource desperation modifier
+    Neighborhood-first search: band-wide candidates at 0.3x weight [DD18]
     Weights: mate_value * trust_bonus * aggression_penalty(0.5) * coop_bonus(0.4)
-    Choosiness blends toward uniform distribution
-    Male contest: 30% chance rival challenges, loser takes injury [DD01]
-    High-status males: can hold multiple bonds (max_mates_per_male)
-  Phase 4: Extra-pair copulation (EPC)
+             * prestige_goods_signal [DD21] * social_skill_assessment [DD26]
+    kinship_obligation belief modulates endogamy preference [DD25]
+    Male contest: 30% chance rival challenges, combat_skill matters [DD26]
+  Phase 4: Extra-pair copulation
     Probability: infidelity_base * mate_value_gap * (1 - bond_strength)
-    EPC male weighted by mate_value
     Detection: jealousy_sensitivity * jealousy_detection_rate
-    Detected: paternity confidence drops -0.3, bond damaged
-  Phase 5: Strengthen bonds (diminishing returns growth curve)
-  Phase 6: Paternity confidence recovery +0.05/yr
+  Phase 5: Strengthen bonds
+  Leadership: peace chief arbitration reduces intra-faction conflict [DD20]
 
 ENGINE 5: REPRODUCTION
-  Conception chance: base * fertility_mod * resource_mod * health_mod
-  Pair bond bonus: 1.3x for bonded females
-  Paternity: epc_partner_id consumed — genetic father may differ from social father
-  Social father investment: paternity_confidence scales resource contribution
-  Child survival: base * parental_resources * bond_stability * scarcity * kin_support
-  Birth interval: minimum 2yr (lactational amenorrhea analog) [DD06/DD13]
-  Age-specific fertility: subfertile 15-19 (60%), peak 20-28, decline 3%/yr post-30 [DD13]
-  Childbirth mortality: 2% per birth, 3x for health < 0.4 [DD13]
-  Birth timing: ±20% conception chance based on seasonal cycle phase [DD10]
+  Conception: base * fertility_mod * resource_mod * health_mod * seasonal_phase
+  h²-weighted inheritance with DD15 heritability model
+  Epigenetic sigma boost if parents have stress load [DD24]
+  Developmental tracking begins at birth (childhood_resource_quality updated annually)
+  Maturation at age 15: developmental modifications applied, genotype preserved
+  Birth interval: 2yr minimum; age-specific fertility curve [DD06/DD13]
+  Skill transmission: child starts at parent_skill * 0.3 at maturation [DD26]
+  Belief initialization: conformity_bias-weighted blend of parent beliefs [DD25]
 
 ENGINE 6: MORTALITY
   Health decay: base_rate + age_acceleration (post-30: +0.002/yr)
-  Scarcity health damage: scarcity_level * 0.03
-  Starvation: resources < 2.0 → health -0.02/yr
-  Health death: health <= min_health_survival (0.05)
-  Age death: probability rises steeply past age 45 (configurable)
-  Background mortality: 0.02/yr base (accidents, disease)
+  Longevity genes modulate maximum lifespan [DD15]
+  Scarcity health damage, starvation damage
   Male differential: 1.8x background mortality age 15-40 [DD13]
-  Childhood mortality: 0.02/yr base, resource-dependent, orphan multiplier 2x [DD06]
-  Grandparent bonus: reduces infant/childhood mortality -0.05 [DD06]
-  Epidemic mortality: differential vulnerability (children 3x, elderly 2x) [DD09]
+  Childhood mortality: resource-dependent, orphan 2x, grandparent -0.05 [DD06]
+  Epidemic mortality: faction disease_resistance buffering [DD09/DD15]
+  Active condition effects: cardiovascular/degenerative accelerate health decay [DD17]
+
+ENGINE 6.3: MIGRATION (DD19)
+  Emigration push factors: resource stress, ostracism, mating failure, subordination
+  Youth males most likely to emigrate for mating reasons
+  Family anchor: bonded agents with children much less likely to emigrate
+  Immigration pull factors: resource surplus, low population, high cooperation
+  Immigrant integration: trust=0.4 toward all, factionless until integrated
+  Seasonal multiplier: migration more likely in lean seasons [DD10]
+
+ENGINE 6.5: PATHOLOGY (DD17/DD24)
+  Condition activation: annual probability = base * trigger_multipliers
+  Triggers: age, resource stress, childhood trauma, recent injury, scarcity
+  Active condition effects: health decay boost, behavioral instability,
+                             epidemic vulnerability, resource penalty
+  Trauma accumulation: conflict loss +0.05, kin death +0.04, deprivation +0.02/yr
+  Trauma contagion: high-trauma agents spread trauma to trusted contacts [DD24]
+  Epigenetic load: accumulates from scarcity/epidemics/trauma events [DD24]
+  Recovery: slow decay when resources adequate and socially connected
+  Institutional response: band-wide trauma epidemic → law_strength drift boost
 
 ENGINE 7: INSTITUTIONS
-  Phase 1: Inheritance distribution (all deaths this tick — violence + natural)
-    Models: equal_split, primogeniture, trust_weighted
-    Prestige inheritance: fraction of prestige passes to heirs
-  Phase 2: Norm enforcement (polygyny detection → reputation + resource penalties)
+  Phase 1: Inheritance (all deaths this tick — violence + natural)
+    Resource types inherit differently: tools primary, subsistence mostly consumed
+    Prestige goods → heirs gain prestige_score boost
+  Phase 2: Norm enforcement
   Phase 3: Institutional drift
     cooperation_pressure = (avg_cooperation - 0.4) * boost
     violence_pressure = violence_rate * decay
-    net_pressure = coop_pressure - violence_pressure
-    law_strength += drift_rate * net_pressure * (1 - inertia * |law_strength|)
+    belief_influence: cooperation_norm and violence_acceptability beliefs
+                      add to drift pressure [DD25]
+    Elder presence: respected elders slow institutional decay [DD22]
   Phase 4: Emergent formation
-    Violence streak (5yr high) → violence_punishment_strength increases
-    Inequality streak (8yr high Gini) → max_mates_per_male decreases
-  Property rights: modulate conflict looting (loot = 0.5 * (1 - property_rights))
-  Taxation: top quartile → bottom quartile, gated by law_strength
+  Peace chief: arbitration, cooperation coordination, norm transmission [DD20]
+  Trauma epidemic: triggers additional law_strength drift toward stronger norms [DD24]
 
 ENGINE 8: REPUTATION
-  Phase 1: Trust decay (−0.01/yr toward neutral, slower for extreme values)
-  Phase 2: Dead agent cleanup (removes deceased from reputation ledgers)
-  Phase 3: Gossip (10% chance per tick, share trust entries with trusted allies,
-           noise 0.1 per hop — telephone game degradation)
+  Phase 1: Trust decay toward neutral
+  Phase 2: Dead agent cleanup
+  Phase 3: Gossip — within proximity tier first (lower noise), cross-tier 2x noise [DD18]
   Phase 4: Aggregate reputation update
-           reputation = 0.7 * mean(how_others_see_you) + 0.3 * existing_reputation
+  Phase 5: Belief evolution (every 3 ticks) [DD25]
+    Social influence: prestige-weighted neighbor beliefs
+    Experience update: wins/losses/sharing shift beliefs
+    Cultural mutation: novelty_seeking-scaled random drift
+    Ideological tension: large belief divergence generates distrust
+  Phase 6: Skill updates [DD26]
+    Foraging: above-average yield → skill growth
+    Social: cooperation events, new bonds, accurate gossip
+    Combat: updated in conflict engine
+    Mentoring: high-skilled faction members transmit to low-skilled
+    Elder teaching: age 55+ high social_skill agents boost young members
+  Phase 7: Faction detection (every 5yr) — connected-component analysis
+  Phase 8: Neighborhood refresh (every 3yr) [DD18]
+    Priority: trust > 0.5 ledger entries + same faction + shared parents
 
-ENGINE 8.5: FACTION DETECTION (every 5yr)
-  Algorithm: connected-component analysis on mutual trust graph
-  Threshold: mutual trust > 0.65 for same faction
-  Min size: 3 agents (smaller = factionless)
-  Max size: 50 (schism pressure above this)
-  In-group effects: lower sharing threshold (-0.1), sharing rate boost (+20%)
-  Out-group effects: 1.5x conflict targeting weight
-  Endogamy: mild same-faction mate value bonus (+10%)
-  Merge: leader mutual trust > 0.8 triggers faction merger
-  Schism: oversized factions split probabilistically (0.01/yr pressure)
-
-ENGINE 9: PATHOLOGY (DD17 — planned)
-  Condition activation: annual probability per heritable condition risk
-  Triggers: resource stress, childhood trauma, age, recent injury, scarcity
-  Active condition effects: health decay boost, behavioral instability,
-                            epidemic vulnerability, resource penalty, etc.
-  Trauma tracking: conflict loss +0.05, kin death +0.04, deprivation +0.02/yr
-  Trauma effects: trust formation slowed, jealousy boosted, instability at >0.8
-  Recovery: slow decay when resources adequate and socially connected
+LEADERSHIP LAYER (DD20) — runs within faction detection:
+  War leader: highest dominance_score in faction
+    Effects: conflict initiation boost, coalition defense, combat power bonus,
+             targeting deterrence for faction members
+  Peace chief: highest prestige_score in faction
+    Effects: dispute arbitration, cooperation boost, norm transmission,
+             elder-style institutional stability
+  Big man: cross-faction high trust → proto-chiefdom signal in fingerprint
+  Tenure: must demonstrate competence or role passes to next highest
 
 --------------------------------------------------------------------------------
 3C. ENVIRONMENT MODEL
@@ -354,197 +434,226 @@ ENGINE 9: PATHOLOGY (DD17 — planned)
 
   Resource multiplier: abundance_multiplier + volatility_noise (Gaussian)
   Scarcity events: overcrowding-amplified, 2-6yr duration, 20yr refractory [DD09]
-  Seasonal cycles: cosine wave, configurable amplitude (0.3) and period (3yr) [DD10]
-  Epidemics: 2% base probability, differential vulnerability, 20yr refractory [DD09]
-  Carrying capacity: crowding penalty activates above 50% of max capacity
-  Scarcity level: computed ONCE per tick in environment.tick() — all engines
-                  read the same stored value (key reproducibility guarantee)
+  Seasonal cycles: cosine wave, amplitude 0.3, period 3yr [DD10]
+    - Affects: resource production, birth timing, conflict probability, migration
+  Epidemics: 2% base, differential vulnerability, faction disease_resistance buffer [DD09]
+  Carrying capacity: crowding penalty above 50% of max capacity
+  Epigenetic triggers: severe scarcity adds to agent epigenetic_stress_load [DD24]
 
 --------------------------------------------------------------------------------
-3D. METRICS — WHAT THE BAND PRODUCES
+3D. PROXIMITY TIERS (DD18)
 --------------------------------------------------------------------------------
 
-62 per-tick metrics collected annually:
+Three-tier relational proximity model (no spatial coordinates):
 
-DEMOGRAPHICS:
-  population, males, females, births, deaths, infant_deaths, childhood_deaths
-  orphan_count, children_count, max_generation, sex_ratio_reproductive
-  male_deaths, female_deaths, childbirth_deaths
+  HOUSEHOLD (3-8 agents):
+    Who: partners + dependent children + living parents
+    Computed dynamically each tick from relationship state
+    Interaction multiplier: 4x for all engines
+    Cooperation sharing: highest rate, lowest ostracism threshold
 
-ECONOMICS:
-  resource_gini, status_gini, avg_resources, avg_status
-  resource_top10_share, cooperation_network_size, resource_transfers
-  civilization_stability (CSI), social_cohesion (SCI)
+  NEIGHBORHOOD (up to 40 agents):
+    Who: trust > 0.5 ledger entries + same faction members + shared-parent kin
+    Computed every 3 years
+    Interaction multiplier: 2x for all engines
+    Primary arena: most conflict, most cooperation, most gossip
 
-REPRODUCTION:
-  reproductive_skew, mating_inequality, unmated_male_pct, unmated_female_pct
-  elite_repro_advantage, child_survival_rate, pair_bonded_pct
-  infidelity_rate, epc_detected, paternity_uncertainty
-  avg_bond_strength, mating_contests, avg_lifetime_births, avg_maternal_health
+  BAND (full population):
+    Who: everyone else
+    Interaction multiplier: 1x (current default behavior for out-of-neighborhood)
+    Mate search: band-level males available at 0.3x weight
 
-CONFLICT:
-  conflicts, violence_rate, flee_events, violence_deaths
-  punishment_events, agents_in_cooldown, coalition_defenses
-  third_party_punishments, ostracized_count
+--------------------------------------------------------------------------------
+3E. METRICS — WHAT THE BAND PRODUCES (~120 per tick)
+--------------------------------------------------------------------------------
 
-SOCIAL:
-  gossip_events, avg_ledger_size, avg_trust, distrust_fraction, avg_reputation
-  bluff_attempts, bluff_detections
-  faction_count, largest_faction_size, faction_size_gini
-  faction_stability, inter_faction_conflict_rate, factionless_fraction
+DEMOGRAPHICS: population, males, females, births, deaths, infant_deaths,
+  childhood_deaths, orphan_count, children_count, max_generation,
+  sex_ratio_reproductive, male_deaths, female_deaths, childbirth_deaths,
+  life_stage_distribution (fraction in each stage)
 
-INSTITUTIONS:
-  law_strength, violence_punishment, property_rights
+ECONOMICS: resource_gini, status_gini, avg_resources, avg_tools,
+  avg_prestige_goods, resource_top10_share, cooperation_network_size,
+  resource_transfers, trade_events, tool_gini, civilization_stability (CSI),
+  social_cohesion (SCI)
+
+REPRODUCTION: reproductive_skew, mating_inequality, unmated_male_pct,
+  unmated_female_pct, elite_repro_advantage, child_survival_rate,
+  pair_bonded_pct, infidelity_rate, epc_detected, paternity_uncertainty,
+  avg_bond_strength, mating_contests, avg_lifetime_births, avg_maternal_health,
+  local_mate_rate (fraction of bonds formed within neighborhood)
+
+CONFLICT: conflicts, violence_rate, flee_events, violence_deaths,
+  punishment_events, agents_in_cooldown, coalition_defenses,
+  third_party_punishments, ostracized_count, youth_conflict_rate,
+  cross_tier_conflict_rate
+
+SOCIAL: gossip_events, avg_ledger_size, avg_trust, distrust_fraction,
+  avg_reputation, bluff_attempts, bluff_detections, faction_count,
+  largest_faction_size, faction_size_gini, faction_stability,
+  inter_faction_conflict_rate, factionless_fraction, avg_household_size,
+  avg_neighborhood_size, network_clustering_coefficient
+
+INSTITUTIONS: law_strength, violence_punishment, property_rights,
   inheritance_events, norm_violations, institutions_emerged
 
-TRAITS:
-  avg_aggression, avg_cooperation, avg_risk_tolerance, avg_jealousy
-  avg_attractiveness, avg_status_drive, avg_fertility, avg_intelligence
-  aggression_std, cooperation_std, seasonal_phase
+TRAITS (26): avg and std for all 26 heritable traits
 
-ENVIRONMENT:
-  scarcity, epidemic_active, epidemic_deaths
+BELIEFS (5): avg_hierarchy_belief, avg_cooperation_norm,
+  avg_violence_acceptability, avg_tradition_adherence,
+  avg_kinship_obligation, belief_polarization (std per dimension),
+  dominant_ideology (categorical), belief_revolution_events
 
-STATUS/HEALTH:
-  avg_prestige, avg_dominance, prestige_gini, dominance_gini
+SKILLS (4): avg_foraging_skill, avg_combat_skill, avg_social_skill,
+  avg_craft_skill, skill_gini (per domain), mentor_events,
+  specialist_count, skill_age_correlation
+
+MIGRATION: emigration_count, immigration_count, immigrant_fraction,
+  avg_generation_in_band, trait_import_delta
+
+LEADERSHIP: war_leader_count, peace_chief_count, leadership_interventions,
+  big_man_present, faction_leader_turnover
+
+PATHOLOGY/EPIGENETICS: active_conditions_count, avg_trauma_score,
+  condition_prevalence (by type), trauma_contagion_events, band_trauma_index,
+  trauma_epidemic_active, avg_epigenetic_load, epigenetic_lineages
+
+ENVIRONMENT: scarcity, epidemic_active, epidemic_deaths, seasonal_phase
+
+STATUS/HEALTH: avg_prestige, avg_dominance, prestige_gini, dominance_gini,
   prestige_dominance_corr, avg_health, avg_age, avg_lifespan, pop_growth_rate
 
 --------------------------------------------------------------------------------
-3E. KEY EMERGENT FINDINGS (from 14 completed deep dives)
+3F. KEY EMERGENT FINDINGS (calibrated results)
 --------------------------------------------------------------------------------
 
-These patterns emerge without being programmed:
+All findings emerge without being programmed. Selected from multi-seed runs:
 
-1. MONOGAMY SELECTS FOR COOPERATION AND INTELLIGENCE
-   STRICT_MONOGAMY: cooperation +0.074, intelligence +0.093 over 200yr
-   Mechanism: monogamous pair bonding reduces male-male competition, increasing
-   selection pressure on parenting quality and resource acquisition
+1. COOPERATION AND INTELLIGENCE CONSISTENTLY SELECTED FOR
+   Across all tested scenarios, cooperation and intelligence trend upward.
+   Multiple independent selection channels operate simultaneously.
 
-2. ELITE POLYGYNY SELECTS HARDEST AGAINST AGGRESSION
-   ELITE_POLYGYNY: aggression -0.086 over 200yr
-   Mechanism: high-status males with multiple mates — aggression costs prestige
-   and resources, selecting against it even as it helps win competitions
+2. AGGRESSION CONSISTENTLY SELECTED AGAINST
+   Female mate choice (-0.5 weight), resource penalty (production penalty),
+   conflict mortality, prestige cost, bond destabilization — all punish aggression
+   independently. The effect is robust across all mating system scenarios.
 
 3. INSTITUTIONS SUBSTITUTE FOR TRAITS
    STRONG_STATE: cooperation trait 0.527 vs BASELINE 0.564
-   Mechanism: when law enforces cooperative behavior, individual selection
-   pressure for cooperation genes relaxes. External enforcement crowds out
-   internal motivation. This is a genuine social science finding.
+   When law enforces cooperative behavior, genetic selection pressure relaxes.
+   External enforcement crowds out internal motivation. Genuine finding in
+   institutional economics, emergent in simulation.
 
 4. EMERGENT INSTITUTIONS SELF-ORGANIZE
-   Law strength grows 0 → 0.48 over 200yr from cooperation/violence balance alone
-   Mechanism: cooperation-heavy populations generate institutional pressure;
-   violence-heavy populations erode it. No central designer required.
+   Law strength: 0 → 0.48 over 200yr in EMERGENT_INSTITUTIONS scenario
+   Driven purely by cooperation/violence balance. No designer required.
 
-5. FACTIONS EMERGE NATURALLY FROM KIN TRUST
-   45 factions peak in 500-pop run, consolidating over time
-   Mechanism: kin trust bootstraps cooperation networks; trust clusters naturally
-   become factions through connected-component dynamics
+5. MONOGAMY REDUCES VIOLENCE AND UNMATED MALES
+   ENFORCED_MONOGAMY: violence -37%, unmated males -40% vs FREE_COMPETITION
 
-6. AGGRESSION CONSISTENTLY SELECTED AGAINST ACROSS ALL SCENARIOS
-   Multiple independent selection channels operate simultaneously:
-   - Female mate choice penalizes aggression (-0.5 weight)
-   - Resource engine: aggression_production_penalty reduces competitive weight
-   - Conflict mortality: aggressive agents die more
-   - Pair bond destabilization: violence loses mates
-   - Prestige cost: aggressors lose social standing even when winning
+6. ELITE POLYGYNY MAXIMIZES INEQUALITY
+   Gini 0.468 — highest of all scenarios — but not highest violence.
+   Resource privilege effect dominates mating competition effect.
 
-7. COOPERATION NETWORKS CREATE ECONOMIC MOATS
-   High-cooperation agents accumulate more resources through network effects,
-   creating compounding advantage that pure aggression cannot overcome
+7. FACTIONS EMERGE FROM KIN TRUST CLUSTERS
+   Connected-component detection on trust graph produces 45 peak factions in
+   500-pop run, consolidating over time. Not assigned, not scripted.
 
-8. VIOLENCE RATES RESPOND TO INSTITUTIONAL STRENGTH
-   STRONG_STATE: violence 0.024 (lowest) vs BASELINE 0.054
-   Mechanism: law_strength suppresses initiation probability through multiple
-   channels — direct suppression, punishment, property rights reducing loot value
+8. !KUNG VALIDATION
+   Baseline violence rate 0.018 vs real !Kung San ~0.02.
+   Not tuned for — emerged from calibrated parameters.
 
 ================================================================================
-SECTION 4 — PLANNED DEEP DIVES (DD15-DD17)
+SECTION 4 — COMPLETED DEEP DIVES SUMMARY
 ================================================================================
 
-DD15 — EXTENDED GENOMICS
-  Expand heritable traits from 8 to ~22
-  Add real heritability coefficients (h²) to inheritance model
-  New traits: longevity, disease resistance, physical robustness, pain tolerance,
-             mental health baseline, emotional intelligence, impulse control,
-             novelty seeking, empathy capacity, conformity bias, dominance drive,
-             maternal investment, sexual maturation rate
-  Expand TRAIT_CORRELATION matrix to include new cross-trait correlations
-  Status: Prompt written at prompts/deep_dive_15_genomics.md
+All 26 deep dives complete. Design docs in docs/deep_dive_*.md.
 
-DD16 — DEVELOPMENTAL BIOLOGY (NATURE VS NURTURE)
-  Add developmental plasticity: childhood environment modifies trait expression
-  Store genotype separately from phenotype (breed uses genotype)
-  Childhood effects: resources, parental traits, orphan status, peer group
-  mental_health_baseline moderates plasticity (orchid vs dandelion)
-  New metric: heritability_realized — empirically measures nature vs nurture
-  Status: Prompt written at prompts/deep_dive_16_development.md
+| DD  | System                    | Key Addition                                          |
+|-----|---------------------------|-------------------------------------------------------|
+| 01  | Mating                    | Multi-bond, EPC, paternity, male contests             |
+| 02  | Resources                 | 8-phase engine, kin trust, aggression penalty         |
+| 03  | Conflict                  | Network deterrence, flee, subordination               |
+| 04  | Genetics                  | Parent variance, rare mutations, stress mutation      |
+| 05  | Institutions              | Drift, emergence, property rights                     |
+| 06  | Household                 | Birth spacing, childhood mortality, orphans           |
+| 07  | Reputation                | Gossip, trust decay, aggregate reputation             |
+| 08  | Prestige/Dominance        | Dual-track status system                              |
+| 09  | Disease                   | Epidemics, differential vulnerability                 |
+| 10  | Seasons                   | Resource cycles, storage                              |
+| 11  | Coalitions                | Defense, third-party punishment, ostracism            |
+| 12  | Signaling                 | Resource display, dominance bluffing                  |
+| 13  | Demographics              | Sex-differential mortality, fertility curve           |
+| 14  | Factions                  | Emergent connected-component detection                |
+| 15  | Extended Genomics         | 13 new traits, real h² model, 26x26 correlation matrix|
+| 16  | Developmental Biology     | Genotype/phenotype, childhood plasticity              |
+| 17  | Medical History           | Pathology engine, 5 conditions, trauma               |
+| 18  | Proximity Tiers           | Household/neighborhood/band interaction weighting     |
+| 19  | Migration                 | Voluntary emigration/immigration                      |
+| 20  | Leadership                | War leader + peace chief per faction                  |
+| 21  | Resource Types            | Subsistence/tools/prestige goods differentiation      |
+| 22  | Life Stages               | Youth/prime/mature/elder roles                        |
+| 23  | Intelligence Audit        | Feedback loop check, diminishing returns              |
+| 24  | Epigenetics               | Transgenerational stress, trauma contagion            |
+| 25  | Beliefs                   | 5 cultural belief dimensions, ideology emergence      |
+| 26  | Skills                    | 4 skill domains, mentoring, transmission              |
 
-DD17 — MEDICAL HISTORY AND PATHOLOGY
-  New engine: engines/pathology.py
-  Heritable condition risks (5 conditions, add to HERITABLE_TRAITS)
-  Condition activation based on age, stress, trauma, lifestyle
-  Trauma score accumulation and recovery
-  Medical history log per agent (max 50 entries — part of life biography)
-  Lineage health profiles observable across generations
-  Status: Prompt written at prompts/deep_dive_17_medical.md
+Totals: ~250 config params, ~120 metrics per tick, 9 engines (+pathology)
 
 ================================================================================
 SECTION 5 — WORLD ARCHITECTURE (HIGHER LEVELS — PLANNED V2/V3)
 ================================================================================
 
 DESIGN PHILOSOPHY FOR HIGHER LEVELS:
-  Each level runs its own simulator that is simpler than the level below.
-  Computational complexity decreases with each level.
-  Information richness decreases going up.
-  The individual biography only exists at the band level.
+  Each level runs its own simulator simpler than the level below.
+  Computational complexity decreases going up.
+  Individual biography only exists at band level.
   At clan level and above, people are represented as statistics.
 
 THE CLAN SIMULATOR (v2 — planned)
-  Inputs: Band fingerprints from 5-15 member bands
-  Runs: Band-level interaction model (not individual agents)
+  Inputs: Band fingerprints from 5-15 member bands (15 values each)
+  Tick: Decadal (10yr per clan tick = ~10 band annual ticks)
 
-  What the clan simulator computes each tick:
+  What the clan simulator computes:
   - Inter-band trade probability = f(resource_gap, cooperation_index, trust)
   - Raid probability = f(aggressor_aggression, target_resources, defender_network)
   - Intermarriage rate = f(faction_alignment, cultural_distance, resource_level)
-  - Migration = f(resource_desperation, population_pressure, kinship_density)
-  - Cultural drift = conformity_bias weighted average of member band norms
+  - Migration flow = f(resource_desperation, population_pressure, kinship_density)
+  - Cultural drift = conformity_bias weighted avg of member band belief vectors
   - Alliance formation = f(shared_enemies, cooperation_index, historical_trust)
+  - Leadership recognition = f(big_man signals from member bands)
 
-  What triggers band → clan recognition:
-  NOT a building or tech unlock. A THRESHOLD CROSSING:
-  - Multiple bands sharing territory with kinship links > threshold
+  Band → Clan transition (not a building — a threshold crossing):
+  - Multiple bands sharing territory with kinship links above threshold
   - Inter-band cooperation rate above threshold for N years
   - No sustained raiding between members for N years
-  - Shared faction/identity score above threshold
+  - Shared cultural identity (belief vector similarity) above threshold
 
-  Clan fingerprint exported upward:
-  Same 12 metrics as band fingerprint, now representing ~150-2000 people
+  Clan fingerprint: same 15 metrics as band, now representing 150-2000 people
 
 THE TRIBE SIMULATOR (v2 — planned)
   Inputs: Clan fingerprints from 5-15 member clans
-  Runs: Clan-level interaction model (even simpler)
+  Tick: Generational (25yr per tribe tick)
 
   What the tribe simulator computes:
-  - Cultural identity score (shared norms, language proxy, ritual alignment)
+  - Cultural identity score (shared beliefs, language proxy, ritual alignment)
   - Territorial boundaries (spatial extent, defended perimeter)
   - Inter-clan warfare (aggregate power calculations)
-  - Trade network structure (network graph of alliance-weighted exchanges)
+  - Trade network structure (alliance-weighted exchange graph)
   - Norm standardization (institutional drift toward mean across clans)
 
-  What triggers clan → tribe recognition:
-  - Shared cultural identity score above threshold
+  Clan → Tribe transition:
+  - Shared cultural identity above threshold
   - Regular inter-clan trade for N years
-  - Coordinated response to external threat (shared conflict event)
+  - Coordinated response to external threat
   - Common institutional norms within tolerance range
 
 THE CHIEFDOM SIMULATOR (v3 — planned)
   Inputs: Tribe fingerprints
   What emerges:
-  - Hereditary leadership (band with highest avg prestige + resources + faction size)
+  - Hereditary leadership (band with highest prestige + resources + faction size)
   - Tribute flow (weaker tribes pay stronger tribes resources)
-  - Monument/infrastructure (resource surplus above threshold → collective investment)
+  - Monument/infrastructure (surplus above threshold → collective investment)
   - Ranked society (band-level Gini crystallizes into formal hierarchy)
 
 THE STATE SIMULATOR (v3+ — planned)
@@ -562,49 +671,70 @@ SECTION 6 — TECHNICAL ARCHITECTURE
 
 FILE STRUCTURE:
   D:\EXPERIMENTS\SIM\
-  ├── config.py              — 107+ tunable parameters
-  ├── simulation.py          — tick orchestrator
+  ├── config.py              — ~250 tunable parameters (grouped by DD)
+  ├── simulation.py          — tick orchestrator (12 clean numbered steps)
   ├── main.py               — CLI entry point
+  ├── requirements.txt       — numpy, pandas, matplotlib, pyyaml, streamlit, scipy
   ├── models/
-  │   ├── agent.py           — Agent dataclass, breed(), create_initial_population()
-  │   ├── society.py         — Agent registry, faction detection, migrant injection
+  │   ├── agent.py           — Agent dataclass (26 traits, beliefs, skills, etc.)
+  │   ├── society.py         — Agent registry, faction detection, migration
   │   └── environment.py     — Scarcity, seasons, epidemics
   ├── engines/
-  │   ├── resources.py       — 8-phase resource distribution
-  │   ├── conflict.py        — Violence, deterrence, coalitions
-  │   ├── mating.py          — Pair bonds, EPC, infidelity
-  │   ├── reproduction.py    — Conception, birth, child survival
-  │   ├── mortality.py       — Aging, health, death
-  │   ├── institutions.py    — Inheritance, norms, drift, emergence
-  │   └── reputation.py      — Gossip, trust decay, aggregate reputation
+  │   ├── resources.py       — 8-phase resource distribution + DD21 types
+  │   ├── conflict.py        — Violence, deterrence, coalitions, life stages
+  │   ├── mating.py          — Pair bonds, EPC, infidelity, proximity
+  │   ├── reproduction.py    — Conception, birth, developmental biology
+  │   ├── mortality.py       — Aging, health, death, maturation
+  │   ├── pathology.py       — Conditions, trauma, epigenetics (DD17/DD24)
+  │   ├── institutions.py    — Inheritance, norms, drift, emergence, leadership
+  │   └── reputation.py      — Gossip, trust, beliefs, skills, factions
   ├── metrics/
-  │   └── collectors.py      — 62+ metrics per tick
+  │   └── collectors.py      — ~120 metrics per tick
   ├── experiments/
   │   ├── scenarios.py       — 10 named scenario configs
   │   ├── runner.py          — Multi-seed experiment execution
   │   └── summarizer.py      — Narrative summaries, integrity checks
+  ├── autosim/
+  │   ├── runner.py          — Mode A parameter optimization loop
+  │   ├── realism_score.py   — Composite score vs anthropological targets
+  │   ├── targets.yaml       — Calibration targets with sources
+  │   ├── program.md         — Agent instructions
+  │   ├── journal.jsonl      — Experiment log (all 100 experiments)
+  │   └── best_config.yaml   — Best parameters found
   ├── dashboard/
-  │   └── app.py             — Streamlit visual dashboard
+  │   └── app.py             — Streamlit visual dashboard (9 tabs)
+  ├── sandbox/
+  │   └── explore.py         — IPython harness for live exploration
+  ├── tests/
+  │   └── test_smoke.py      — 5 pytest smoke tests (all passing)
+  ├── docs/
+  │   ├── world_architecture.md  — THIS FILE
+  │   ├── deep_dive_01-26.md     — Design rationale per subsystem
+  │   ├── AUTOSIM.md             — Autosim design document
+  │   └── MISSION.md             — Project mission statement
+  ├── devlog/
+  │   └── DEV_LOG.md         — Complete development history
   └── prompts/
-      └── deep_dive_*.md     — 17 deep dive implementation prompts (DD01-DD17)
+      ├── README.md          — Index of all 26 deep dive prompts
+      └── deep_dive_*.md     — 26 implementation prompts
 
 ARCHITECTURE GUARANTEES:
   - Pure library: no IO, no print statements in engines
-  - Deterministic: same seed = identical results (scarcity computed once per tick)
-  - Modular: engines know nothing about each other, communicate via Society state
+  - Deterministic: same seed = identical results
+  - Modular: engines share no state except via Society
   - No circular imports: models never import engines
   - All randomness via seeded numpy.random.Generator
 
 NAMED SCENARIOS (10 defined):
   FREE_COMPETITION      — baseline, unrestricted, null hypothesis
-  ENFORCED_MONOGAMY     — mating_system="monogamy", law=0.7, punishment=0.5
+  ENFORCED_MONOGAMY     — mating_system="monogamy", law=0.7
   ELITE_POLYGYNY        — elite_privilege=3.0, max_mates=5
   HIGH_FEMALE_CHOICE    — female_choice_strength=0.95
-  RESOURCE_ABUNDANCE    — resource_abundance=2.5, low volatility
+  RESOURCE_ABUNDANCE    — resource_abundance=2.5
   RESOURCE_SCARCITY     — resource_abundance=0.4, scarcity_prob=0.15
   HIGH_VIOLENCE_COST    — violence_cost_health=0.45, death_chance=0.15
   STRONG_PAIR_BONDING   — bond_strength=0.9, dissolution_rate=0.02
-  STRONG_STATE          — law=0.8, punishment=0.7, property_rights=0.5, tax=0.15
+  STRONG_STATE          — law=0.8, tax=0.15, property_rights=0.5
   EMERGENT_INSTITUTIONS — all institutions start at 0, self-organize
 
 ================================================================================
@@ -614,7 +744,9 @@ SECTION 7 — WHAT THIS IS BUILDING TOWARD
 The ultimate goal is a Civilization-style game where:
 
 1. Every person in the game world is a real simulated individual with a genome,
-   a developmental history, a medical biography, relationships, and a life story
+   a developmental history, a medical biography, skills earned through experience,
+   cultural beliefs transmitted from their community, relationships, and a
+   complete life story from birth to death
 
 2. Social structures — bands, clans, tribes, chiefdoms, states — emerge from
    what those individuals do, not from what the game designer scripted
@@ -629,57 +761,61 @@ The ultimate goal is a Civilization-style game where:
 5. Scale: ~3-5 million fully simulated individuals across a world map, with
    hundreds of millions represented statistically at higher levels
 
-Current state: The band simulator (Level 1) is complete through DD14, with
-DD15-DD17 in progress. This is the most complex and important level.
-All other levels will be simpler to build because they operate on aggregates.
+CURRENT STATE: Band simulator v1.0 complete — all 26 deep dives done.
+This is the most complex and important level. All other levels will be simpler
+to build because they operate on aggregate fingerprints rather than individuals.
 
 WHAT MAKES THIS DIFFERENT FROM EVERYTHING THAT EXISTS:
   - Civ VI simulates civilizations but has no real people inside them
   - The Sims simulates people but has no civilization around them
-  - Dwarf Fortress has personality but no emergent biology
-  - This simulation has real people (heritable traits, life histories, evolution)
-    inside real societies (emergent institutions, factions, norms)
-  - The people are real in a way no simulated people have ever been before
+  - Dwarf Fortress has personality but no emergent biology or evolution
+  - SIMSIV has real people (26 heritable traits, developmental plasticity,
+    medical histories, skills, beliefs, living biographies) inside real
+    societies (emergent institutions, factions, norms, cultural transmission)
+
+The people are real in a way no simulated people have ever been before.
+The civilizations they build will be real in a way no simulated civilizations
+have ever been before.
 
 ================================================================================
-SECTION 8 — OPEN QUESTIONS AND FEEDBACK REQUESTED
+SECTION 8 — OPEN QUESTIONS FOR V2 DESIGN
 ================================================================================
 
-These are areas where outside perspective would be valuable:
+These are the unresolved design questions for the clan/tribe simulators:
 
-1. BAND FINGERPRINT DESIGN
-   What are the 12 most important aggregate metrics for the clan simulator?
-   Are there metrics we're not currently computing that would be critical?
+1. TEMPORAL SCALE TRANSLATION
+   Band sim runs at annual tick. Clan sim should run at decadal tick.
+   How do we handle the 10:1 compression? Does one clan tick consume
+   10 band ticks, or do bands run continuously and export snapshots?
 
-2. BAND → CLAN TRANSITION CRITERIA
-   What thresholds define when bands have become a clan?
-   Should this be gradual (continuous) or threshold-based (discrete)?
+2. BAND FINGERPRINT COMPLETENESS
+   Does the 15-value fingerprint capture enough for realistic clan dynamics?
+   What interactions would require individual agent data to model correctly
+   (and therefore can't be abstracted without information loss)?
 
-3. CLAN SIMULATOR MECHANICS
-   What are the most important dynamics to model at the clan level?
-   What can safely be simplified away?
+3. BAND → CLAN TRANSITION THRESHOLDS
+   What exact metric values trigger clan recognition?
+   Should this be sharp (threshold crossing) or gradual (continuous)?
 
-4. TEMPORAL SCALE MISMATCH
-   Band sim runs at annual tick. Clan sim might run at decadal tick.
-   How should we handle the time scale translation between levels?
+4. CULTURAL DIVERGENCE TRACKING
+   Two bands with the same starting population will evolve different belief
+   vectors and trait distributions. How do we quantify "cultural distance"
+   for the clan simulator's cultural drift mechanics?
 
-5. CULTURAL IDENTITY
-   How do we give bands a cultural fingerprint distinct enough to differentiate
-   them when they meet? What are the right markers?
+5. PLAYER INTERACTION LAYER
+   At which hierarchy levels should the player have direct agency?
+   Band level (individual decisions), clan level (inter-band policy),
+   tribe level (territorial strategy), or all three simultaneously?
 
-6. PLAYER INTERACTION MODEL
-   At which level(s) should the player have agency?
-   Should the player be able to influence individual agents, or only
-   set institutional parameters for a band?
-
-7. MISSING MECHANISMS
-   What human social dynamics are most conspicuously absent from the current model?
-   What would most change emergent outcomes if added?
+6. PERFORMANCE ARCHITECTURE FOR V2
+   Thousands of bands running simultaneously on a world map requires
+   parallel execution. What's the right parallelization strategy?
+   Process-per-band? Thread pool? GPU vectorization?
 
 ================================================================================
 END OF DOCUMENT
 ================================================================================
 
-Version: 1.0
+Version: 2.0 (DD01-DD26 complete)
 Project: SIMSIV — D:\EXPERIMENTS\SIM
-Contact: See project repository
+GitHub: https://github.com/kepiCHelaSHen/SIMSIV
