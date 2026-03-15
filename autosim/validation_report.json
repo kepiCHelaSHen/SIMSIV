@@ -1,0 +1,350 @@
+{
+  "config_path": "D:\\experiments\\sim\\autosim\\best_config.yaml",
+  "autosim_score": 1.0,
+  "validation": {
+    "seeds": [
+      50523,
+      94249,
+      50213,
+      59977,
+      31951,
+      59290,
+      46379,
+      71686,
+      94154,
+      25332
+    ],
+    "years": 200,
+    "pop": 500,
+    "n_runs": 10,
+    "n_survived": 10
+  },
+  "scores": {
+    "mean": 0.934223,
+    "std": 0.053002,
+    "min": 0.804877,
+    "max": 0.992153
+  },
+  "per_seed": [
+    {
+      "seed": 50523,
+      "score": 0.88451,
+      "survived": true,
+      "final_pop": 303,
+      "elapsed_s": 43.8,
+      "metrics": {
+        "resource_gini": 0.31105,
+        "mating_inequality": 0.54659,
+        "pop_growth_rate": -0.01667,
+        "avg_lifetime_births": 3.4824,
+        "avg_cooperation": 0.53086,
+        "avg_aggression": 0.47509,
+        "pair_bonded_pct": 0.41282,
+        "violence_rate": 0.02048,
+        "population": 319.46667,
+        "violence_death_fraction": 0.04046,
+        "child_survival_to_15": 0.60852,
+        "bond_dissolution_rate": 0.14537
+      },
+      "per_metric": {
+        "resource_gini": 1.0,
+        "mating_inequality": 1.0,
+        "violence_death_fraction": 0.91329,
+        "pop_growth_rate": 0.26363,
+        "child_survival_to_15": 1.0,
+        "avg_lifetime_births": 0.82804,
+        "bond_dissolution_rate": 1.0,
+        "avg_cooperation": 1.0,
+        "avg_aggression": 1.0
+      }
+    },
+    {
+      "seed": 94249,
+      "score": 0.928915,
+      "survived": true,
+      "final_pop": 570,
+      "elapsed_s": 71.1,
+      "metrics": {
+        "resource_gini": 0.34525,
+        "mating_inequality": 0.52151,
+        "pop_growth_rate": 0.00862,
+        "avg_lifetime_births": 4.32692,
+        "avg_cooperation": 0.54158,
+        "avg_aggression": 0.46244,
+        "pair_bonded_pct": 0.37503,
+        "violence_rate": 0.01281,
+        "population": 442.53333,
+        "violence_death_fraction": 0.01877,
+        "child_survival_to_15": 0.72695,
+        "bond_dissolution_rate": 0.10035
+      },
+      "per_metric": {
+        "resource_gini": 1.0,
+        "mating_inequality": 1.0,
+        "violence_death_fraction": 0.71606,
+        "pop_growth_rate": 1.0,
+        "child_survival_to_15": 0.87165,
+        "avg_lifetime_births": 1.0,
+        "bond_dissolution_rate": 1.0,
+        "avg_cooperation": 1.0,
+        "avg_aggression": 1.0
+      }
+    },
+    {
+      "seed": 50213,
+      "score": 0.954674,
+      "survived": true,
+      "final_pop": 1155,
+      "elapsed_s": 86.9,
+      "metrics": {
+        "resource_gini": 0.31218,
+        "mating_inequality": 0.54663,
+        "pop_growth_rate": 0.01752,
+        "avg_lifetime_births": 3.64718,
+        "avg_cooperation": 0.49022,
+        "avg_aggression": 0.45985,
+        "pair_bonded_pct": 0.37507,
+        "violence_rate": 0.02068,
+        "population": 903.4,
+        "violence_death_fraction": 0.07947,
+        "child_survival_to_15": 0.71341,
+        "bond_dissolution_rate": 0.11364
+      },
+      "per_metric": {
+        "resource_gini": 1.0,
+        "mating_inequality": 1.0,
+        "violence_death_fraction": 1.0,
+        "pop_growth_rate": 0.89502,
+        "child_survival_to_15": 0.93612,
+        "avg_lifetime_births": 0.88278,
+        "bond_dissolution_rate": 1.0,
+        "avg_cooperation": 1.0,
+        "avg_aggression": 1.0
+      }
+    },
+    {
+      "seed": 59977,
+      "score": 0.947228,
+      "survived": true,
+      "final_pop": 484,
+      "elapsed_s": 35.5,
+      "metrics": {
+        "resource_gini": 0.33621,
+        "mating_inequality": 0.54062,
+        "pop_growth_rate": 0.00575,
+        "avg_lifetime_births": 4.10567,
+        "avg_cooperation": 0.51494,
+        "avg_aggression": 0.49502,
+        "pair_bonded_pct": 0.35696,
+        "violence_rate": 0.014,
+        "population": 392.96667,
+        "violence_death_fraction": 0.01892,
+        "child_survival_to_15": 0.70494,
+        "bond_dissolution_rate": 0.11321
+      },
+      "per_metric": {
+        "resource_gini": 1.0,
+        "mating_inequality": 1.0,
+        "violence_death_fraction": 0.71744,
+        "pop_growth_rate": 1.0,
+        "child_survival_to_15": 0.97648,
+        "avg_lifetime_births": 1.0,
+        "bond_dissolution_rate": 1.0,
+        "avg_cooperation": 1.0,
+        "avg_aggression": 1.0
+      }
+    },
+    {
+      "seed": 31951,
+      "score": 0.972618,
+      "survived": true,
+      "final_pop": 483,
+      "elapsed_s": 48.7,
+      "metrics": {
+        "resource_gini": 0.31429,
+        "mating_inequality": 0.56826,
+        "pop_growth_rate": -0.00077,
+        "avg_lifetime_births": 3.78594,
+        "avg_cooperation": 0.49778,
+        "avg_aggression": 0.47504,
+        "pair_bonded_pct": 0.37075,
+        "violence_rate": 0.02141,
+        "population": 943.83333,
+        "violence_death_fraction": 0.04637,
+        "child_survival_to_15": 0.67036,
+        "bond_dissolution_rate": 0.11755
+      },
+      "per_metric": {
+        "resource_gini": 1.0,
+        "mating_inequality": 1.0,
+        "violence_death_fraction": 0.96703,
+        "pop_growth_rate": 0.92609,
+        "child_survival_to_15": 1.0,
+        "avg_lifetime_births": 0.92888,
+        "bond_dissolution_rate": 1.0,
+        "avg_cooperation": 1.0,
+        "avg_aggression": 1.0
+      }
+    },
+    {
+      "seed": 59290,
+      "score": 0.804877,
+      "survived": true,
+      "final_pop": 181,
+      "elapsed_s": 59.5,
+      "metrics": {
+        "resource_gini": 0.33034,
+        "mating_inequality": 0.53496,
+        "pop_growth_rate": -0.0231,
+        "avg_lifetime_births": 3.22344,
+        "avg_cooperation": 0.53559,
+        "avg_aggression": 0.4958,
+        "pair_bonded_pct": 0.37295,
+        "violence_rate": 0.02039,
+        "population": 264.43333,
+        "violence_death_fraction": 0.01775,
+        "child_survival_to_15": 0.6611,
+        "bond_dissolution_rate": 0.09551
+      },
+      "per_metric": {
+        "resource_gini": 1.0,
+        "mating_inequality": 1.0,
+        "violence_death_fraction": 0.70683,
+        "pop_growth_rate": 0.0,
+        "child_survival_to_15": 1.0,
+        "avg_lifetime_births": 0.74201,
+        "bond_dissolution_rate": 0.9786,
+        "avg_cooperation": 1.0,
+        "avg_aggression": 1.0
+      }
+    },
+    {
+      "seed": 46379,
+      "score": 0.978136,
+      "survived": true,
+      "final_pop": 778,
+      "elapsed_s": 70.4,
+      "metrics": {
+        "resource_gini": 0.32851,
+        "mating_inequality": 0.56953,
+        "pop_growth_rate": -0.00117,
+        "avg_lifetime_births": 4.14794,
+        "avg_cooperation": 0.49416,
+        "avg_aggression": 0.47288,
+        "pair_bonded_pct": 0.37822,
+        "violence_rate": 0.02032,
+        "population": 778.16667,
+        "violence_death_fraction": 0.04102,
+        "child_survival_to_15": 0.67071,
+        "bond_dissolution_rate": 0.125
+      },
+      "per_metric": {
+        "resource_gini": 1.0,
+        "mating_inequality": 1.0,
+        "violence_death_fraction": 0.91835,
+        "pop_growth_rate": 0.90968,
+        "child_survival_to_15": 1.0,
+        "avg_lifetime_births": 1.0,
+        "bond_dissolution_rate": 1.0,
+        "avg_cooperation": 1.0,
+        "avg_aggression": 1.0
+      }
+    },
+    {
+      "seed": 71686,
+      "score": 0.992153,
+      "survived": true,
+      "final_pop": 814,
+      "elapsed_s": 53.7,
+      "metrics": {
+        "resource_gini": 0.31144,
+        "mating_inequality": 0.55195,
+        "pop_growth_rate": -0.00118,
+        "avg_lifetime_births": 4.29757,
+        "avg_cooperation": 0.5017,
+        "avg_aggression": 0.5069,
+        "pair_bonded_pct": 0.39046,
+        "violence_rate": 0.0242,
+        "population": 815.76667,
+        "violence_death_fraction": 0.05096,
+        "child_survival_to_15": 0.69435,
+        "bond_dissolution_rate": 0.10099
+      },
+      "per_metric": {
+        "resource_gini": 1.0,
+        "mating_inequality": 1.0,
+        "violence_death_fraction": 1.0,
+        "pop_growth_rate": 0.90898,
+        "child_survival_to_15": 1.0,
+        "avg_lifetime_births": 1.0,
+        "bond_dissolution_rate": 1.0,
+        "avg_cooperation": 1.0,
+        "avg_aggression": 1.0
+      }
+    },
+    {
+      "seed": 94154,
+      "score": 0.912547,
+      "survived": true,
+      "final_pop": 446,
+      "elapsed_s": 38.3,
+      "metrics": {
+        "resource_gini": 0.34596,
+        "mating_inequality": 0.55536,
+        "pop_growth_rate": -0.00505,
+        "avg_lifetime_births": 4.29415,
+        "avg_cooperation": 0.49445,
+        "avg_aggression": 0.46033,
+        "pair_bonded_pct": 0.38273,
+        "violence_rate": 0.01678,
+        "population": 495.73333,
+        "violence_death_fraction": 0.02881,
+        "child_survival_to_15": 0.72945,
+        "bond_dissolution_rate": 0.08646
+      },
+      "per_metric": {
+        "resource_gini": 1.0,
+        "mating_inequality": 1.0,
+        "violence_death_fraction": 0.8074,
+        "pop_growth_rate": 0.74793,
+        "child_survival_to_15": 0.85978,
+        "avg_lifetime_births": 1.0,
+        "bond_dissolution_rate": 0.9355,
+        "avg_cooperation": 1.0,
+        "avg_aggression": 1.0
+      }
+    },
+    {
+      "seed": 25332,
+      "score": 0.966574,
+      "survived": true,
+      "final_pop": 763,
+      "elapsed_s": 66.4,
+      "metrics": {
+        "resource_gini": 0.34747,
+        "mating_inequality": 0.52671,
+        "pop_growth_rate": 0.02244,
+        "avg_lifetime_births": 4.48676,
+        "avg_cooperation": 0.50822,
+        "avg_aggression": 0.5202,
+        "pair_bonded_pct": 0.35744,
+        "violence_rate": 0.01604,
+        "population": 547.96667,
+        "violence_death_fraction": 0.06024,
+        "child_survival_to_15": 0.70817,
+        "bond_dissolution_rate": 0.11607
+      },
+      "per_metric": {
+        "resource_gini": 1.0,
+        "mating_inequality": 1.0,
+        "violence_death_fraction": 1.0,
+        "pop_growth_rate": 0.69012,
+        "child_survival_to_15": 0.96107,
+        "avg_lifetime_births": 1.0,
+        "bond_dissolution_rate": 1.0,
+        "avg_cooperation": 1.0,
+        "avg_aggression": 1.0
+      }
+    }
+  ]
+}
