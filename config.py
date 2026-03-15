@@ -21,7 +21,7 @@ class Config:
     # Trait correlation: if True, use correlated multivariate normal for initial traits
     correlated_traits: bool = True
 
-    # ── Mating ───────────────────────────────────────────────────────
+    # ── DD01: Mating system ──────────────────────────────────────────
     mating_system: str = "unrestricted"  # "unrestricted", "monogamy", "elite_polygyny"
     female_choice_strength: float = 0.6  # 0=random, 1=pure best-available
     male_competition_intensity: float = 0.7
@@ -38,7 +38,7 @@ class Config:
     paternity_certainty_threshold: float = 0.7  # below this, male reduces investment
     widowhood_mourning_years: int = 1  # years before re-entering mating pool
 
-    # ── Reproduction ─────────────────────────────────────────────────
+    # ── Reproduction (base) ──────────────────────────────────────────
     age_first_reproduction: int = 15
     age_max_reproduction_female: int = 45
     age_max_reproduction_male: int = 65
@@ -47,14 +47,14 @@ class Config:
     mutation_sigma: float = 0.05  # Gaussian noise on heritable traits
     child_survival_base: float = 0.85  # baseline child survival to adulthood
 
-    # DD04: Genetics deep dive
+    # ── DD04: Trait inheritance ─────────────────────────────────────
     parent_weight_variance: float = 0.1  # 0=exact 50/50, >0=random parent weighting per trait
     rare_mutation_rate: float = 0.05     # probability per trait of using large mutation
     rare_mutation_sigma: float = 0.15    # sigma for rare large mutations
     stress_mutation_multiplier: float = 1.5  # mutation sigma multiplier during scarcity
     migrant_trait_source: str = "population"  # "uniform" or "population" for rescue migrants
 
-    # DD06: Household deep dive
+    # ── DD06: Household and childhood ──────────────────────────────
     birth_interval_years: int = 2              # minimum years between births per female
     childhood_mortality_annual: float = 0.02   # annual death risk for children 0-15
     orphan_mortality_multiplier: float = 2.0   # mortality multiplier for parentless children
@@ -64,7 +64,7 @@ class Config:
     maternal_health_cost: float = 0.03         # health cost per birth to mother
     maternal_age_fertility_decline: float = 0.03  # fertility decline per year past 30 (female)
 
-    # ── Resources ────────────────────────────────────────────────────
+    # ── DD02: Resource model ────────────────────────────────────────
     resource_abundance: float = 1.0  # multiplier on base per-agent resources
     resource_volatility: float = 0.2  # year-to-year random variation
     carrying_capacity: int = 800
@@ -72,7 +72,6 @@ class Config:
     status_resource_fraction: float = 0.3  # fraction of total resources as status-type
     inheritance_model: str = "equal_split"  # "equal_split", "primogeniture", "none"
 
-    # DD02: Resource model deep dive
     resource_equal_floor: float = 0.25  # fraction of survival pool as equal share
     resource_decay_rate: float = 0.5  # fraction of resources retained year-to-year
     aggression_production_penalty: float = 0.3  # competitive weight penalty for aggression
@@ -86,14 +85,13 @@ class Config:
     child_investment_per_year: float = 0.5  # resources per dependent child per year
     scarcity_severity: float = 0.6  # resource multiplier during scarcity events
 
-    # ── Conflict ─────────────────────────────────────────────────────
+    # ── DD03: Conflict model ────────────────────────────────────────
     violence_cost_health: float = 0.15  # health cost per conflict (to loser)
     violence_cost_resources: float = 0.1  # resource fraction lost by loser
     violence_death_chance: float = 0.05  # chance of death per conflict (loser)
     conflict_base_probability: float = 0.05  # random baseline conflict chance per agent
     jealousy_conflict_multiplier: float = 2.0  # multiplier when jealousy triggers conflict
 
-    # DD03: Conflict deep dive
     flee_threshold: float = 0.3           # risk_tolerance below this → chance to flee
     network_deterrence_factor: float = 0.1  # per ally, reduces targeting weight
     bystander_trust_update: bool = True   # witnesses to violence update trust
@@ -104,21 +102,20 @@ class Config:
     winner_status_scale: float = 0.05     # base status gain for winner (scaled by differential)
     loser_status_scale: float = 0.05      # base status loss for loser (scaled by differential)
 
-    # ── Mortality ────────────────────────────────────────────────────
+    # ── DD13: Mortality and demographics ────────────────────────────
     age_death_base: int = 60  # mean natural death age
     age_death_variance: int = 15  # standard deviation of natural death age
     mortality_base: float = 0.02  # background annual death rate (accidents, disease)
     health_decay_per_year: float = 0.01  # base health decay rate
     min_health_survival: float = 0.05  # below this health, agent dies
 
-    # ── Institutions ─────────────────────────────────────────────────
+    # ── DD05: Institutions ─────────────────────────────────────────
     monogamy_enforced: bool = False
     law_strength: float = 0.0  # 0=anarchy, 1=perfect enforcement
     elite_privilege_multiplier: float = 1.0  # resource multiplier for top-status agents
     inheritance_law_enabled: bool = True  # DD05: changed default True (resources shouldn't vanish)
     violence_punishment_strength: float = 0.0  # 0=none, 1=severe
 
-    # DD05: Institutions deep dive
     institutional_drift_rate: float = 0.0      # max change in law_strength per year (0=static)
     institutional_inertia: float = 0.8         # resistance to change (0=fluid, 1=rigid)
     cooperation_institution_boost: float = 2.0   # cooperation weight in drift (applied to coop-0.4)
@@ -127,14 +124,14 @@ class Config:
     property_rights_strength: float = 0.0      # modulates conflict resource transfer (0=free loot, 1=protected)
     inheritance_prestige_fraction: float = 0.0  # fraction of deceased's status inherited by heirs
 
-    # DD08: Prestige vs Dominance
+    # ── DD08: Prestige vs dominance ─────────────────────────────────
     prestige_decay_rate: float = 0.01            # annual prestige decay
     dominance_decay_rate: float = 0.03           # annual dominance decay (faster)
     prestige_weight_in_mate_value: float = 0.6   # fraction of status from prestige in mate choice
     dominance_weight_in_combat: float = 0.7      # fraction of status from dominance in combat
     dominance_deterrence_factor: float = 0.3     # high dominance → less likely targeted
 
-    # DD07: Reputation deep dive
+    # ── DD07: Reputation and gossip ─────────────────────────────────
     gossip_enabled: bool = True               # enable gossip/information spread
     gossip_rate: float = 0.1                  # probability per agent per tick of gossiping
     gossip_noise: float = 0.1                 # information degradation per hop
@@ -143,13 +140,12 @@ class Config:
     dead_agent_ledger_cleanup: bool = True    # remove dead agents from ledgers each tick
     max_reputation_ledger_size: int = 100     # configurable ledger cap
 
-    # DD13: Demographics
     male_risk_mortality_multiplier: float = 1.8   # extra male mortality age 15-40
     childbirth_mortality_rate: float = 0.02       # per-birth female mortality risk
     adolescent_fertility_fraction: float = 0.6    # fertility multiplier age 15-19
     fertility_peak_age: int = 24                  # age of peak fertility
 
-    # DD12: Status signaling
+    # ── DD12: Status signaling ──────────────────────────────────────
     signaling_enabled: bool = True
     resource_display_fraction: float = 0.05       # fraction of resources spent on display
     resource_display_prestige_boost: float = 0.03 # prestige gain from display
@@ -157,7 +153,7 @@ class Config:
     bluff_detection_base: float = 0.3             # base detection probability
     bluff_caught_reputation_loss: float = 0.15    # reputation hit if caught
 
-    # DD11: Coalitions and third-party punishment
+    # ── DD11: Coalitions and punishment ─────────────────────────────
     third_party_punishment_enabled: bool = True
     punishment_willingness_threshold: float = 0.6  # min cooperation to punish
     punishment_cost_fraction: float = 0.05         # punisher's resource cost
@@ -168,7 +164,7 @@ class Config:
     ostracism_enabled: bool = True
     ostracism_reputation_threshold: float = 0.25   # below this = ostracized
 
-    # DD10: Seasonal resource cycles
+    # ── DD10: Seasonal resource cycles ──────────────────────────────
     seasonal_cycle_enabled: bool = True         # enable predictable resource cycles
     seasonal_amplitude: float = 0.3            # peak-to-trough resource variation
     seasonal_cycle_length: int = 3             # years per full cycle (1=annual, 3=triennial)
@@ -177,7 +173,7 @@ class Config:
     seasonal_conflict_boost: float = 0.2       # conflict boost during lean cycle phase
     birth_timing_sensitivity: float = 0.2      # how much cycle affects conception
 
-    # DD09: Disease and epidemics
+    # ── DD09: Disease and epidemics ─────────────────────────────────
     epidemic_base_probability: float = 0.02       # annual chance of epidemic starting
     epidemic_lethality_base: float = 0.15         # base mortality during epidemic year
     epidemic_duration_years: int = 2              # peak epidemic duration
@@ -187,7 +183,7 @@ class Config:
     epidemic_refractory_period: int = 20          # min years between epidemics
     epidemic_overcrowding_multiplier: float = 2.0 # above 80% capacity → 2x risk
 
-    # DD17: Medical history and pathology
+    # ── DD17: Medical history and pathology ─────────────────────────
     pathology_enabled: bool = True
     condition_activation_base: float = 0.02      # annual base activation probability
     condition_remission_rate: float = 0.15       # annual remission probability if resources adequate
@@ -201,7 +197,7 @@ class Config:
     degenerative_flee_threshold_boost: float = 0.15   # flee more easily when degenerated
     health_signal_visibility: float = 0.5        # how visible active conditions are to mates
 
-    # DD16: Developmental biology (nature vs nurture)
+    # ── DD16: Developmental biology ─────────────────────────────────
     developmental_plasticity_enabled: bool = True
     childhood_resource_effect: float = 0.05      # max trait modification from resource quality
     parental_modeling_effect: float = 0.08        # max trait modification from parental traits
@@ -210,12 +206,11 @@ class Config:
     critical_period_years: int = 5                # age at which first developmental mods apply
     birth_order_effect: float = 0.02              # birth order trait modification magnitude
 
-    # DD15: Extended genomics — per-trait heritability
-    # child_val = h² * parent_midpoint + (1 - h²) * pop_mean + mutation
-    # None = use default TRAIT_HERITABILITY from agent.py
+    # ── DD15: Extended genomics ─────────────────────────────────────
+    # Per-trait heritability: child_val = h² * parent_midpoint + (1-h²) * pop_mean + mutation
     heritability_by_trait: dict = field(default_factory=lambda: {})
 
-    # DD14: Factions and in-group identity
+    # ── DD14: Factions and in-group identity ────────────────────────
     factions_enabled: bool = True
     faction_detection_interval: int = 5          # years between faction recomputation
     faction_min_trust_threshold: float = 0.65    # mutual trust required for same faction
@@ -228,7 +223,7 @@ class Config:
     faction_schism_pressure: float = 0.01        # annual schism probability above max_size
     faction_merge_trust: float = 0.8             # inter-leader trust required for faction merge
 
-    # DD18: Proximity tiers
+    # ── DD18: Proximity tiers ───────────────────────────────────────
     proximity_tiers_enabled: bool = True
     household_interaction_multiplier: float = 4.0
     neighborhood_interaction_multiplier: float = 2.0
@@ -238,7 +233,7 @@ class Config:
     band_mate_weight: float = 0.3               # mate weight for out-of-neighborhood males
     cross_tier_gossip_noise_multiplier: float = 2.0
 
-    # DD19: Migration dynamics
+    # ── DD19: Migration dynamics ────────────────────────────────────
     migration_enabled: bool = True
     base_emigration_rate: float = 0.005          # annual base emigration probability per agent
     base_immigration_rate: float = 0.008         # annual base immigration probability (band level)
@@ -252,7 +247,7 @@ class Config:
     immigrant_initial_trust: float = 0.4        # starting trust level toward all band members
     overcrowding_emigration_threshold: float = 0.9  # fraction of carrying capacity triggering push
 
-    # DD20: Leadership
+    # ── DD20: Leadership ────────────────────────────────────────────
     leadership_enabled: bool = True
     war_leader_aggression_boost: float = 0.2     # faction member aggression boost when active
     war_leader_combat_bonus: float = 0.05        # combat power boost alongside leader
@@ -264,7 +259,7 @@ class Config:
     peace_chief_tenure_years: int = 5            # years before must re-demonstrate
     leadership_age_limit: int = 55              # age above which health-declining leaders step down
 
-    # DD21: Resource type differentiation
+    # ── DD21: Resource types ────────────────────────────────────────
     resource_types_enabled: bool = True
     subsistence_decay_rate: float = 0.4          # higher decay than tools
     tools_decay_rate: float = 0.1                # very durable
@@ -277,7 +272,7 @@ class Config:
     prestige_goods_mate_signal: float = 0.05     # prestige goods → attractiveness boost
     tool_conflict_loot_chance: float = 0.2       # chance winner takes a tool
 
-    # DD22: Life stage social roles
+    # ── DD22: Life stages ───────────────────────────────────────────
     life_stages_enabled: bool = True
     youth_conflict_multiplier: float = 1.25      # elevated conflict initiation for youth
     youth_risk_multiplier: float = 1.4           # amplified risk tolerance expression
@@ -289,7 +284,7 @@ class Config:
     elder_conflict_damping: float = 0.15         # elder presence reduces out-group conflict
     cohort_range_years: int = 3                  # age range defining a cohort
 
-    # DD24: Epigenetics and social pathology spread
+    # ── DD24: Epigenetics and trauma contagion ──────────────────────
     epigenetics_enabled: bool = True
     epigenetic_sigma_boost: float = 0.3          # max mutation rate increase from stress load
     epigenetic_scarcity_load: float = 0.3        # load added from scarcity event
@@ -302,7 +297,7 @@ class Config:
     trauma_epidemic_threshold: float = 0.3       # fraction of band in crisis to trigger epidemic
     faction_trauma_buffer: float = 0.02          # annual trauma decay boost in strong factions
 
-    # DD26: Skill acquisition and cultural knowledge
+    # ── DD26: Skills and cultural knowledge ─────────────────────────
     skills_enabled: bool = True
     skill_learning_rate_base: float = 0.01          # base annual skill gain rate
     skill_foraging_decay: float = 0.02              # annual foraging skill decay
@@ -315,7 +310,7 @@ class Config:
     combat_skill_weight: float = 0.15               # combat skill contribution to power
     skill_learning_intelligence_multiplier: float = 0.6  # how much intel boosts learning
 
-    # DD25: Belief and ideology system
+    # ── DD25: Beliefs and ideology ──────────────────────────────────
     beliefs_enabled: bool = True
     belief_social_influence_rate: float = 0.05   # strength of conformity pressure per tick
     belief_experience_update_rate: float = 0.03  # belief change from direct experience
@@ -325,13 +320,9 @@ class Config:
     belief_institutional_influence: float = 0.3  # weight of belief aggregate in inst drift
     prestige_transmission_weight: float = 0.6    # how much more prestigious agents influence beliefs
 
-    # ── Environment ─────────────────────────────────────────────
+    # ── Environment and safety ──────────────────────────────────────
     scarcity_event_probability: float = 0.03  # base annual chance of scarcity shock
-
-    # ── Population safety ────────────────────────────────────────────
     min_viable_population: int = 20  # inject migrants if below this
-
-    # ── Equilibrium detection ────────────────────────────────────────
     equilibrium_window: int = 10  # years of stable metrics to flag equilibrium
     equilibrium_threshold: float = 0.01  # max relative change to count as stable
 
