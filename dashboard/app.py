@@ -20,7 +20,7 @@ from plotly.subplots import make_subplots
 
 from config import Config
 from simulation import Simulation
-from models.agent import HERITABLE_TRAITS, Sex, reset_id_counter
+from models.agent import HERITABLE_TRAITS, TRAIT_HERITABILITY, Sex, reset_id_counter
 from experiments.scenarios import SCENARIOS
 from data.names import namer
 
@@ -740,6 +740,119 @@ with tab_traits:
         fig.update_layout(height=500, template="plotly_dark",
                           margin=dict(l=40, r=40, t=40, b=40))
         st.plotly_chart(fig, use_container_width=True)
+
+    # ── Realized Heritability Section ────────────────────────────
+    st.markdown("---")
+    st.subheader("Realized Heritability Over Time (h² = Var(genotype) / Var(phenotype))")
+    st.caption(
+        "Shows how much of each trait's variance is genetic vs environmental. "
+        "h²=1.0 means all variation is genetic. h²<0.5 means environment "
+        "is shaping traits more than genes. Watch how institutions and "
+        "scenarios change which traits are genetically vs environmentally driven."
+    )
+
+    # Check if h2 columns exist
+    h2_cols_available = [c for c in df.columns if c.startswith("h2_") and c != "avg_h2_all_traits"]
+
+    if not h2_cols_available:
+        st.info("No heritability data available. Heritability requires agents with finalized "
+                "traits (age >= 15) and populated genotypes. Run a longer simulation.")
+    else:
+        default_h2 = [t for t in [
+            "aggression_propensity", "cooperation_propensity",
+            "intelligence_proxy", "group_loyalty",
+            "future_orientation", "psychopathy_tendency",
+        ] if f"h2_{t}" in df.columns]
+
+        selected_h2_traits = st.multiselect(
+            "Select traits to display",
+            HERITABLE_TRAITS,
+            default=default_h2,
+            format_func=lambda t: TRAIT_ABBREV.get(t, t) if "TRAIT_ABBREV" in dir() else t,
+            key="h2_trait_select",
+        )
+
+        show_ref = st.checkbox("Show theoretical h² reference lines", key="h2_ref_lines")
+
+        fig = go.Figure()
+
+        for trait in selected_h2_traits:
+            col = f"h2_{trait}"
+            if col not in df.columns:
+                continue
+            values = df[col].ffill().fillna(0.5)
+            color = TRAIT_DOMAIN_COLORS.get(trait, "#888888")
+
+            fig.add_trace(go.Scatter(
+                x=df["year"], y=values,
+                name=TRAIT_ABBREV.get(trait, trait[:12]),
+                line=dict(color=color, width=2),
+                mode="lines",
+                hovertemplate="Year %{x}<br>h²=%{y:.3f}<br>" + TRAIT_ABBREV.get(trait, trait),
+            ))
+
+            # Rolling std band (5-year window)
+            if len(values) >= 5:
+                rolling_std = values.rolling(window=5, min_periods=1).std().fillna(0)
+                add_band(fig, df["year"], values, rolling_std, color)
+
+            # Theoretical reference line
+            if show_ref and trait in TRAIT_HERITABILITY:
+                ref_h2 = TRAIT_HERITABILITY[trait]
+                fig.add_hline(
+                    y=ref_h2, line_dash="dash", line_width=1,
+                    line_color=color, opacity=0.4,
+                    annotation_text=f"Expected: {TRAIT_ABBREV.get(trait, trait)} h²={ref_h2}",
+                    annotation_position="right",
+                    annotation_font_size=9, annotation_font_color=color,
+                )
+
+        fig.add_hline(y=0.5, line_dash="dot", line_color="white",
+                      annotation_text="Nature = Nurture (h²=0.5)",
+                      annotation_position="right")
+
+        fig.update_layout(
+            title="Realized Heritability Over Time",
+            xaxis_title="Year",
+            yaxis_title="Realized h² (Var genotype / Var phenotype)",
+            yaxis=dict(range=[0, 1.05]),
+            height=500, template="plotly_dark",
+            margin=dict(l=40, r=40, t=40, b=40),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02),
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+        # Aggregate h² chart
+        if "avg_h2_all_traits" in df.columns:
+            fig2 = go.Figure()
+            avg_h2 = df["avg_h2_all_traits"].ffill().fillna(0.5)
+            fig2.add_trace(go.Scatter(
+                x=df["year"], y=avg_h2,
+                name="Mean h² (all traits)",
+                line=dict(color="#FFD54F", width=2),
+                fill="tozeroy", fillcolor="rgba(255,213,79,0.15)",
+            ))
+            fig2.add_hline(y=0.5, line_dash="dot", line_color="white",
+                           annotation_text="Above 0.5 = genetics dominating | Below 0.5 = environment dominating",
+                           annotation_position="top right", annotation_font_size=10)
+            fig2.update_layout(
+                title="Mean Heritability Across All Traits",
+                xaxis_title="Year",
+                yaxis_title="Mean h²",
+                yaxis=dict(range=[0, 1.05]),
+                height=250, template="plotly_dark",
+                margin=dict(l=40, r=40, t=40, b=40),
+            )
+            st.plotly_chart(fig2, use_container_width=True)
+
+        st.info(
+            "Scientific interpretation: "
+            "Rising h² means genetic selection is concentrating variation — the trait is becoming fixed. "
+            "Falling h² means environmental factors (institutions, scarcity, development) "
+            "are overriding genetic signal. "
+            "Compare STRONG_STATE vs FREE_COMPETITION — institutions should reduce h² "
+            "for cooperation as enforcement replaces genetic selection pressure."
+        )
 
 # ── TAB: Institutions ────────────────────────────────────────────
 

@@ -154,6 +154,19 @@ class MetricsCollector:
             trait_means[trait] = float(np.mean(vals))
             trait_stds[trait] = float(np.std(vals))
 
+        # ── Realized heritability (h² = Var(genotype) / Var(phenotype)) ──
+        # Only for agents with finalized traits (age >= 15) and populated genotype
+        mature_with_geno = [a for a in living if a.traits_finalized and a.genotype]
+        h2_values = {}
+        if len(mature_with_geno) >= 10:
+            for trait in HERITABLE_TRAITS:
+                geno_vals = [a.genotype.get(trait, getattr(a, trait)) for a in mature_with_geno]
+                pheno_vals = [getattr(a, trait) for a in mature_with_geno]
+                var_geno = float(np.var(geno_vals))
+                var_pheno = float(np.var(pheno_vals))
+                h2 = float(np.clip(var_geno / max(var_pheno, 1e-8), 0.0, 1.0))
+                h2_values[f"h2_{trait}"] = h2
+
         # Max generation in living population
         max_generation = max((a.generation for a in living), default=0)
 
@@ -572,6 +585,12 @@ class MetricsCollector:
             # DD26: Skill metrics
             **self._collect_skill_metrics(living, society, pop),
         }
+        # Heritability metrics (computed above, append to row)
+        row.update(h2_values)
+        if h2_values:
+            row["avg_h2_all_traits"] = float(np.mean(list(h2_values.values())))
+        else:
+            row["avg_h2_all_traits"] = 0.0
         self.rows.append(row)
         return row
 
