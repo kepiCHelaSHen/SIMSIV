@@ -1,14 +1,23 @@
 """
 Resource engine — distributes survival and status resources each tick.
 
+Deep Dive 02 implementation:
+- Aggression production penalty (fighters less resource-efficient)
+- Cooperation network competitive bonus (amplified mutual aid)
+- Diminishing returns on wealth (soft ceiling)
+- Child investment costs (parental resource drain per dependent)
+- Configurable taxation / redistribution
+- Subsistence floor (prevents scarcity death spirals)
+- Status compounding (cooperation-weighted, network-boosted)
+
 Resources are two-dimensional:
-  - Survival resources: needed to stay alive and reproduce
-  - Status resources: proxy for dominance, affects mate value
+  - Survival resources: finite pool per tick, competitively distributed
+  - Status resources: proxy for dominance, amplifies survival acquisition
 """
 
 from __future__ import annotations
 import numpy as np
-from models.agent import Agent
+from models.agent import Agent, Sex
 
 
 class ResourceEngine:
@@ -21,83 +30,378 @@ class ResourceEngine:
         env_multiplier = society.environment.get_resource_multiplier()
         pop_size = len(living)
 
-        # Total resources available this tick, scaled by carrying capacity pressure
+        # Total resources available this tick, scaled by carrying capacity
         capacity_ratio = pop_size / config.carrying_capacity
         crowding_penalty = max(0.3, 1.0 - max(0, capacity_ratio - 0.5) * 0.8)
 
         total_pool = config.base_resource_per_agent * pop_size * env_multiplier * crowding_penalty
 
-        # Split into survival and status pools
         status_pool = total_pool * config.status_resource_fraction
         survival_pool = total_pool - status_pool
 
-        # ── Survival resources: distributed somewhat equally ─────────
-        # Everyone gets a base share; intelligence gives a bonus
-        base_share = survival_pool / pop_size * 0.7  # 70% equal
-        competitive_pool = survival_pool * 0.3  # 30% competitive
-
-        # Intelligence-weighted competitive share
-        intel_sum = sum(a.intelligence_proxy for a in living) or 1.0
-
+        # ── Phase 0: Kin trust maintenance ─────────────────────────────
+        # Parents and dependent children build mutual trust through daily
+        # interaction. This seeds cooperation networks organically through
+        # reproduction, solving the chicken-and-egg bootstrap problem.
         for agent in living:
-            # Base survival resources
-            share = base_share + competitive_pool * (agent.intelligence_proxy / intel_sum)
+            for oid in agent.offspring_ids:
+                child = society.get_by_id(oid)
+                if (child and child.alive
+                        and child.age < config.child_dependency_years):
+                    agent.remember(oid, 0.02)
+                    child.remember(agent.id, 0.02)
 
-            # Resource decay — agents consume resources each year
-            agent.current_resources *= 0.5  # retain half from last year
+        # DD06: Sibling trust growth — co-living siblings build mutual trust
+        sibling_trust = config.sibling_trust_growth
+        if sibling_trust > 0:
+            for agent in living:
+                if not agent.offspring_ids:
+                    continue
+                # Gather living dependent children of this parent
+                deps = []
+                for oid in agent.offspring_ids:
+                    child = society.get_by_id(oid)
+                    if (child and child.alive
+                            and child.age < config.child_dependency_years):
+                        deps.append(child)
+                # Each pair of siblings builds trust
+                for i in range(len(deps)):
+                    for j in range(i + 1, len(deps)):
+                        deps[i].remember(deps[j].id, sibling_trust)
+                        deps[j].remember(deps[i].id, sibling_trust)
+
+        # ── Phase 0b: DD16 — Update childhood resource quality ────────
+        # Track parental resources during critical period (ages 0-5)
+        crit_years = getattr(config, 'critical_period_years', 5)
+        if getattr(config, 'developmental_plasticity_enabled', False):
+            for agent in living:
+                if agent.age <= crit_years and not agent.traits_finalized:
+                    parental_res = 0.0
+                    n_parents = 0
+                    for pid in agent.parent_ids:
+                        if pid is not None:
+                            parent = society.get_by_id(pid)
+                            if parent and parent.alive:
+                                parental_res += parent.current_resources
+                                n_parents += 1
+                    if n_parents > 0:
+                        avg_res = parental_res / n_parents
+                        # Running average: blend new observation with existing
+                        quality = min(1.0, avg_res / 10.0)  # normalize: 10+ = 1.0
+                        alpha = 1.0 / max(1, agent.age + 1)
+                        agent.childhood_resource_quality = (
+                            agent.childhood_resource_quality * (1.0 - alpha)
+                            + quality * alpha)
+
+        # ── Phase 1: Decay existing resources ──────────────────────────
+        # DD10: Intelligence-mediated storage efficiency
+        storage_intel_bonus = getattr(config, 'storage_intelligence_bonus', 0.0)
+        storage_cap = getattr(config, 'resource_storage_cap', 20.0)
+        for agent in living:
+            # Smarter agents preserve more (better storage)
+            effective_decay = config.resource_decay_rate
+            if storage_intel_bonus > 0:
+                effective_decay += agent.intelligence_proxy * storage_intel_bonus
+                effective_decay = min(0.9, effective_decay)  # can't keep more than 90%
+            agent.current_resources *= effective_decay
+            # DD10: Storage cap prevents runaway accumulation
+            if storage_cap > 0:
+                agent.current_resources = min(agent.current_resources, storage_cap)
+
+        # ── Phase 2: Distribute survival resources ─────────────────────
+        # Equal floor guarantees subsistence; competitive layer rewards
+        # intelligence, status, experience, wealth, and cooperation networks.
+        # Aggression penalizes production efficiency.
+        per_agent = survival_pool / pop_size
+        base_share = per_agent * config.resource_equal_floor
+        competitive_pool = survival_pool * (1.0 - config.resource_equal_floor)
+
+        # Precompute cooperation network sizes (trusted cooperative allies)
+        network_sizes = {}
+        for a in living:
+            count = 0
+            for other_id, trust in a.reputation_ledger.items():
+                if trust > config.cooperation_trust_threshold:
+                    other = society.get_by_id(other_id)
+                    if (other and other.alive
+                            and other.cooperation_propensity > config.cooperation_min_propensity):
+                        count += 1
+            network_sizes[a.id] = count
+
+        # Competitive weights: multi-factor with aggression penalty
+        # DD08: prestige matters more than dominance for resource acquisition
+        comp_weights = np.zeros(pop_size)
+        for i, a in enumerate(living):
+            intelligence = a.intelligence_proxy * 0.25
+            status = (a.prestige_score * 0.7 + a.dominance_score * 0.3) * 0.25
+            experience = min(a.age, 50) / 50.0 * 0.15
+
+            # Wealth with diminishing returns (prevents runaway accumulation)
+            wealth_raw = min(a.current_resources / 20.0, 1.0)
+            wealth = (wealth_raw ** config.wealth_diminishing_power) * 0.15
+
+            # Cooperation network bonus — cooperative clusters gain advantage
+            network = min(network_sizes[a.id], 5) * config.cooperation_network_bonus
+
+            raw_weight = intelligence + status + experience + wealth + network
+
+            # Aggression production penalty: fighters are less efficient
+            agg_penalty = 1.0 - a.aggression_propensity * config.aggression_production_penalty
+            raw_weight *= agg_penalty
+
+            # DD17: Metabolic condition reduces resource acquisition
+            if "metabolic" in a.active_conditions:
+                raw_weight *= (1.0 - getattr(config, 'metabolic_resource_penalty', 0.15))
+
+            # Cube to amplify differences (stronger than v1's square)
+            comp_weights[i] = max(0.01, raw_weight) ** 3
+
+        comp_total = comp_weights.sum() or 1.0
+
+        for i, agent in enumerate(living):
+            share = base_share + competitive_pool * (comp_weights[i] / comp_total)
             agent.current_resources += share
 
-        # ── Cooperation bonus: mutual aid among trusted allies ───────
-        # Cooperative agents share resources with agents they trust,
-        # creating a fitness advantage for cooperation networks.
+        # ── Phase 3: Child investment costs ────────────────────────────
+        # Parents pay per dependent child per year. Creates mating-resource
+        # inequality link: agents with more children pay more.
+        # Males with paternity uncertainty invest less.
         for agent in living:
-            if agent.cooperation_propensity < 0.3:
-                continue  # low-coop agents don't share
-            # Find trusted allies
+            dependents = 0
+            for oid in agent.offspring_ids:
+                child = society.get_by_id(oid)
+                if child and child.alive and child.age < config.child_dependency_years:
+                    dependents += 1
+            if dependents > 0:
+                cost_per_child = config.child_investment_per_year
+                if agent.sex == Sex.MALE and config.infidelity_enabled:
+                    cost_per_child *= agent.paternity_confidence
+                total_cost = cost_per_child * dependents
+                # Can't spend more than half resources on children
+                actual_cost = min(total_cost, agent.current_resources * 0.5)
+                agent.current_resources = max(0.0, agent.current_resources - actual_cost)
+
+        # ── Phase 4: Cooperation sharing (amplified mutual aid) ────────
+        # Cooperative agents share resources with trusted allies.
+        # DD11: Ostracized agents (low reputation) excluded from sharing.
+        total_transfers = 0.0
+        ostracism_enabled = getattr(config, 'ostracism_enabled', False)
+        ostracism_thresh = getattr(config, 'ostracism_reputation_threshold', 0.25)
+        # DD14: In-group sharing preferences
+        factions_active = getattr(config, 'factions_enabled', False)
+        in_group_trust_red = getattr(config, 'in_group_trust_threshold_reduction', 0.0)
+        in_group_bonus = getattr(config, 'in_group_sharing_bonus', 0.0)
+        for agent in living:
+            if agent.cooperation_propensity < config.cooperation_min_propensity:
+                continue
+            # DD11: Ostracized agents can't participate in sharing
+            if ostracism_enabled and agent.reputation < ostracism_thresh:
+                continue
             allies = []
             for other_id, trust in agent.reputation_ledger.items():
-                if trust > 0.6:
-                    other = society.get_by_id(other_id)
-                    if other and other.alive and other.cooperation_propensity > 0.3:
-                        allies.append(other)
-            if allies:
-                # Share a small fraction of resources with needy allies
-                share_rate = agent.cooperation_propensity * 0.05
-                share_amount = agent.current_resources * share_rate
-                if share_amount > 0.5:  # only share if you have enough
-                    per_ally = share_amount / len(allies)
-                    agent.current_resources -= share_amount
-                    for ally in allies:
-                        ally.current_resources += per_ally
-                        # Strengthen mutual trust
-                        agent.remember(ally.id, 0.03)
-                        ally.remember(agent.id, 0.03)
+                other = society.get_by_id(other_id)
+                if not (other and other.alive
+                        and other.cooperation_propensity > config.cooperation_min_propensity):
+                    continue
+                # DD14: Lower trust threshold for same-faction members
+                eff_thresh = config.cooperation_trust_threshold
+                if (factions_active and agent.faction_id is not None
+                        and other.faction_id == agent.faction_id):
+                    eff_thresh -= in_group_trust_red
+                if trust > eff_thresh:
+                    allies.append(other)
+            if not allies:
+                continue
 
-        # ── Status resources: winner-take-more ───────────────────────
-        # Status-driven agents compete; top agents get disproportionate share
-        # Cooperation also contributes to status (social capital)
-        status_scores = []
+            share_rate = agent.cooperation_propensity * config.cooperation_sharing_rate
+            # DD15: Empathy extends sharing to non-kin (broader altruism radius)
+            share_rate *= (1.0 + agent.empathy_capacity * 0.15)
+            # DD14: Boost sharing rate for agents with in-group allies
+            if factions_active and in_group_bonus > 0 and agent.faction_id is not None:
+                n_in = sum(1 for a in allies if a.faction_id == agent.faction_id)
+                if n_in > 0:
+                    share_rate *= (1.0 + in_group_bonus * n_in / len(allies))
+            share_amount = agent.current_resources * share_rate
+            if share_amount > 0.5:  # only share if meaningful
+                per_ally = share_amount / len(allies)
+                agent.current_resources -= share_amount
+                total_transfers += share_amount
+                for ally in allies:
+                    ally.current_resources += per_ally
+                    # Sharing strengthens trust (amplified from v1's 0.03)
+                    # DD15: Emotional intelligence speeds trust formation
+                    ei_trust = 0.05 * (1.0 + agent.emotional_intelligence * 0.3)
+                    agent.remember(ally.id, ei_trust)
+                    ally.remember(agent.id, 0.05)
+
+        if total_transfers > 0:
+            events.append({
+                "type": "resource_transfers",
+                "year": society.year,
+                "agent_ids": [],
+                "description": f"Cooperation: {total_transfers:.1f} resources shared",
+            })
+
+        # ── Phase 5: Status distribution (DD08: prestige + dominance) ──
+        # Prestige: earned through cooperation, intelligence, networks, parenting
+        # Dominance: earned through status_drive, aggression, existing dominance
+        prestige_scores = []
+        dominance_scores = []
         for a in living:
-            score = (a.status_drive * 0.35 + a.current_status * 0.25 +
-                     a.cooperation_propensity * 0.15 +
-                     a.aggression_propensity * 0.1 + a.intelligence_proxy * 0.15)
-            status_scores.append((a, score))
+            p_score = (a.cooperation_propensity * 0.30
+                       + a.intelligence_proxy * 0.20
+                       + a.prestige_score * 0.20
+                       + min(network_sizes[a.id], 5) * 0.04
+                       + a.reputation * 0.10)
+            d_score = (a.status_drive * 0.20
+                       + a.aggression_propensity * 0.15
+                       + a.dominance_score * 0.25
+                       + a.health * 0.10
+                       + a.risk_tolerance * 0.10
+                       + a.dominance_drive * 0.20)   # DD15
+            prestige_scores.append((a, p_score))
+            dominance_scores.append((a, d_score))
 
-        total_score = sum(s for _, s in status_scores) or 1.0
+        # Prestige pool (larger share — cooperation is social capital)
+        prestige_pool = status_pool * 0.6
+        dominance_pool = status_pool * 0.4
 
-        for agent, score in status_scores:
-            share = status_pool * (score / total_score)
-            agent.current_status = max(0.0, min(1.0,
-                agent.current_status * 0.7 + (share / (status_pool / pop_size + 0.01)) * 0.3
-            ))
+        total_p = sum(s for _, s in prestige_scores) or 1.0
+        total_d = sum(s for _, s in dominance_scores) or 1.0
 
-        # Elite privilege multiplier
+        for i, agent in enumerate(living):
+            _, p_score = prestige_scores[i]
+            _, d_score = dominance_scores[i]
+
+            p_share = prestige_pool * (p_score / total_p)
+            d_share = dominance_pool * (d_score / total_d)
+
+            p_norm = p_share / (prestige_pool / pop_size + 0.01)
+            d_norm = d_share / (dominance_pool / pop_size + 0.01)
+
+            # DD08: prestige decays slower than dominance
+            p_decay = 1.0 - config.prestige_decay_rate
+            d_decay = 1.0 - config.dominance_decay_rate
+
+            agent.prestige_score = max(0.0, min(1.0,
+                agent.prestige_score * p_decay * 0.7 + p_norm * 0.3))
+            agent.dominance_score = max(0.0, min(1.0,
+                agent.dominance_score * d_decay * 0.7 + d_norm * 0.3))
+
+        # ── Phase 6: Elite privilege (status compounding) ──────────────
+        # Top-status agents get additive bonus, capped to prevent runaway
         if config.elite_privilege_multiplier > 1.0:
             threshold = np.percentile(
-                [a.current_status for a in living], 90
+                [a.prestige_score + a.dominance_score for a in living], 90
             )
+            bonus_cap = per_agent * 2.0
             for a in living:
-                if a.current_status >= threshold:
-                    a.current_resources *= config.elite_privilege_multiplier
+                if (a.prestige_score + a.dominance_score) >= threshold:
+                    bonus = min(bonus_cap,
+                                a.current_resources
+                                * (config.elite_privilege_multiplier - 1.0))
+                    a.current_resources += bonus
+
+        # ── Phase 7: Taxation / redistribution ─────────────────────────
+        # Gated by law_strength: only societies with governance can tax
+        if config.tax_rate > 0 and config.law_strength > 0:
+            effective_tax = config.tax_rate * config.law_strength
+            resource_values = sorted(
+                [(a, a.current_resources) for a in living],
+                key=lambda x: x[1], reverse=True)
+
+            # Tax from top quartile
+            top_n = max(1, pop_size // 4)
+            tax_collected = 0.0
+            for agent, res in resource_values[:top_n]:
+                tax = res * effective_tax
+                agent.current_resources -= tax
+                tax_collected += tax
+
+            # Redistribute to bottom quartile
+            if tax_collected > 0:
+                bottom_n = max(1, pop_size // 4)
+                per_recipient = tax_collected / bottom_n
+                for agent, _ in resource_values[-bottom_n:]:
+                    agent.current_resources += per_recipient
+
+                events.append({
+                    "type": "taxation",
+                    "year": society.year,
+                    "agent_ids": [],
+                    "description": (f"Tax: {tax_collected:.1f} collected, "
+                                    f"redistributed to {bottom_n} agents"),
+                })
+
+        # ── DD12: Status signaling phase ──────────────────────────────
+        # Agents with surplus resources can invest in public display (honest
+        # signal) or attempt dominance bluffs (dishonest signal).
+        signaling_enabled = getattr(config, 'signaling_enabled', False)
+        bluff_attempts = 0
+        bluff_detections = 0
+        display_events = 0
+
+        if signaling_enabled:
+            display_frac = config.resource_display_fraction
+            display_prestige = config.resource_display_prestige_boost
+            bluff_prob = config.bluff_base_probability
+            bluff_detect_base = config.bluff_detection_base
+            bluff_rep_loss = config.bluff_caught_reputation_loss
+
+            for a in living:
+                # Honest signal: resource display (costs resources, gains prestige)
+                if a.current_resources > 5.0 and a.cooperation_propensity > 0.3:
+                    display_cost = a.current_resources * display_frac
+                    a.current_resources -= display_cost
+                    a.prestige_score = min(1.0,
+                        a.prestige_score + display_prestige * (display_cost / 3.0))
+                    display_events += 1
+
+                # Dishonest signal: dominance bluff (low-quality agents try to
+                # appear tougher; detected by intelligent observers)
+                if (a.risk_tolerance > 0.5
+                        and a.dominance_score < 0.3
+                        and a.aggression_propensity > 0.4
+                        and rng.random() < bluff_prob):
+                    bluff_attempts += 1
+                    # Detection: nearby intelligent agents may see through it
+                    detected = False
+                    for observer in rng.choice(living, size=min(3, len(living)),
+                                               replace=False):
+                        if observer.id == a.id:
+                            continue
+                        # DD15: Emotional intelligence boosts bluff detection
+                        detect_p = (bluff_detect_base
+                                    * observer.intelligence_proxy
+                                    * (1.0 + observer.emotional_intelligence * 0.3)
+                                    * (1.0 + (0.5 - observer.trust_of(a.id))))
+                        if rng.random() < detect_p:
+                            detected = True
+                            observer.remember(a.id, -0.1)
+                            break
+
+                    if detected:
+                        bluff_detections += 1
+                        a.reputation = max(0.0, a.reputation - bluff_rep_loss)
+                        a.prestige_score = max(0.0, a.prestige_score - 0.05)
+                    else:
+                        # Successful bluff: temporary dominance boost
+                        a.dominance_score = min(1.0, a.dominance_score + 0.05)
+
+            if bluff_attempts > 0:
+                events.append({
+                    "type": "signaling_summary",
+                    "year": society.year,
+                    "agent_ids": [],
+                    "description": (f"Signals: {display_events} displays, "
+                                    f"{bluff_attempts} bluffs, "
+                                    f"{bluff_detections} detected"),
+                })
+
+        # ── Phase 8: Subsistence floor ─────────────────────────────────
+        # Prevents death spirals: even the poorest get minimum resources
+        for agent in living:
+            if agent.current_resources < config.subsistence_floor:
+                agent.current_resources = config.subsistence_floor
 
         return events

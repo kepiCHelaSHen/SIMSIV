@@ -1,6 +1,14 @@
 """
-Conflict engine — models violence from jealousy, resource pressure,
-status challenges, retaliation, and random aggression.
+Conflict engine — models violence, deterrence, and dominance hierarchy.
+
+Deep Dive 03 implementation:
+- Network deterrence (allies suppress initiation and targeting)
+- Flee response (low risk_tolerance targets can avoid combat)
+- Scaled consequences (power differential affects cost magnitude)
+- Subordination (recent losers enter cooldown, reducing future conflict)
+- Bystander reputation updates (witnesses adjust trust toward aggressor)
+- Resource advantage in combat resolution
+- Proper violence death event logging
 """
 
 from __future__ import annotations
@@ -15,38 +23,69 @@ class ConflictEngine:
         if len(living) < 2:
             return events
 
-        conflicts = 0
+        # Phase 0: Decay conflict cooldowns (subordination wears off)
+        for agent in living:
+            if agent.conflict_cooldown > 0:
+                agent.conflict_cooldown -= 1
+
+        # Precompute ally counts for network deterrence
+        ally_counts = {}
+        for a in living:
+            count = sum(1 for t in a.reputation_ledger.values() if t > 0.5)
+            ally_counts[a.id] = count
 
         for agent in living:
-            if not agent.alive:  # might have died earlier this tick
+            if not agent.alive:
                 continue
 
             # ── Calculate conflict probability ───────────────────────
-            base_p = config.conflict_base_probability * agent.aggression_propensity
+            # DD15: Impulse control gates aggression→conflict translation
+            effective_aggression = agent.aggression_propensity * max(0.3, 1.0 - agent.impulse_control * 0.6)
+            base_p = config.conflict_base_probability * effective_aggression
 
-            # Jealousy trigger: bonded agent whose partner is attractive to others
+            # Jealousy trigger
             jealousy_boost = 0.0
-            if agent.pair_bond_id is not None and agent.sex == Sex.MALE:
-                partner = society.get_by_id(agent.pair_bond_id)
+            if agent.is_bonded and agent.sex == Sex.MALE:
+                partner = society.get_by_id(agent.primary_partner_id)
                 if partner and partner.alive:
                     if partner.attractiveness_base > 0.6:
-                        jealousy_boost = (agent.jealousy_sensitivity *
-                                          config.jealousy_conflict_multiplier * 0.1)
+                        jealousy_boost = (agent.jealousy_sensitivity
+                                          * config.jealousy_conflict_multiplier * 0.1)
 
-            # Resource pressure: low resources increase aggression
+            # Resource pressure — DD15: mental_health_baseline moderates stress response
             resource_stress = max(0, 1.0 - agent.current_resources / 5.0) * 0.1
+            resource_stress *= max(0.3, 1.0 - agent.mental_health_baseline * 0.5)
 
-            # Status drive: ambitious agents challenge more
+            # Status drive
             status_drive_boost = agent.status_drive * 0.05
 
             total_p = base_p + jealousy_boost + resource_stress + status_drive_boost
 
-            # Institutional suppression — law reduces conflict probability
-            suppression = config.law_strength * config.violence_punishment_strength
+            # DD10: Seasonal conflict boost during lean cycle phase
+            if getattr(config, 'seasonal_cycle_enabled', False):
+                phase = society.environment.seasonal_phase
+                if phase < 0:  # lean phase
+                    boost = abs(phase) * getattr(config, 'seasonal_conflict_boost', 0.2)
+                    total_p *= (1.0 + boost)
+
+            # Institutional suppression
+            suppression = config.law_strength * (
+                0.5 + config.violence_punishment_strength * 0.5)
             total_p *= (1.0 - suppression * 0.8)
 
             # Cooperation dampens aggression
             total_p *= (1.0 - agent.cooperation_propensity * 0.3)
+
+            # DD15: Empathy reduces conflict initiation
+            total_p *= max(0.5, 1.0 - agent.empathy_capacity * 0.3)
+
+            # Network deterrence: agents embedded in dense networks fight less
+            own_allies = ally_counts.get(agent.id, 0)
+            total_p *= 1.0 / (1.0 + own_allies * 0.05)
+
+            # Subordination: recent losers are less aggressive
+            if agent.conflict_cooldown > 0:
+                total_p *= config.subordination_dampening
 
             total_p = max(0.0, min(0.5, total_p))
 
@@ -54,23 +93,83 @@ class ConflictEngine:
                 continue
 
             # ── Select target ────────────────────────────────────────
-            target = self._select_target(agent, living, society, rng)
+            target = self._select_target(
+                agent, living, society, config, rng, ally_counts)
             if target is None or not target.alive:
                 continue
 
+            # ── Flee check: target may avoid combat ──────────────────
+            # DD15: Pain tolerance raises effective risk tolerance for flee check
+            effective_risk = target.risk_tolerance + target.pain_tolerance * 0.15
+            # DD17: Degenerative condition makes flee easier
+            flee_thresh = config.flee_threshold
+            if "degenerative" in target.active_conditions:
+                flee_thresh += getattr(config, 'degenerative_flee_threshold_boost', 0.15)
+            if effective_risk < flee_thresh:
+                flee_chance = (1.0 - effective_risk) * 0.5
+                if rng.random() < flee_chance:
+                    # Target flees — small dominance shift, no violence
+                    agent.dominance_score = min(1.0,
+                        agent.dominance_score + 0.02)
+                    target.dominance_score = max(0.0,
+                        target.dominance_score - 0.02)
+                    events.append({
+                        "type": "flee",
+                        "year": society.year,
+                        "agent_ids": [agent.id, target.id],
+                        "description": (f"Agent {target.id} fled from "
+                                        f"{agent.id}"),
+                    })
+                    continue
+
+            # ── DD11: Coalition defense — target's allies may intervene ──
+            if getattr(config, 'coalition_defense_enabled', False):
+                defended = False
+                trust_thresh = config.coalition_defense_trust_threshold
+                for other in living:
+                    if (other.id != agent.id and other.id != target.id
+                            and other.alive
+                            and other.trust_of(target.id) > trust_thresh
+                            and other.cooperation_propensity > 0.4
+                            and other.health > 0.3):
+                        defense_p = (config.coalition_defense_probability
+                                     * other.trust_of(target.id)
+                                     * other.cooperation_propensity)
+                        if rng.random() < defense_p:
+                            # Ally intervenes — aggressor deterred
+                            agent.dominance_score = max(0.0,
+                                agent.dominance_score - 0.03)
+                            other.prestige_score = min(1.0,
+                                other.prestige_score + 0.03)
+                            other.remember(target.id, 0.05)
+                            target.remember(other.id, 0.05)
+                            agent.remember(other.id, -0.1)
+                            events.append({
+                                "type": "coalition_defense",
+                                "year": society.year,
+                                "agent_ids": [other.id, target.id, agent.id],
+                                "description": (f"Agent {other.id} defended "
+                                                f"{target.id} from {agent.id}"),
+                            })
+                            defended = True
+                            break  # one defender is enough
+                if defended:
+                    continue  # conflict averted
+
             # ── Resolve conflict ─────────────────────────────────────
-            event = self._resolve_conflict(agent, target, society, config, rng)
-            if event:
-                events.append(event)
-                conflicts += 1
+            conflict_events = self._resolve_conflict(
+                agent, target, society, config, rng, living, ally_counts)
+            events.extend(conflict_events)
 
         return events
 
     def _select_target(self, aggressor: Agent, living: list[Agent],
-                       society, rng: np.random.Generator) -> Agent | None:
-        """Pick a conflict target. Biased toward rivals and low-trust agents."""
+                       society, config, rng: np.random.Generator,
+                       ally_counts: dict) -> Agent | None:
+        """Pick a conflict target with network deterrence."""
         candidates = [a for a in living
-                      if a.id != aggressor.id and a.alive and a.sex == aggressor.sex]
+                      if a.id != aggressor.id and a.alive
+                      and a.sex == aggressor.sex]
         if not candidates:
             return None
 
@@ -81,15 +180,39 @@ class ConflictEngine:
             weights[i] *= (1.5 - trust)
 
             # Rival for same mate = high priority
-            if (aggressor.pair_bond_id is not None and
-                c.pair_bond_id is not None and
-                aggressor.pair_bond_id == c.pair_bond_id):
+            if (aggressor.is_bonded and c.is_bonded
+                    and set(aggressor.partner_ids) & set(c.partner_ids)):
                 weights[i] *= 3.0
 
-            # Similar status = status challenge
-            status_diff = abs(aggressor.current_status - c.current_status)
-            if status_diff < 0.2:
+            # DD08: Similar dominance = status challenge
+            dom_diff = abs(aggressor.dominance_score - c.dominance_score)
+            if dom_diff < 0.2:
                 weights[i] *= 1.5
+
+            # DD08: High-dominance targets are feared (deterrence)
+            weights[i] *= 1.0 / (1.0 + c.dominance_score
+                                  * config.dominance_deterrence_factor)
+
+            # Resource envy: richer targets are more tempting
+            if c.current_resources > aggressor.current_resources * 1.5:
+                weights[i] *= 1.3
+
+            # Network deterrence: well-connected agents are harder targets
+            target_allies = ally_counts.get(c.id, 0)
+            weights[i] *= 1.0 / (1.0 + target_allies
+                                  * config.network_deterrence_factor)
+
+            # Strength assessment: cowardly aggressors avoid strong targets
+            if aggressor.risk_tolerance < 0.4:
+                if c.health > aggressor.health * 1.2:
+                    weights[i] *= 0.5
+
+            # DD14: Out-group targeting preference
+            if (getattr(config, 'factions_enabled', False)
+                    and aggressor.faction_id is not None
+                    and c.faction_id is not None
+                    and aggressor.faction_id != c.faction_id):
+                weights[i] *= getattr(config, 'out_group_conflict_multiplier', 1.0)
 
         total = weights.sum()
         if total <= 0:
@@ -99,17 +222,45 @@ class ConflictEngine:
         return candidates[rng.choice(len(candidates), p=weights)]
 
     def _resolve_conflict(self, aggressor: Agent, target: Agent,
-                          society, config, rng) -> dict | None:
-        """Resolve a conflict. Returns event dict."""
-        # Combat power: aggression + status + health + risk tolerance
-        agg_power = (aggressor.aggression_propensity * 0.3 +
-                     aggressor.current_status * 0.25 +
-                     aggressor.health * 0.25 +
-                     aggressor.risk_tolerance * 0.2)
-        tgt_power = (target.aggression_propensity * 0.3 +
-                     target.current_status * 0.25 +
-                     target.health * 0.25 +
-                     target.risk_tolerance * 0.2)
+                          society, config, rng,
+                          living: list[Agent],
+                          ally_counts: dict) -> list[dict]:
+        """Resolve a conflict with scaled consequences."""
+        events = []
+
+        # DD08: Combat power — dominance matters more than prestige in combat
+        resource_edge_a = min(aggressor.current_resources / 20.0, 1.0)
+        resource_edge_t = min(target.current_resources / 20.0, 1.0)
+
+        dom_weight = config.dominance_weight_in_combat
+        pres_weight = 1.0 - dom_weight
+        status_a = aggressor.dominance_score * dom_weight + aggressor.prestige_score * pres_weight
+        status_t = target.dominance_score * dom_weight + target.prestige_score * pres_weight
+
+        agg_power = (aggressor.aggression_propensity * 0.20
+                     + status_a * 0.15
+                     + aggressor.health * 0.20
+                     + aggressor.risk_tolerance * 0.10
+                     + resource_edge_a * config.combat_resource_factor
+                     + aggressor.intelligence_proxy * 0.05
+                     + aggressor.physical_robustness * 0.10   # DD15
+                     + aggressor.dominance_drive * 0.10       # DD15
+                     + aggressor.pain_tolerance * 0.05)       # DD15
+        tgt_power = (target.aggression_propensity * 0.20
+                     + status_t * 0.15
+                     + target.health * 0.20
+                     + target.risk_tolerance * 0.10
+                     + resource_edge_t * config.combat_resource_factor
+                     + target.intelligence_proxy * 0.05
+                     + target.physical_robustness * 0.10      # DD15
+                     + target.dominance_drive * 0.10          # DD15
+                     + target.pain_tolerance * 0.05)          # DD15
+
+        # Small ally bonus (allies don't fight but boost confidence)
+        agg_allies = min(ally_counts.get(aggressor.id, 0), 3) * 0.03
+        tgt_allies = min(ally_counts.get(target.id, 0), 3) * 0.03
+        agg_power += agg_allies
+        tgt_power += tgt_allies
 
         # Probabilistic outcome
         agg_chance = agg_power / (agg_power + tgt_power + 0.01)
@@ -118,65 +269,119 @@ class ConflictEngine:
         winner = aggressor if aggressor_wins else target
         loser = target if aggressor_wins else aggressor
 
-        # ── Costs to loser ───────────────────────────────────────────
-        loser.health = max(0.0, loser.health - config.violence_cost_health)
-        resource_loss = loser.current_resources * config.violence_cost_resources
-        loser.current_resources = max(0, loser.current_resources - resource_loss)
+        # Power differential for scaled consequences
+        power_diff = abs(agg_power - tgt_power) / (agg_power + tgt_power + 0.01)
+        # scale_factor: 0.7 for close fights, up to 1.5 for stomps
+        scale_factor = 0.7 + power_diff * 1.6
 
-        # Winner takes some resources and gains status
-        winner.current_resources += resource_loss * 0.5
-        winner.current_status = min(1.0, winner.current_status + 0.05)
-        loser.current_status = max(0.0, loser.current_status - 0.05)
+        # ── Costs to loser ───────────────────────────────────────────
+        loser_health_cost = config.violence_cost_health * scale_factor
+        # DD15: Physical robustness absorbs damage
+        loser_health_cost *= max(0.5, 1.0 - loser.physical_robustness * 0.4)
+        loser.health = max(0.0, loser.health - loser_health_cost)
+        resource_loss = loser.current_resources * config.violence_cost_resources * scale_factor
+        loser.current_resources = max(0.0, loser.current_resources - resource_loss)
+
+        # Winner takes some resources and gains status (scaled)
+        # DD05: Property rights reduce looting
+        loot_fraction = 0.5 * (1.0 - getattr(config, 'property_rights_strength', 0.0))
+        winner.current_resources += resource_loss * loot_fraction
+
+        # DD08: Victory/defeat shifts dominance (not prestige)
+        dom_shift = config.winner_status_scale * (1.0 + power_diff)
+        winner.dominance_score = min(1.0, winner.dominance_score + dom_shift)
+        loser.dominance_score = max(0.0,
+            loser.dominance_score - config.loser_status_scale * (1.0 + power_diff))
+        # Aggressor loses prestige (violence is socially costly even if you win)
+        aggressor.prestige_score = max(0.0, aggressor.prestige_score - 0.02)
 
         # Both suffer minor health cost (fighting is costly)
         winner.health = max(0.0, winner.health - config.violence_cost_health * 0.3)
 
-        # Death check for loser
+        # ── Subordination: loser enters cooldown ─────────────────────
+        loser.conflict_cooldown = max(
+            loser.conflict_cooldown, config.subordination_cooldown_years)
+
+        # ── Death check for loser ────────────────────────────────────
         death = False
-        if rng.random() < config.violence_death_chance:
+        # Death chance scales with power differential (stomps are more lethal)
+        effective_death_chance = config.violence_death_chance * (0.5 + power_diff)
+        if rng.random() < effective_death_chance:
             loser.die("violence", society.year)
             death = True
-            # Break pair bond
-            if loser.pair_bond_id is not None:
-                partner = society.get_by_id(loser.pair_bond_id)
-                if partner:
-                    partner.pair_bond_id = None
-                    partner.pair_bond_strength = 0.0
+            # Log violence death as proper death event for metrics
+            events.append({
+                "type": "death",
+                "year": society.year,
+                "agent_ids": [loser.id],
+                "description": (f"Agent {loser.id} died: violence "
+                                f"(age {loser.age})"),
+            })
 
         # ── Reputation updates ───────────────────────────────────────
-        # Both fighters' public reputation suffers (violence is socially costly)
+        # Aggressor reputation always suffers (violence is socially costly)
         aggressor.reputation = max(0.0, aggressor.reputation - 0.05)
+        # Winner gets a small reputation bump if they won decisively
+        if aggressor_wins and power_diff > 0.2:
+            winner.reputation = min(1.0, winner.reputation + 0.02)
+
         aggressor.remember(target.id, -0.2)
         target.remember(aggressor.id, -0.3)
 
-        # ── Pair bond destabilization ────────────────────────────────
-        # Violence threatens pair bonds — partner may leave
-        for fighter in [aggressor, target]:
-            if fighter.alive and fighter.pair_bond_id is not None:
-                partner = society.get_by_id(fighter.pair_bond_id)
-                if partner and partner.alive:
-                    # Partner's tolerance depends on fighter's aggression history
-                    leave_chance = fighter.aggression_propensity * 0.15
-                    if rng.random() < leave_chance:
-                        fighter.pair_bond_id = None
-                        fighter.pair_bond_strength = 0.0
-                        partner.pair_bond_id = None
-                        partner.pair_bond_strength = 0.0
-                        partner.remember(fighter.id, -0.25)
+        # ── Bystander trust updates ──────────────────────────────────
+        # Nearby agents witness the violence and judge the aggressor
+        if config.bystander_trust_update and len(living) > 2:
+            n_bystanders = min(config.bystander_count, len(living) - 2)
+            bystander_pool = [a for a in living
+                              if a.id != aggressor.id and a.id != target.id
+                              and a.alive]
+            if bystander_pool and n_bystanders > 0:
+                bystanders = rng.choice(
+                    bystander_pool,
+                    size=min(n_bystanders, len(bystander_pool)),
+                    replace=False)
+                for bystander in bystanders:
+                    # Witnesses distrust the aggressor
+                    bystander.remember(aggressor.id, -0.08)
+                    # If bystander is allied with target, stronger reaction
+                    if bystander.trust_of(target.id) > 0.6:
+                        bystander.remember(aggressor.id, -0.1)
 
-        # Institutional punishment for aggressor
+        # ── Pair bond destabilization ────────────────────────────────
+        for fighter in [aggressor, target]:
+            if fighter.alive and fighter.is_bonded:
+                for pid in list(fighter.partner_ids):
+                    partner = society.get_by_id(pid)
+                    if partner and partner.alive:
+                        leave_chance = fighter.aggression_propensity * 0.15
+                        if rng.random() < leave_chance:
+                            fighter.remove_bond(pid)
+                            partner.remove_bond(fighter.id)
+                            partner.remember(fighter.id, -0.25)
+                            break
+
+        # ── Institutional punishment ─────────────────────────────────
         if config.violence_punishment_strength > 0:
             penalty = config.violence_punishment_strength * 0.1
-            aggressor.reputation = max(0, aggressor.reputation - penalty)
-            aggressor.current_resources = max(0,
+            aggressor.reputation = max(0.0, aggressor.reputation - penalty)
+            aggressor.current_resources = max(0.0,
                 aggressor.current_resources - penalty * 5)
+            events.append({
+                "type": "punishment",
+                "year": society.year,
+                "agent_ids": [aggressor.id],
+                "description": (f"Agent {aggressor.id} punished: "
+                                f"rep -{penalty:.2f}, "
+                                f"res -{penalty * 5:.1f}"),
+            })
 
-        return {
+        events.append({
             "type": "conflict",
             "year": society.year,
             "agent_ids": [aggressor.id, target.id],
             "description": (f"Conflict: {aggressor.id} vs {target.id} → "
-                            f"{'winner' if aggressor_wins else 'loser'}: {aggressor.id}"
+                            f"{'winner' if aggressor_wins else 'loser'}: "
+                            f"{aggressor.id}"
                             f"{' (DEATH)' if death else ''}"),
             "outcome": {
                 "aggressor": aggressor.id,
@@ -184,5 +389,46 @@ class ConflictEngine:
                 "winner": winner.id,
                 "loser": loser.id,
                 "death": death,
+                "power_diff": round(power_diff, 3),
             },
-        }
+        })
+
+        # ── DD11: Third-party punishment ────────────────────────────
+        # High-cooperation agents who trust the target punish the aggressor
+        if getattr(config, 'third_party_punishment_enabled', False):
+            willing_thresh = config.punishment_willingness_threshold
+            for punisher in living:
+                if (punisher.id != aggressor.id
+                        and punisher.id != target.id
+                        and punisher.alive
+                        and punisher.cooperation_propensity >= willing_thresh
+                        and punisher.trust_of(target.id) > 0.5
+                        and punisher.trust_of(aggressor.id) < 0.5):
+                    # Probability based on cooperation and distrust of aggressor
+                    punish_p = (punisher.cooperation_propensity - 0.4) * 0.3
+                    if rng.random() < punish_p:
+                        # Punisher pays a cost
+                        cost = punisher.current_resources * config.punishment_cost_fraction
+                        punisher.current_resources = max(0, punisher.current_resources - cost)
+                        # Aggressor pays a penalty
+                        penalty = config.punishment_severity
+                        aggressor.current_resources = max(0,
+                            aggressor.current_resources - penalty * 5)
+                        aggressor.prestige_score = max(0.0,
+                            aggressor.prestige_score - penalty)
+                        # Trust updates
+                        punisher.remember(aggressor.id, -0.15)
+                        aggressor.remember(punisher.id, -0.1)
+                        # Punisher gains prestige
+                        punisher.prestige_score = min(1.0,
+                            punisher.prestige_score + 0.02)
+                        events.append({
+                            "type": "third_party_punishment",
+                            "year": society.year,
+                            "agent_ids": [punisher.id, aggressor.id],
+                            "description": (f"Agent {punisher.id} punished "
+                                            f"{aggressor.id} (cost={cost:.1f})"),
+                        })
+                        break  # one punisher per conflict
+
+        return events

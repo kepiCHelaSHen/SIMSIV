@@ -28,7 +28,7 @@ Name:       SIMSIV
 Full name:  Simulation of Intersecting Social and Institutional Variables
 Location:   D:\EXPERIMENTS\SIM\
 Language:   Python 3.11+
-Status:     PRE-SKELETON — Design phase complete, implementation not yet started
+Status:     PHASE C COMPLETE — All 17 deep dives done (DD01-DD17)
 
 Purpose:
   Model how human social structures may emerge from first-principles interactions
@@ -52,15 +52,28 @@ CONFIRMED DESIGN DECISIONS
 
 --- AGENT MODEL ---
 
-  Heritable traits (parent → offspring blend + Gaussian noise σ=0.05):
-    aggression_propensity      float [0.0-1.0]  tendency toward conflict
-    cooperation_propensity     float [0.0-1.0]  tendency toward alliance
-    attractiveness_base        float [0.0-1.0]  baseline physical mate value
-    status_drive               float [0.0-1.0]  motivation to seek dominance
-    risk_tolerance             float [0.0-1.0]  willingness to take risks
-    jealousy_sensitivity       float [0.0-1.0]  trigger threshold for jealousy
-    fertility_base             float [0.0-1.0]  baseline reproductive capacity
-    intelligence_proxy         float [0.0-1.0]  resource acquisition efficiency
+  Heritable traits (21 total, h²-weighted inheritance + mutation σ=0.05):
+    aggression_propensity      float [0.0-1.0]  h²=0.44  tendency toward conflict
+    cooperation_propensity     float [0.0-1.0]  h²=0.40  tendency toward alliance
+    attractiveness_base        float [0.0-1.0]  h²=0.50  baseline physical mate value
+    status_drive               float [0.0-1.0]  h²=0.50  motivation to seek dominance
+    risk_tolerance             float [0.0-1.0]  h²=0.48  willingness to take risks
+    jealousy_sensitivity       float [0.0-1.0]  h²=0.45  trigger threshold for jealousy
+    fertility_base             float [0.0-1.0]  h²=0.50  baseline reproductive capacity
+    intelligence_proxy         float [0.0-1.0]  h²=0.65  resource acquisition efficiency
+    longevity_genes            float [0.0-1.0]  h²=0.25  lifespan extension (DD15)
+    disease_resistance         float [0.0-1.0]  h²=0.40  epidemic resistance (DD15)
+    physical_robustness        float [0.0-1.0]  h²=0.50  combat damage absorption (DD15)
+    pain_tolerance             float [0.0-1.0]  h²=0.45  flee threshold modifier (DD15)
+    mental_health_baseline     float [0.0-1.0]  h²=0.40  stress resilience (DD15)
+    emotional_intelligence     float [0.0-1.0]  h²=0.40  trust/gossip effectiveness (DD15)
+    impulse_control            float [0.0-1.0]  h²=0.50  aggression→action gate (DD15)
+    novelty_seeking            float [0.0-1.0]  h²=0.40  exploration tendency (DD15)
+    empathy_capacity           float [0.0-1.0]  h²=0.35  altruism radius (DD15)
+    conformity_bias            float [0.0-1.0]  h²=0.35  institutional adoption (DD15)
+    dominance_drive            float [0.0-1.0]  h²=0.50  dominance acquisition (DD15)
+    maternal_investment        float [0.0-1.0]  h²=0.35  quality-quantity tradeoff (DD15)
+    sexual_maturation_rate     float [0.0-1.0]  h²=0.60  age at first reproduction (DD15)
 
   Non-heritable traits (earned/contextual, reset or built each lifecycle):
     social_trust               float [0.0-1.0]  generalized trust in others
@@ -99,35 +112,64 @@ CONFIRMED DESIGN DECISIONS
 
 --- RESOURCE MODEL ---
   Dimensionality:          Two-dimensional (survival_resources + status_resources)
-  Acquisition:             Status + intelligence scaled, env abundance modulated
+  Acquisition:             8-phase engine: kin trust → decay → distribute → child invest →
+                           share → status → elite → tax → floor
+  Competitive weights:     Cubed (intelligence + status + experience + wealth^0.7 + network)
+                           * (1 - aggression * penalty)
+  Equal floor:             25% of survival pool distributed equally
+  Cooperation networks:    Kin trust bootstraps networks, 0.05/ally competitive bonus
+  Aggression penalty:      0.3 multiplicative penalty on competitive weight
+  Child investment:        0.5 resources/child/year, scaled by paternity confidence
   Inheritance:             Configurable (default: equal split to children)
-  Ceiling:                 No hard cap in v1 (soft diminishing returns)
-  Redistribution:          Configurable taxation parameter (default: off)
-  Deep dive:               Resources = Phase B Sprint 2 priority
+  Ceiling:                 Soft — wealth diminishing returns (power 0.7) + elite cap
+  Redistribution:          Configurable taxation (top quartile → bottom quartile, gated by law_strength)
+  Subsistence floor:       1.0 minimum resources (prevents death spirals)
+  Scarcity:                Configurable severity (default 0.6, was hardcoded 0.4)
+  Deep dive:               DD02 COMPLETE — Gini 0.237 → 0.335
 
 --- CONFLICT MODEL ---
-  Default triggers:        Jealousy, resource pressure, status challenge,
-                           retaliation memory, random stochastic
-  Outcome resolution:      Probabilistic weighted by aggression + status
-  Costs:                   Configurable — resources, status, health, death risk
-  Institutional suppression: law_strength parameter modulates probability
-  Deep dive:               Conflict = Phase B Sprint 3 priority
+  Triggers:                Jealousy, resource pressure, status drive, random baseline
+  Suppression:             Institutional (law_strength), cooperation propensity,
+                           network deterrence (allies), subordination cooldown
+  Target selection:        Trust-based + rival + status challenge + resource envy +
+                           network deterrence + strength assessment
+  Flee response:           Low risk_tolerance targets escape combat (threshold 0.3)
+  Combat resolution:       Power = aggression(0.25) + status(0.20) + health(0.25) +
+                           risk(0.15) + resource_edge + intelligence(0.05) + allies
+  Scaled consequences:     Power differential scales costs (0.7x close, 1.5x stomp)
+  Subordination:           Losers enter cooldown (2yr), reduced initiation by 50%
+  Bystander effects:       Witnesses distrust aggressor (-0.08, allies -0.1 extra)
+  Death scaling:           Lethality increases with power differential
+  Deep dive:               DD03 COMPLETE — 159 v-deaths (was 0/bug), 72 flees
 
 --- OFFSPRING AND HOUSEHOLD ---
   Child survival factors:  Parental resources, pair bond stability,
                            kin network support, random mortality, env stress
-  Offspring trait model:   Blend of both parents + Gaussian mutation (σ=0.05)
+  Offspring trait model:   DD15: h²*parent_midpoint + (1-h²)*pop_mean + mutation
+  Mutation:                Base sigma=0.05, rare 5% at sigma=0.15, stress-amplified (1.5x)
+  Migrant traits:          Population-derived (match evolved distribution, not uniform)
+  Selection signals:       Aggression down, cooperation+intelligence up across all scenarios
+  Trait diversity:         std~0.09 maintained by rare mutations (was 0.07 pre-DD04)
   Reproductive window:     Age configurable (default 15-45 female, 15-65 male)
   Growth to agent:         Offspring enter pool at birth, become fertile at config age
   Paternal investment:     Separable from pair bond status (configurable)
-  Deep dive:               Household = Phase B Sprint 6 priority
+  Deep dive (genetics):    DD04 COMPLETE — parent variance, rare mutation, stress mutation
+  Deep dive (household):   DD06 COMPLETE — birth interval, childhood mortality, orphan model, grandparent bonus, sibling trust
 
 --- INSTITUTIONS ---
-  v1 model:                Toggle-based with continuous strength (0.0-1.0)
-  Institutional drift:     Institutions can strengthen/erode from agent outcomes
-  v1 institutions:         Monogamy norm, violence punishment, inheritance law,
-                           pair bond enforcement, elite privilege multiplier
-  Deep dive:               Institutions = Phase B Sprint 5 priority
+  Model:                   4-phase engine: inheritance → norm enforcement → drift → emergence
+  Institutional drift:     law_strength evolves from cooperation vs violence balance
+                           coop_pressure = (avg_coop - 0.4) * boost, violence_pressure = vio_rate * decay
+                           Inertia creates path dependency; drift_rate=0.0 default (opt-in)
+  Norm enforcement:        Active polygyny detection with scaling penalties
+  Emergent formation:      Violence punishment after 5yr high-violence streak
+                           Mate limit reduction after 8yr inequality streak
+  Property rights:         Modulates conflict looting: loot = 0.5 * (1 - property_rights)
+  Inheritance:             Default ON; equal_split, primogeniture, trust_weighted models
+                           Prestige inheritance (status to heirs, configurable fraction)
+  Cross-engine:            Institution engine mutates config values for next tick
+                           Other engines automatically respond via config reads
+  Deep dive:               DD05 COMPLETE — emergent law 0→0.48 over 200yr
 
 --- OUTPUT AND METRICS ---
   Per-run outputs:
@@ -176,11 +218,21 @@ PHASE B — DEEP DIVE CHAINS (after skeleton verified):
   Order:
     1. Mating system         → prompts/deep_dive_01_mating.md
     2. Resource model        → prompts/deep_dive_02_resources.md
-    3. Conflict model        → prompts/deep_dive_03_conflict.md  [TBD]
-    4. Trait inheritance     → prompts/deep_dive_04_genetics.md  [TBD]
-    5. Institutions          → prompts/deep_dive_05_institutions.md [TBD]
-    6. Offspring/household   → prompts/deep_dive_06_household.md [TBD]
-    7. Memory/reputation     → prompts/deep_dive_07_reputation.md [TBD]
+    3. Conflict model        → prompts/deep_dive_03_conflict.md  [COMPLETE]
+    4. Trait inheritance     → prompts/deep_dive_04_genetics.md  [COMPLETE]
+    5. Institutions          → prompts/deep_dive_05_institutions.md [COMPLETE]
+    6. Offspring/household   → prompts/deep_dive_06_household.md [COMPLETE]
+    7. Memory/reputation     → prompts/deep_dive_07_reputation.md [COMPLETE]
+    8. Prestige/dominance    → prompts/deep_dive_08_prestige.md [COMPLETE]
+    9. Disease/epidemics     → prompts/deep_dive_09_disease.md [COMPLETE]
+   10. Seasonal cycles       → prompts/deep_dive_10_seasons.md [COMPLETE]
+   11. Coalitions/punishment → prompts/deep_dive_11_coalitions.md [COMPLETE]
+   12. Status signaling      → prompts/deep_dive_12_signaling.md [COMPLETE]
+   13. Demographics          → prompts/deep_dive_13_demographics.md [COMPLETE]
+   14. Factions/in-group     → prompts/deep_dive_14_factions.md [COMPLETE]
+   15. Extended genomics     → prompts/deep_dive_15_genomics.md [COMPLETE]
+   16. Developmental biology → prompts/deep_dive_16_development.md [COMPLETE]
+   17. Medical/pathology     → prompts/deep_dive_17_medical.md [COMPLETE]
 
 ================================================================================
 PROMPT LIBRARY — QUICK REFERENCE
@@ -193,6 +245,11 @@ PROMPT LIBRARY — QUICK REFERENCE
   prompts/deep_dive_template.md     → Template for any deep dive
   prompts/deep_dive_01_mating.md    → Mating system deep dive
   prompts/deep_dive_02_resources.md → Resource model deep dive
+  prompts/deep_dive_03_conflict.md  → Conflict model deep dive
+  prompts/deep_dive_04_genetics.md  → Trait inheritance deep dive
+  prompts/deep_dive_05_institutions.md → Institutions deep dive
+  prompts/deep_dive_06_household.md → Offspring/household deep dive
+  prompts/deep_dive_07_reputation.md → Memory/reputation deep dive
   prompts/iteration_template.md     → Any targeted change or feature
   prompts/debug_template.md         → Bug diagnosis and fix
 
@@ -297,7 +354,7 @@ Q4:  Runtime target?
      ANSWERED: No ceiling — kill the compute
 
 Q5:  Heritable traits?
-     ANSWERED: YES — 8 core traits (see agent model above)
+     ANSWERED: YES — 21 traits with per-trait heritability (DD15 expanded from 8)
 
 Q6:  Trait mutation?
      ANSWERED: YES — Gaussian noise σ=0.05 per heritable trait

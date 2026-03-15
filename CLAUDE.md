@@ -14,7 +14,7 @@ See `STATUS.md` for what to work on next.
 ## Architecture Rules
 - **Pure library**: Simulation engine has NO UI, NO print statements, NO matplotlib calls. All IO at the edges.
 - **Tick returns data**: `sim.tick()` returns pure state — any frontend (CLI, Streamlit, game) consumes it.
-- **Engine order per tick**: environment → resources → **conflict** → institutions → mating → reproduction → age/mortality → metrics (conflict before mating so violence has reproductive cost)
+- **Engine order per tick**: environment → resources → **conflict** → mating → reproduction → age/mortality → institutions → metrics (conflict before mating so violence has reproductive cost; institutions after mortality so inheritance sees all deaths)
 - **Models know nothing about engines** — no circular imports.
 - **All randomness** via `numpy.random.Generator` seeded from config. Same seed = identical results.
 - **Events are dicts**: `{type, year, agent_ids, description, outcome}`

@@ -4,3 +4,4 @@ from .mating import MatingEngine
 from .reproduction import ReproductionEngine
 from .conflict import ConflictEngine
 from .mortality import MortalityEngine
+from .pathology import PathologyEngine

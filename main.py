@@ -54,7 +54,8 @@ def save_outputs(sim: Simulation, output_dir: Path):
             "attractiveness": round(a.attractiveness_base, 3),
             "intelligence": round(a.intelligence_proxy, 3),
             "offspring_count": len(a.offspring_ids),
-            "pair_bonded": a.pair_bond_id is not None,
+            "pair_bonded": a.is_bonded,
+            "bond_count": a.bond_count,
         })
     pd.DataFrame(agents_data).to_csv(output_dir / "final_agents.csv", index=False)
 

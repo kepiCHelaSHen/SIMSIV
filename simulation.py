@@ -13,6 +13,8 @@ from engines.mating import MatingEngine
 from engines.reproduction import ReproductionEngine
 from engines.conflict import ConflictEngine
 from engines.mortality import MortalityEngine
+from engines.reputation import ReputationEngine
+from engines.pathology import PathologyEngine
 from metrics.collectors import MetricsCollector
 
 
@@ -30,6 +32,8 @@ class Simulation:
         self.reproduction_engine = ReproductionEngine()
         self.conflict_engine = ConflictEngine()
         self.mortality_engine = MortalityEngine()
+        self.reputation_engine = ReputationEngine()
+        self.pathology_engine = PathologyEngine()
 
         self.year = 0
         self.finished = False
@@ -66,30 +70,46 @@ class Simulation:
         for e in conflict_events:
             self.society.add_event(e)
 
-        # 4. Institutions
-        inst_events = self.institution_engine.run(self.society, self.config, self.rng)
-        for e in inst_events:
-            self.society.add_event(e)
-
-        # 5. Mating
+        # 4. Mating
         mate_events = self.mating_engine.run(self.society, self.config, self.rng)
         for e in mate_events:
             self.society.add_event(e)
 
-        # 6. Reproduction
+        # 5. Reproduction
         repro_events = self.reproduction_engine.run(self.society, self.config, self.rng)
         for e in repro_events:
             self.society.add_event(e)
 
-        # 7. Aging and mortality
+        # 6. Aging and mortality
         mort_events = self.mortality_engine.run(self.society, self.config, self.rng)
         for e in mort_events:
             self.society.add_event(e)
 
-        # 8. Collect metrics
+        # 6.5. Pathology (condition activation, trauma — after mortality)
+        path_events = self.pathology_engine.run(self.society, self.config, self.rng)
+        for e in path_events:
+            self.society.add_event(e)
+
+        # 7. Institutions (after mortality — inheritance sees ALL deaths)
+        inst_events = self.institution_engine.run(self.society, self.config, self.rng)
+        for e in inst_events:
+            self.society.add_event(e)
+
+        # 8. Reputation (gossip, trust decay, cleanup — after all interactions)
+        rep_events = self.reputation_engine.run(self.society, self.config, self.rng)
+        for e in rep_events:
+            self.society.add_event(e)
+
+        # 8.5. Faction detection (periodic — after all trust updates)
+        if getattr(self.config, 'factions_enabled', False):
+            faction_events = self.society.detect_factions(self.config, self.rng)
+            for e in faction_events:
+                self.society.add_event(e)
+
+        # 9. Collect metrics
         row = self.metrics.collect(self.society, self.year)
 
-        # 9. Equilibrium check
+        # 10. Equilibrium check
         if not self.society.equilibrium_flagged:
             if self.metrics.check_equilibrium(self.config):
                 self.society.equilibrium_flagged = True
