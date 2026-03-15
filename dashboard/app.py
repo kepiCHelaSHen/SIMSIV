@@ -1301,76 +1301,146 @@ with tab_events:
 
 
 
-def _build_biography(agent_id):
-    """Build a markdown biography string for an agent."""
+def _render_biography(agent_id):
+    """Render a rich biography card for an agent using Streamlit components."""
     a = society.get_by_id(agent_id)
     if not a:
-        return f"Agent {agent_id} not found."
+        st.warning(f"Agent {agent_id} not found.")
+        return
 
     name = _get_agent_name(agent_id, a)
     sex_str = a.sex.value.capitalize()
+    sex_icon = "\u2640" if a.sex.value == "female" else "\u2642"
 
-    # Birth year
-    birth_year = max(1, society.year - a.age) if a.alive else (a.year_of_death - a.age if a.year_of_death else "?")
-
-    # Alive/dead
     if a.alive:
-        status_str = f"Born Yr {birth_year} | Still Alive (age {a.age})"
+        birth_year = max(1, society.year - a.age)
+        status_line = f"Born Year {birth_year} \u00b7 Age {a.age} \u00b7 Still Alive"
+        status_icon = "\U0001f7e2"
     else:
-        status_str = f"Born Yr {birth_year} → Died Yr {a.year_of_death} ({a.cause_of_death})"
+        birth_year = (a.year_of_death - a.age) if a.year_of_death else "?"
+        cause = a.cause_of_death or "unknown"
+        status_line = f"Born Year {birth_year} \u00b7 Died Year {a.year_of_death} \u00b7 {cause}"
+        status_icon = "\U0001f480"
 
-    # Parents
     p1, p2 = a.parent_ids
     p1_name = _get_agent_name(p1) if p1 is not None else "Unknown"
     p2_name = _get_agent_name(p2) if p2 is not None else "Unknown"
-    if p1 is None and p2 is None:
-        parents_str = "Unknown"
-    else:
-        parents_str = f"{p1_name} × {p2_name}"
+    parents_str = f"{p1_name} \u00d7 {p2_name}" if (p1 is not None or p2 is not None) else "Unknown (Founder)"
 
-    children_count = len(a.offspring_ids)
+    child_names = []
+    for cid in list(a.offspring_ids)[:5]:
+        child = society.get_by_id(cid)
+        if child:
+            child_names.append(_get_agent_name(cid, child))
+    children_str = ", ".join(child_names) if child_names else "None"
+    if len(a.offspring_ids) > 5:
+        children_str += f" (+{len(a.offspring_ids) - 5} more)"
 
-    # Top 3 traits
     trait_vals = [(t, getattr(a, t, 0.5)) for t in HERITABLE_TRAITS]
     trait_vals.sort(key=lambda x: x[1], reverse=True)
-    top3 = trait_vals[:3]
-    traits_str = " | ".join(f"{TRAIT_ABBREV.get(t, t)}: {v:.2f}" for t, v in top3)
+    top5 = trait_vals[:5]
+    bottom3 = trait_vals[-3:]
 
-    # Life events
+    blocks = "\u2581\u2582\u2583\u2584\u2585\u2586\u2587\u2588"
+    def _bar(val):
+        idx = min(int(val * len(blocks)), len(blocks) - 1)
+        return blocks[idx]
+
     agent_events = [e for e in events if agent_id in e.get("agent_ids", [])]
     agent_events.sort(key=lambda e: e.get("year", 0))
-    if agent_events:
-        ev_lines = []
-        for e in agent_events[:25]:
-            ev_lines.append(f"Yr {e.get('year', '?')}: {e.get('description', e.get('type', '?'))}")
-        events_str = "\n".join(ev_lines)
-    else:
-        events_str = "No recorded events"
 
-    # Status block
-    faction_str = a.faction_id if a.faction_id is not None else "None"
+    event_icons = {
+        "birth": "\U0001f476", "death": "\U0001f480", "pair_bond_formed": "\U0001f491",
+        "bond_dissolved": "\U0001f494", "conflict": "\u2694\ufe0f",
+        "epc_occurred": "\U0001f48b", "epc_detected": "\U0001f440",
+        "mating_contest": "\U0001f94a", "flee": "\U0001f3c3",
+        "punishment": "\u2696\ufe0f", "inheritance": "\U0001f4b0",
+        "institution_emerged": "\U0001f3db\ufe0f", "maturation": "\U0001f331",
+        "childhood_death": "\U0001f622", "infant_death": "\U0001f622",
+    }
+
+    def _format_event(e):
+        etype = e.get("type", "")
+        yr = e.get("year", "?")
+        desc = e.get("description", "")
+        icon = event_icons.get(etype, "\u00b7")
+        if desc:
+            return f"**Yr {yr}** {icon} {desc}"
+        return f"**Yr {yr}** {icon} {etype.replace('_', ' ').title()}"
+
+    partner_names = []
+    for pid in a.partner_ids:
+        partner = society.get_by_id(pid)
+        if partner:
+            partner_names.append(_get_agent_name(pid, partner))
+
+    faction_str = f"Faction {a.faction_id}" if a.faction_id is not None else "No faction"
     conditions_str = ", ".join(a.active_conditions) if a.active_conditions else "None"
+    life_stage = getattr(a, "life_stage", "Unknown")
 
-    bio = f"""---
-**{name}** | {sex_str} | {status_str}
+    with st.container(border=True):
+        st.markdown(f"## {sex_icon} {name}")
+        st.markdown(f"{status_icon} {status_line}")
+        st.markdown(f"*{sex_str} \u00b7 Generation {a.generation} \u00b7 {life_stage} \u00b7 {faction_str}*")
+        st.markdown("---")
 
-**Lineage**
-Parents: {parents_str}
-Children: {children_count} born | Generation {a.generation}
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("**\U0001f9ec Lineage**")
+            st.markdown(f"Parents: {parents_str}")
+            st.markdown(f"Children ({len(a.offspring_ids)}): {children_str}")
+            if partner_names:
+                st.markdown(f"Partner(s): {', '.join(partner_names)}")
+            st.markdown("")
+            st.markdown("**\U0001f4ca Status**")
+            st.markdown(f"Reputation: {a.reputation:.2f} \u00b7 Health: {a.health:.2f}")
+            st.markdown(f"Resources: {a.current_resources:.1f} \u00b7 Trauma: {a.trauma_score:.2f}")
+            if conditions_str != "None":
+                st.markdown(f"\u2695\ufe0f Conditions: {conditions_str}")
 
-**Dominant Traits**
-{traits_str}
+        with col2:
+            st.markdown("**\U0001f4aa Dominant Traits**")
+            domain_icons = {
+                "physical": "\U0001f7e0", "cognitive": "\U0001f535", "temporal": "\U0001f7e1",
+                "personality": "\U0001f7e3", "social": "\U0001f7e2", "reproductive": "\U0001fa77",
+                "psychopath": "\U0001f534",
+            }
+            for t, v in top5:
+                bar = _bar(v)
+                d_icon = "\u26aa"
+                if t in _physical: d_icon = "\U0001f7e0"
+                elif t in _cognitive: d_icon = "\U0001f535"
+                elif t in _temporal: d_icon = "\U0001f7e1"
+                elif t in _personality: d_icon = "\U0001f7e3"
+                elif t in _social: d_icon = "\U0001f7e2"
+                elif t in _reproductive: d_icon = "\U0001fa77"
+                elif t in _psychopath: d_icon = "\U0001f534"
+                st.markdown(f"{d_icon} {TRAIT_ABBREV.get(t, t)}: **{v:.2f}** {bar}")
+            st.markdown("")
+            st.markdown("**\U0001f4c9 Weakest Traits**")
+            for t, v in bottom3:
+                st.markdown(f"\u00b7 {TRAIT_ABBREV.get(t, t)}: {v:.2f} {_bar(v)}")
 
-**Life Events**
-{events_str}
+        st.markdown("---")
+        st.markdown("**\U0001f4d6 Life Events**")
+        if agent_events:
+            sig_events = [e for e in agent_events
+                          if e.get("type", "") not in ("resource_transfers",)]
+            display_events = sig_events[:20] if len(sig_events) > 5 else agent_events[:20]
+            for e in display_events:
+                st.markdown(_format_event(e))
+            if len(agent_events) > 20:
+                st.caption(f"... and {len(agent_events) - 20} more events")
+        else:
+            st.markdown("*No recorded events*")
 
-**Status**
-Faction: {faction_str} | Reputation: {a.reputation:.2f}
-Foraging: {getattr(a, 'foraging_skill', 0):.2f} | Combat: {getattr(a, 'combat_skill', 0):.2f} | Social: {getattr(a, 'social_skill', 0):.2f}
-Conditions: {conditions_str} | Trauma: {a.trauma_score:.2f}
-
----"""
-    return bio
+        st.markdown("---")
+        st.markdown("**\U0001f6e0 Skills**")
+        sk1, sk2, sk3, sk4 = st.columns(4)
+        sk1.metric("Foraging", f"{getattr(a, 'foraging_skill', 0):.2f}")
+        sk2.metric("Combat", f"{getattr(a, 'combat_skill', 0):.2f}")
+        sk3.metric("Social", f"{getattr(a, 'social_skill', 0):.2f}")
+        sk4.metric("Craft", f"{getattr(a, 'craft_skill', 0):.2f}")
 
 
 # ── TAB: Life Stories ────────────────────────────────────────────
@@ -1384,14 +1454,20 @@ with tab_lives:
         all_agents = list(society.agents.values())
         all_ids = [a.id for a in all_agents]
 
-        # Pick 3 random featured agents (deterministic per session)
-        rng_feat = np.random.default_rng(42)
+        # Shuffle button updates the seed for featured agents
+        col_title, col_shuffle = st.columns([4, 1])
+        with col_shuffle:
+            if st.button("Shuffle", key="shuffle_featured"):
+                st.session_state["featured_seed"] = st.session_state.get("featured_seed", 42) + 1
+
+        feat_seed = st.session_state.get("featured_seed", 42)
+        rng_feat = np.random.default_rng(feat_seed)
         featured_ids = list(rng_feat.choice(all_ids, size=min(3, len(all_ids)), replace=False))
 
         cols = st.columns(3)
         for i, aid in enumerate(featured_ids):
             with cols[i]:
-                st.markdown(_build_biography(int(aid)))
+                _render_biography(int(aid))
 
         st.markdown("---")
         st.subheader("View Any Agent")
@@ -1409,7 +1485,7 @@ with tab_lives:
                 selected_id = int(np.random.default_rng().choice(all_ids))
 
         if selected_id:
-            st.markdown(_build_biography(int(selected_id)))
+            _render_biography(int(selected_id))
 
 # ── TAB: Dynasty Tree ────────────────────────────────────────────
 
@@ -1450,30 +1526,42 @@ with tab_dynasty:
             chosen_idx = labels.index(chosen_label)
             root_agent, _ = top_founders[chosen_idx]
 
-            # Build sunburst data by BFS from root
+            # Build sunburst data by BFS from root (unique IDs to avoid Plotly collisions)
             sb_ids, sb_parents, sb_labels, sb_values, sb_colors = [], [], [], [], []
 
             queue = [(root_agent.id, "")]
             visited_sb = set()
             while queue:
-                aid, parent_label = queue.pop(0)
+                aid, parent_id_str = queue.pop(0)
                 if aid in visited_sb:
                     continue
                 visited_sb.add(aid)
                 a = all_agents_dict.get(aid)
                 if not a:
                     continue
-                label = _get_agent_name(aid, a)
-                sb_ids.append(label)
-                sb_parents.append(parent_label)
+                name = _get_agent_name(aid, a)
+                unique_id = f"{name}_{aid}"
+                sb_ids.append(unique_id)
+                sb_parents.append(parent_id_str)
+                sb_labels.append(name)
                 sb_values.append(max(1, len(a.offspring_ids)))
                 sb_colors.append(getattr(a, "cooperation_propensity", 0.5))
                 for oid in a.offspring_ids:
-                    queue.append((oid, label))
+                    queue.append((oid, unique_id))
 
-            if sb_ids:
+            if len(sb_ids) == 0:
+                st.warning("No lineage data to display.")
+            else:
+                if len(sb_ids) > 2000:
+                    st.warning(f"Lineage has {len(sb_ids)} nodes — showing first 2000.")
+                    sb_ids = sb_ids[:2000]
+                    sb_parents = sb_parents[:2000]
+                    sb_labels = sb_labels[:2000]
+                    sb_values = sb_values[:2000]
+                    sb_colors = sb_colors[:2000]
+
                 fig = go.Figure(go.Sunburst(
-                    ids=sb_ids, labels=sb_ids, parents=sb_parents,
+                    ids=sb_ids, labels=sb_labels, parents=sb_parents,
                     values=sb_values,
                     marker=dict(
                         colors=sb_colors,
