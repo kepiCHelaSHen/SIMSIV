@@ -4,7 +4,7 @@ Inspired by Karpathy's autoresearch pattern: AI agent modifies code → runs exp
 
 ## Why SIMSIV Is a Good Fit
 
-- Simulation runs are fast (200 years in ~10 seconds vs minutes of GPU time)
+- Simulation runs are fast (~60-90 seconds per experiment: 3 seeds x 200yr x 500pop)
 - Metrics are interpretable (Gini, violence rate, trait evolution) vs opaque loss curves
 - Real-world anthropological targets exist to calibrate against
 
@@ -15,7 +15,7 @@ autoresearch mapping:
   program.md          →  CLAUDE.md + calibration_targets.md
   train.py            →  any engine file (conflict.py, reproduction.py, etc.)
   val_bpb metric      →  composite "realism score"
-  5-min experiment    →  200-year simulation run (~10 seconds)
+  5-min experiment    →  200-year simulation run (~60-90 seconds, 3 seeds)
 ```
 
 ## Calibration Targets
@@ -71,9 +71,9 @@ def realism_score(metrics: dict, targets: dict) -> float:
 
 - **Git checkpoint** before each experiment
 - **Smoke test gate**: sim must complete 200 years, population must survive
-- **Bounded changes**: agent can only modify `engines/` and `config.py`, never `models/agent.py` (trait structure is sacred)
+- **Bounded changes**: agent can only modify `engines/` and `config.py`, never `models/agent.py` (trait structure is sacred). Sacred files: `models/agent.py`, `models/society.py`, `models/environment.py`, `simulation.py`, `metrics/collectors.py`, all 8 engine files (`engines/conflict.py`, `engines/institutions.py`, `engines/mating.py`, `engines/mortality.py`, `engines/pathology.py`, `engines/reproduction.py`, `engines/reputation.py`, `engines/resources.py`)
 - **Budget cap**: max 30 seconds compute per experiment
-- **Journal**: every experiment logged to `experiments/journal.jsonl` with diff, metrics, score
+- **Journal**: every experiment logged to `autosim/journal.jsonl` with diff, metrics, score
 
 ## File Structure
 
@@ -110,4 +110,4 @@ autosim/
 
 ## Status
 
-**Not yet implemented.** Design document only. Parameter sweep (Mode A) is ~1 day of work. Engine modification (Mode B) is a weekend project with much higher ceiling.
+**RUNNING — Mode A complete, 100+ experiments logged.** Parameter sweeps optimizing realism score via `autosim/runner.py`. Journal at `autosim/journal.jsonl`. Best config at `autosim/best_config.yaml`. Mode B (engine logic modification) not yet attempted.

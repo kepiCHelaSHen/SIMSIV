@@ -1,7 +1,7 @@
 # SIMSIV — CHAIN PROMPT MASTER FILE
 # Simulation of Intersecting Social and Institutional Variables
 # Root: D:\EXPERIMENTS\SIM
-# Last Updated: 2026-03-13 | Session 001
+# Last Updated: 2026-03-14 | Phase C complete
 
 ================================================================================
 PURPOSE OF THIS FILE
@@ -78,15 +78,33 @@ CONFIRMED DESIGN DECISIONS
     sexual_maturation_rate     float [0.0-1.0]  h²=0.60  age at first reproduction (DD15)
 
   Non-heritable traits (earned/contextual, reset or built each lifecycle):
-    social_trust               float [0.0-1.0]  generalized trust in others
     reputation                 float [0.0-1.0]  public standing score
     health                     float [0.0-1.0]  current health (decays with age)
     age                        int   years alive
-    current_resources          float             survival + status wealth
-    current_status             float             achieved dominance rank
-    pair_bond_id               int or None       id of current mate
+    current_resources          float             survival resources (DD21)
+    current_tools              float             durable tools (DD21)
+    current_prestige_goods     float             social-value goods (DD21)
+    prestige_score             float             earned via cooperation/skill (DD08)
+    dominance_score            float             earned via conflict/intimidation (DD08)
+    current_status             float             computed: 0.6*prestige + 0.4*dominance
+    partner_ids                list[int]         current mate(s)
     offspring_ids              list[int]         ids of living offspring
     reputation_ledger          dict[int, float]  trust score per known agent
+    faction_id                 int or None       emergent faction membership (DD14)
+    neighborhood_ids           list[int]         proximity tier contacts (DD18)
+    origin_band_id             int               migration origin (DD19, 0=native)
+    generation_in_band         int               generations since immigration (DD19)
+    Beliefs (DD25, 5 dims, float [-1, +1], culturally transmitted):
+      hierarchy_belief, cooperation_norm, violence_acceptability,
+      tradition_adherence, kinship_obligation
+    Skills (DD26, 4 domains, float [0, 1], acquired via experience):
+      foraging_skill, combat_skill, social_skill, craft_skill
+    Epigenetics (DD24):
+      epigenetic_stress_load   float             transgenerational stress
+      epigenetic_generation_decay  int            generations since stress
+    Medical (DD17):
+      active_conditions        set               currently active pathologies
+      trauma_score             float [0.0-1.0]   accumulated trauma
 
   Dynamic computed properties:
     mate_value = f(health, current_status, current_resources, age)
@@ -368,7 +386,7 @@ Q4:  Runtime target?
      ANSWERED: No ceiling — kill the compute
 
 Q5:  Heritable traits?
-     ANSWERED: YES — 21 traits with per-trait heritability (DD15 expanded from 8)
+     ANSWERED: YES — 26 traits (21 core + 5 condition risks) with per-trait heritability (DD15+DD17 expanded from 8)
 
 Q6:  Trait mutation?
      ANSWERED: YES — Gaussian noise σ=0.05 per heritable trait

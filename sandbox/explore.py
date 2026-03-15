@@ -69,16 +69,25 @@ def agent_df(sim):
     records = []
     for a in sim.society.agents.values():
         records.append({
-            "id": a.agent_id, "age": a.age, "sex": a.sex,
+            "id": a.id, "age": a.age, "sex": a.sex.value,
+            "life_stage": a.life_stage,
             "health": round(a.health, 3),
             "resources": round(a.current_resources, 2),
             "agg": round(a.aggression_propensity, 3),
             "coop": round(a.cooperation_propensity, 3),
             "intel": round(a.intelligence_proxy, 3),
             "status": round(a.current_status, 3),
+            "prestige": round(a.prestige_score, 3),
+            "dominance": round(a.dominance_score, 3),
             "reputation": round(a.reputation, 3),
-            "bonded": a.is_bonded(),
+            "trauma": round(a.trauma_score, 3),
+            "faction_id": a.faction_id,
+            "bonded": a.is_bonded,
             "offspring": len(a.offspring_ids),
+            "foraging": round(a.foraging_skill, 3),
+            "social": round(a.social_skill, 3),
+            "hierarchy_belief": round(a.hierarchy_belief, 3),
+            "cooperation_norm": round(a.cooperation_norm, 3),
         })
     return pd.DataFrame(records).set_index("id")
 
