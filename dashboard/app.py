@@ -326,6 +326,66 @@ def _std_col(col_name):
 
 
 # ════════════════════════════════════════════════════════════════════
+# Shared constants and helpers (must be before tabs)
+# ════════════════════════════════════════════════════════════════════
+
+TRAIT_ABBREV = {
+    "aggression_propensity": "Aggression", "cooperation_propensity": "Coop",
+    "attractiveness_base": "Attract", "status_drive": "Status",
+    "risk_tolerance": "Risk", "jealousy_sensitivity": "Jealousy",
+    "fertility_base": "Fertility", "intelligence_proxy": "Intel",
+    "longevity_genes": "Longevity", "disease_resistance": "Disease Res",
+    "physical_robustness": "Robustness", "pain_tolerance": "Pain Tol",
+    "mental_health_baseline": "MH Base", "emotional_intelligence": "Emot Intel",
+    "impulse_control": "Impulse", "novelty_seeking": "Novelty",
+    "empathy_capacity": "Empathy", "conformity_bias": "Conform",
+    "dominance_drive": "Dominance", "maternal_investment": "Maternal",
+    "sexual_maturation_rate": "Sex Mat", "cardiovascular_risk": "Cardio Risk",
+    "mental_illness_risk": "Mental Risk", "autoimmune_risk": "Autoimmune",
+    "metabolic_risk": "Metabolic", "degenerative_risk": "Degen Risk",
+    "physical_strength": "Strength", "endurance": "Endurance",
+    "group_loyalty": "Loyalty", "outgroup_tolerance": "Outgroup",
+    "future_orientation": "Future Or", "conscientiousness": "Conscient",
+    "psychopathy_tendency": "Psychopathy", "anxiety_baseline": "Anxiety",
+    "paternal_investment_preference": "Pat Invest",
+}
+
+TRAIT_DOMAIN_COLORS = {}
+_physical = ["physical_strength", "endurance", "physical_robustness", "pain_tolerance", "longevity_genes", "disease_resistance"]
+_cognitive = ["intelligence_proxy", "emotional_intelligence", "impulse_control", "conscientiousness"]
+_temporal = ["future_orientation"]
+_personality = ["risk_tolerance", "novelty_seeking", "anxiety_baseline", "mental_health_baseline"]
+_social = ["aggression_propensity", "cooperation_propensity", "dominance_drive", "group_loyalty",
+           "outgroup_tolerance", "empathy_capacity", "conformity_bias", "status_drive", "jealousy_sensitivity"]
+_reproductive = ["fertility_base", "sexual_maturation_rate", "maternal_investment",
+                 "paternal_investment_preference", "attractiveness_base"]
+_psychopath = ["psychopathy_tendency", "mental_illness_risk", "cardiovascular_risk",
+               "autoimmune_risk", "metabolic_risk", "degenerative_risk"]
+for t in _physical: TRAIT_DOMAIN_COLORS[t] = "#FF6B35"
+for t in _cognitive: TRAIT_DOMAIN_COLORS[t] = "#4ECDC4"
+for t in _temporal: TRAIT_DOMAIN_COLORS[t] = "#FFE66D"
+for t in _personality: TRAIT_DOMAIN_COLORS[t] = "#C77DFF"
+for t in _social: TRAIT_DOMAIN_COLORS[t] = "#06D6A0"
+for t in _reproductive: TRAIT_DOMAIN_COLORS[t] = "#F72585"
+for t in _psychopath: TRAIT_DOMAIN_COLORS[t] = "#EF233C"
+
+
+def _get_agent_name(agent_id, agent=None):
+    """Get full name for an agent, caching in session state."""
+    cache = st.session_state.setdefault("agent_names", {})
+    if agent_id not in cache:
+        sex = "male"
+        if agent:
+            sex = agent.sex.value if hasattr(agent.sex, "value") else str(agent.sex)
+        else:
+            a = society.get_by_id(agent_id)
+            if a:
+                sex = a.sex.value if hasattr(a.sex, "value") else str(a.sex)
+        cache[agent_id] = namer.get_full_name(agent_id, sex=sex)
+    return cache[agent_id]
+
+
+# ════════════════════════════════════════════════════════════════════
 # Tabs
 # ════════════════════════════════════════════════════════════════════
 
@@ -1239,64 +1299,6 @@ with tab_events:
                           margin=dict(l=40, r=40, t=40, b=40), xaxis_tickangle=-45)
         st.plotly_chart(fig, use_container_width=True)
 
-# ════════════════════════════════════════════════════════════════════
-# Shared helpers for new tabs
-# ════════════════════════════════════════════════════════════════════
-
-TRAIT_ABBREV = {
-    "aggression_propensity": "Aggression", "cooperation_propensity": "Coop",
-    "attractiveness_base": "Attract", "status_drive": "Status",
-    "risk_tolerance": "Risk", "jealousy_sensitivity": "Jealousy",
-    "fertility_base": "Fertility", "intelligence_proxy": "Intel",
-    "longevity_genes": "Longevity", "disease_resistance": "Disease Res",
-    "physical_robustness": "Robustness", "pain_tolerance": "Pain Tol",
-    "mental_health_baseline": "MH Base", "emotional_intelligence": "Emot Intel",
-    "impulse_control": "Impulse", "novelty_seeking": "Novelty",
-    "empathy_capacity": "Empathy", "conformity_bias": "Conform",
-    "dominance_drive": "Dominance", "maternal_investment": "Maternal",
-    "sexual_maturation_rate": "Sex Mat", "cardiovascular_risk": "Cardio Risk",
-    "mental_illness_risk": "Mental Risk", "autoimmune_risk": "Autoimmune",
-    "metabolic_risk": "Metabolic", "degenerative_risk": "Degen Risk",
-    "physical_strength": "Strength", "endurance": "Endurance",
-    "group_loyalty": "Loyalty", "outgroup_tolerance": "Outgroup",
-    "future_orientation": "Future Or", "conscientiousness": "Conscient",
-    "psychopathy_tendency": "Psychopathy", "anxiety_baseline": "Anxiety",
-    "paternal_investment_preference": "Pat Invest",
-}
-
-TRAIT_DOMAIN_COLORS = {}
-_physical = ["physical_strength", "endurance", "physical_robustness", "pain_tolerance", "longevity_genes", "disease_resistance"]
-_cognitive = ["intelligence_proxy", "emotional_intelligence", "impulse_control", "conscientiousness"]
-_temporal = ["future_orientation"]
-_personality = ["risk_tolerance", "novelty_seeking", "anxiety_baseline", "mental_health_baseline"]
-_social = ["aggression_propensity", "cooperation_propensity", "dominance_drive", "group_loyalty",
-           "outgroup_tolerance", "empathy_capacity", "conformity_bias", "status_drive", "jealousy_sensitivity"]
-_reproductive = ["fertility_base", "sexual_maturation_rate", "maternal_investment",
-                 "paternal_investment_preference", "attractiveness_base"]
-_psychopath = ["psychopathy_tendency", "mental_illness_risk", "cardiovascular_risk",
-               "autoimmune_risk", "metabolic_risk", "degenerative_risk"]
-for t in _physical: TRAIT_DOMAIN_COLORS[t] = "#FF6B35"
-for t in _cognitive: TRAIT_DOMAIN_COLORS[t] = "#4ECDC4"
-for t in _temporal: TRAIT_DOMAIN_COLORS[t] = "#FFE66D"
-for t in _personality: TRAIT_DOMAIN_COLORS[t] = "#C77DFF"
-for t in _social: TRAIT_DOMAIN_COLORS[t] = "#06D6A0"
-for t in _reproductive: TRAIT_DOMAIN_COLORS[t] = "#F72585"
-for t in _psychopath: TRAIT_DOMAIN_COLORS[t] = "#EF233C"
-
-
-def _get_agent_name(agent_id, agent=None):
-    """Get full name for an agent, caching in session state."""
-    cache = st.session_state.setdefault("agent_names", {})
-    if agent_id not in cache:
-        sex = "male"
-        if agent:
-            sex = agent.sex.value if hasattr(agent.sex, "value") else str(agent.sex)
-        else:
-            a = society.get_by_id(agent_id)
-            if a:
-                sex = a.sex.value if hasattr(a.sex, "value") else str(a.sex)
-        cache[agent_id] = namer.get_full_name(agent_id, sex=sex)
-    return cache[agent_id]
 
 
 def _build_biography(agent_id):
