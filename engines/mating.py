@@ -10,8 +10,11 @@ Deep Dive 01 implementation:
 """
 
 from __future__ import annotations
+import logging
 import numpy as np
 from models.agent import Agent, Sex
+
+_log = logging.getLogger(__name__)
 
 
 class MatingEngine:
@@ -50,6 +53,7 @@ class MatingEngine:
                 partner = society.get_by_id(pid)
                 if not partner or not partner.alive:
                     agent.remove_bond(pid)
+                    society._unindex_bond(agent.id, pid)
                     agent.last_partner_death_year = society.year
         return events
 
@@ -101,6 +105,7 @@ class MatingEngine:
                 if rng.random() < dissolution_chance:
                     agent.remove_bond(pid)
                     partner.remove_bond(agent.id)
+                    society._unindex_bond(agent.id, pid)
                     agent.remember(pid, -0.15)
                     partner.remember(agent.id, -0.15)
                     events.append({
@@ -313,6 +318,7 @@ class MatingEngine:
             initial_strength = config.pair_bond_strength * rng.uniform(0.5, 1.0)
             female.add_bond(chosen_male.id, initial_strength)
             chosen_male.add_bond(female.id, initial_strength)
+            society._index_bond(female.id, chosen_male.id)
 
             female.remember(chosen_male.id, 0.1)
             chosen_male.remember(female.id, 0.1)
@@ -408,6 +414,7 @@ class MatingEngine:
                 if new_str <= 0:
                     female.remove_bond(partner_id)
                     partner.remove_bond(female.id)
+                    society._unindex_bond(female.id, partner_id)
                 else:
                     female.pair_bond_strengths[partner_id] = new_str
                     partner.pair_bond_strengths[female.id] = new_str

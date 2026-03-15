@@ -250,7 +250,7 @@ if run_clicked:
         st.session_state["living"] = last_sim.society.get_living()
         st.session_state["society"] = last_sim.society
         st.session_state["config"] = last_sim.config
-        st.session_state["events"] = last_sim.society.events
+        st.session_state["events"] = last_sim.society._event_window
 
     else:
         # ── Single run mode ──────────────────────────────────────
@@ -280,7 +280,7 @@ if run_clicked:
         st.session_state["living"] = living
         st.session_state["society"] = sim.society
         st.session_state["config"] = config
-        st.session_state["events"] = sim.society.events
+        st.session_state["events"] = sim.society._event_window
 
 # ════════════════════════════════════════════════════════════════════
 # Display results (from session state)

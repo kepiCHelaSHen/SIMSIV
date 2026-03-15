@@ -9,8 +9,11 @@ birth cap, maternal health cost, grandparent survival bonus.
 """
 
 from __future__ import annotations
+import logging
 import numpy as np
 from models.agent import Agent, Sex, HERITABLE_TRAITS, breed
+
+_log = logging.getLogger(__name__)
 
 
 class ReproductionEngine:
@@ -110,6 +113,7 @@ class ReproductionEngine:
                 female.epc_partner_id = None  # consumed
 
             child = breed(female, genetic_father, rng, config, society.year,
+                         id_counter=society.id_counter,
                          scarcity=society.environment.get_scarcity_level(),
                          pop_trait_means=pop_trait_means)
             # Social father also tracks child (for investment/kin support)

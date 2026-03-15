@@ -1,28 +1,28 @@
-autosim_best_score: 0.979298
+autosim_best_score: 0.98521
 autosim_key_metrics:
-  population: 697.075
-  child_survival_to_15: 0.698
-  violence_death_fraction: 0.0747
-  avg_lifetime_births: 3.7208
-  avg_cooperation: 0.5265
-  avg_aggression: 0.4898
-  mating_inequality: 0.6303
-  pop_growth_rate: 0.0063
-  resource_gini: 0.3334
-  bond_dissolution_rate: 0.0989
+  population: 572.65
+  child_survival_to_15: 0.5983
+  violence_death_fraction: 0.0642
+  avg_lifetime_births: 3.824
+  avg_cooperation: 0.5074
+  avg_aggression: 0.487
+  mating_inequality: 0.6132
+  pop_growth_rate: 0.0068
+  resource_gini: 0.3391
+  bond_dissolution_rate: 0.0965
 parameters:
   resource_equal_floor: 0.23595
-  resource_abundance: 1.219122
-  aggression_production_penalty: 0.467623
+  resource_abundance: 1.369979
+  aggression_production_penalty: 0.380495
   cooperation_network_bonus: 0.051526
   cooperation_sharing_rate: 0.03
   wealth_diminishing_power: 0.838232
   subsistence_floor: 0.3
-  scarcity_severity: 0.8
+  scarcity_severity: 0.784798
   child_investment_per_year: 0.993278
   conflict_base_probability: 0.080651
   violence_cost_health: 0.09588
-  violence_death_chance: 0.076302
+  violence_death_chance: 0.074579
   violence_cost_resources: 0.070398
   flee_threshold: 0.219876
   seasonal_conflict_boost: 0.165769
@@ -31,18 +31,18 @@ parameters:
   base_conception_chance: 0.673243
   female_choice_strength: 0.882349
   infidelity_base_rate: 0.039306
-  maternal_age_fertility_decline: 0.032982
+  maternal_age_fertility_decline: 0.024933
   maternal_health_cost: 0.043659
   birth_interval_years: 1
   age_first_reproduction: 15
-  age_max_reproduction_female: 42
-  orphan_mortality_multiplier: 1.69597
+  age_max_reproduction_female: 43
+  orphan_mortality_multiplier: 2.212877
   grandparent_survival_bonus: 0.045571
   widowhood_mourning_years: 2
   mortality_base: 0.005
   childhood_mortality_annual: 0.047289
   health_decay_per_year: 0.00887
   epidemic_base_probability: 0.035207
-  epidemic_lethality_base: 0.240738
-  male_risk_mortality_multiplier: 2.040643
+  epidemic_lethality_base: 0.245586
+  male_risk_mortality_multiplier: 1.680214
   childbirth_mortality_rate: 0.028089

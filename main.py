@@ -5,6 +5,7 @@ Run: python main.py [--seed N] [--years N] [--population N] [--config path.yaml]
 
 import argparse
 import json
+import logging
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -35,9 +36,9 @@ def save_outputs(sim: Simulation, output_dir: Path):
     # Metrics CSV
     sim.metrics.save_csv(output_dir / "metrics.csv")
 
-    # Events CSV
+    # Events CSV — recent events only (last 500). Full counts in event_type_counts.
     import pandas as pd
-    events_df = pd.DataFrame(sim.society.events)
+    events_df = pd.DataFrame(sim.society._event_window)
     events_df.to_csv(output_dir / "events.csv", index=False)
 
     # Final agents
@@ -86,10 +87,15 @@ def save_outputs(sim: Simulation, output_dir: Path):
         charts_dir.mkdir(exist_ok=True)
         plot_dashboard(df, charts_dir)
     except Exception as e:
-        print(f"  Warning: chart generation failed: {e}")
+        logging.getLogger(__name__).warning("Chart generation failed: %s", e)
 
 
 def main():
+    logging.basicConfig(
+        level=logging.WARNING,
+        format="%(levelname)s [%(name)s] %(message)s"
+    )
+
     parser = argparse.ArgumentParser(description="SIMSIV — Social Simulation")
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--years", type=int, default=None)
@@ -97,7 +103,12 @@ def main():
     parser.add_argument("--config", type=str, default=None, help="YAML config file")
     parser.add_argument("--output-dir", type=str, default=None)
     parser.add_argument("--quiet", action="store_true")
+    parser.add_argument("--verbose", action="store_true",
+                        help="Enable debug logging from all engines")
     args = parser.parse_args()
+
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
 
     # Load config
     if args.config:

@@ -1,9 +1,29 @@
 outputs/
 __pycache__/
 *.pyc
+*.py[cod]
+*.pyo
 .env
 *.egg-info/
 dist/
 build/
 .venv/
 venv/
+
+# Runtime data — never commit
+autosim/journal.jsonl
+data/
+
+# Large runtime files
+*.jsonl
+*.parquet
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+desktop.ini

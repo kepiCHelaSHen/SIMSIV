@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import Config
 from simulation import Simulation
-from models.agent import Agent, Sex, breed, create_initial_population, HERITABLE_TRAITS
+from models.agent import Agent, Sex, breed, create_initial_population, IdCounter, HERITABLE_TRAITS
 from metrics.collectors import _gini
 
 
@@ -21,7 +21,8 @@ def test_breed_trait_range():
     """All heritable traits on a child must be in [0.0, 1.0]."""
     rng = np.random.default_rng(7)
     config = Config(years=1, population_size=50, seed=7)
-    pop = create_initial_population(rng, config, 50)
+    idc = IdCounter()
+    pop = create_initial_population(rng, config, 50, idc)
     pop_means = {t: float(np.mean([getattr(a, t) for a in pop])) for t in HERITABLE_TRAITS}
 
     parent1 = pop[0]
@@ -35,7 +36,7 @@ def test_breed_trait_range():
 
     for _ in range(20):
         child = breed(parent1, parent2, rng, config, year=1,
-                      pop_trait_means=pop_means)
+                      id_counter=idc, pop_trait_means=pop_means)
         for t in HERITABLE_TRAITS:
             val = getattr(child, t)
             assert 0.0 <= val <= 1.0, f"{t}={val} out of range"

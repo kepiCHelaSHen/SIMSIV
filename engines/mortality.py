@@ -6,8 +6,11 @@ mortality multiplier, grandparent survival bonus for children.
 """
 
 from __future__ import annotations
+import logging
 import numpy as np
 from models.agent import Agent, Sex, HERITABLE_TRAITS
+
+_log = logging.getLogger(__name__)
 
 
 class MortalityEngine:
@@ -339,7 +342,9 @@ class MortalityEngine:
         }
 
         for bfield, trait_derived in belief_specs.items():
-            parent_avg = getattr(agent, f'_parent_{bfield}', 0.0)
+            parent_avg = getattr(agent, f'_parent_{bfield}', None)
+            if parent_avg is None:
+                parent_avg = 0.0
             belief = cb * parent_avg + (1.0 - cb) * trait_derived
             noise = agent.novelty_seeking * rng.normal(0, 0.15)
             setattr(agent, bfield, float(np.clip(belief + noise, -1.0, 1.0)))

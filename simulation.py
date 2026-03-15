@@ -3,7 +3,10 @@ Core simulation loop — pure library, no IO.
 """
 
 from __future__ import annotations
+import logging
 import numpy as np
+
+_log = logging.getLogger(__name__)
 
 from config import Config
 from models.society import Society

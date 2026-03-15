@@ -230,28 +230,34 @@ def _build_correlation_matrix() -> np.ndarray:
 TRAIT_CORRELATION = _build_correlation_matrix()
 
 
-_next_id = 0
+class IdCounter:
+    """Monotonically increasing integer ID generator.
 
+    One instance per Simulation. Ensures IDs are unique within a run
+    and independent across runs — two Simulation instances both produce
+    IDs starting from 1 with no cross-contamination.
+    """
+    def __init__(self, start: int = 0):
+        self._value = start
 
-def _new_id() -> int:
-    global _next_id
-    _next_id += 1
-    return _next_id
+    def next(self) -> int:
+        self._value += 1
+        return self._value
+
+    def reset(self):
+        self._value = 0
 
 
 def reset_id_counter():
-    """Reset the global ID counter to 0.
-
-    WARNING: Only use between completely independent sessions. Never call
-    during multi-run experiments — IDs will collide across scenarios.
+    """DEPRECATED: No-op. Use per-Simulation IdCounter instead.
+    Retained only for backward compatibility with old scripts.
     """
-    global _next_id
-    _next_id = 0
+    pass
 
 
 @dataclass
 class Agent:
-    id: int = field(default_factory=_new_id)
+    id: int = 0
     sex: Sex = Sex.MALE
     age: int = 0
     generation: int = 0
@@ -356,6 +362,13 @@ class Agent:
     violence_acceptability: float = 0.0  # [-1=pacifist, +1=violence is honorable]
     tradition_adherence: float = 0.0     # [-1=innovator, +1=conservative]
     kinship_obligation: float = 0.0      # [-1=universalist, +1=in-group only]
+
+    # ── DD25: Parental belief staging (set at birth, consumed at maturation) ──
+    _parent_hierarchy_belief: Optional[float] = None
+    _parent_cooperation_norm: Optional[float] = None
+    _parent_violence_acceptability: Optional[float] = None
+    _parent_tradition_adherence: Optional[float] = None
+    _parent_kinship_obligation: Optional[float] = None
 
     # ── DD26: Skills (non-heritable, acquired through experience) ──
     foraging_skill: float = 0.0
@@ -526,7 +539,7 @@ class Agent:
 
 
 def create_initial_population(
-    rng: np.random.Generator, config, count: int
+    rng: np.random.Generator, config, count: int, id_counter: "IdCounter" = None
 ) -> list[Agent]:
     """Create the founding population with correlated traits and realistic age distribution."""
     agents = []
@@ -552,6 +565,7 @@ def create_initial_population(
         age = rng.integers(0, config.init_max_age)
 
         a = Agent(
+            id=id_counter.next() if id_counter else 0,
             sex=sex,
             age=int(age),
             generation=0,
@@ -597,7 +611,8 @@ def create_initial_population(
 
 
 def breed(parent1: Agent, parent2: Agent, rng: np.random.Generator,
-          config, year: int, scarcity: float = 0.0,
+          config, year: int, id_counter: "IdCounter" = None,
+          scarcity: float = 0.0,
           pop_trait_means: dict[str, float] | None = None) -> Agent:
     """Create offspring from two parents.
 
@@ -610,6 +625,7 @@ def breed(parent1: Agent, parent2: Agent, rng: np.random.Generator,
     generation = max(parent1.generation, parent2.generation) + 1
 
     child = Agent(
+        id=id_counter.next() if id_counter else 0,
         sex=child_sex,
         age=0,
         generation=generation,
@@ -702,12 +718,11 @@ def breed(parent1: Agent, parent2: Agent, rng: np.random.Generator,
     # Children don't get beliefs at birth — they develop at maturation (age 15)
     # But we store parent belief averages for later use in maturation
     if getattr(config, 'beliefs_enabled', False):
-        for bfield in ('hierarchy_belief', 'cooperation_norm',
-                        'violence_acceptability', 'tradition_adherence',
-                        'kinship_obligation'):
-            p_avg = (getattr(parent1, bfield, 0.0) + getattr(parent2, bfield, 0.0)) / 2.0
-            # Store as _parent_belief_* for maturation to use
-            setattr(child, f'_parent_{bfield}', p_avg)
+        child._parent_hierarchy_belief = (parent1.hierarchy_belief + parent2.hierarchy_belief) / 2.0
+        child._parent_cooperation_norm = (parent1.cooperation_norm + parent2.cooperation_norm) / 2.0
+        child._parent_violence_acceptability = (parent1.violence_acceptability + parent2.violence_acceptability) / 2.0
+        child._parent_tradition_adherence = (parent1.tradition_adherence + parent2.tradition_adherence) / 2.0
+        child._parent_kinship_obligation = (parent1.kinship_obligation + parent2.kinship_obligation) / 2.0
 
     parent1.offspring_ids.append(child.id)
     parent2.offspring_ids.append(child.id)

@@ -12,8 +12,11 @@ Phases:
 """
 
 from __future__ import annotations
+import logging
 import numpy as np
 from models.agent import Agent
+
+_log = logging.getLogger(__name__)
 
 
 class ReputationEngine:
@@ -22,6 +25,17 @@ class ReputationEngine:
         living = society.get_living()
         if not living:
             return events
+
+        # ── Dead ledger cleanup (efficient: diff from this tick's deaths) ──
+        if getattr(config, 'dead_agent_ledger_cleanup', True):
+            dead_ids_this_tick: set[int] = set()
+            for e in society.tick_events:
+                if e.get("type") in ("death", "emigration", "violence_death",
+                                      "childhood_death", "natural_death"):
+                    if e.get("agent_ids"):
+                        dead_ids_this_tick.add(e["agent_ids"][0])
+            if dead_ids_this_tick:
+                society.purge_dead_from_ledgers(dead_ids_this_tick)
 
         # ── Phase 1: Trust decay ─────────────────────────────────────
         # All trust entries slowly drift toward neutral (0.5).

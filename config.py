@@ -336,9 +336,27 @@ class Config:
     equilibrium_threshold: float = 0.01  # max relative change to count as stable
 
     def __post_init__(self):
-        # Wire mating_system string to enforcement flags
-        if self.mating_system == "monogamy" and not self.monogamy_enforced:
+        import warnings
+        VALID_MATING_SYSTEMS = ("unrestricted", "monogamy", "elite_polygyny")
+
+        if self.mating_system not in VALID_MATING_SYSTEMS:
+            warnings.warn(
+                f"Unknown mating_system '{self.mating_system}'. "
+                f"Valid: {VALID_MATING_SYSTEMS}. Defaulting to 'unrestricted'.",
+                UserWarning,
+                stacklevel=2,
+            )
+            self.mating_system = "unrestricted"
+
+        if self.mating_system == "monogamy":
             self.monogamy_enforced = True
+            self.max_mates_per_male = 1
+            self.max_mates_per_female = 1
+        elif self.mating_system == "elite_polygyny":
+            self.monogamy_enforced = False
+        elif self.mating_system == "unrestricted":
+            self.monogamy_enforced = False
+            self.max_mates_per_male = 999
 
     def save(self, path: Path):
         with open(path, "w") as f:
@@ -346,6 +364,18 @@ class Config:
 
     @classmethod
     def load(cls, path: Path) -> "Config":
+        import warnings
         with open(path) as f:
             data = yaml.safe_load(f)
-        return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+        if not data:
+            return cls()
+        known = set(cls.__dataclass_fields__.keys())
+        unknown = [k for k in data if k not in known]
+        if unknown:
+            warnings.warn(
+                f"Config.load('{path}'): Unrecognized key(s) will be IGNORED: {unknown}\n"
+                f"  Check for typos. Run Config() to see all valid parameter names.",
+                UserWarning,
+                stacklevel=2,
+            )
+        return cls(**{k: v for k, v in data.items() if k in known})

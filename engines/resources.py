@@ -16,8 +16,11 @@ Resources are two-dimensional:
 """
 
 from __future__ import annotations
+import logging
 import numpy as np
 from models.agent import Agent, Sex
+
+_log = logging.getLogger(__name__)
 
 
 class ResourceEngine:

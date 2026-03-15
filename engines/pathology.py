@@ -7,8 +7,11 @@ accumulated trauma, and medical history logging.
 """
 
 from __future__ import annotations
+import logging
 import numpy as np
 from models.agent import Agent
+
+_log = logging.getLogger(__name__)
 
 
 # Condition types and their effects

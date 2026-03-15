@@ -12,8 +12,11 @@ Deep Dive 03 implementation:
 """
 
 from __future__ import annotations
+import logging
 import numpy as np
 from models.agent import Agent, Sex
+
+_log = logging.getLogger(__name__)
 
 
 class ConflictEngine:
@@ -502,6 +505,7 @@ class ConflictEngine:
                         if rng.random() < leave_chance:
                             fighter.remove_bond(pid)
                             partner.remove_bond(fighter.id)
+                            society._unindex_bond(fighter.id, pid)
                             partner.remember(fighter.id, -0.25)
                             break
 

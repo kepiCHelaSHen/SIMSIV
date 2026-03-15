@@ -227,7 +227,15 @@ python -m autosim.runner --experiments 500 --seeds 2 --years 150
 
 **Reproducible** — All configs are serializable and logged.
 
-**Tested** — Basic smoke tests verify core functions.
+**Isolated instances** — Per-simulation `IdCounter`; running N simulations in sequence produces independent, non-colliding agent ID spaces.
+
+**Bounded memory** — Event list capped to a rolling window (500 events); full event-type counts tracked as running totals; no OOM on long runs.
+
+**Typed** — All Agent fields declared in dataclass; no dynamic attribute injection.
+
+**Validated config** — `Config.load()` warns on unrecognized YAML keys.
+
+**Tested** — pytest suite covering IdCounter isolation, Config validation, Society event windowing, partner index correctness, breed(), gini(), 10-tick run, population counting (22 test cases, 4 test files).
 
 ---
 

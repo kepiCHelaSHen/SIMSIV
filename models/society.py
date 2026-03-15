@@ -7,9 +7,13 @@ from typing import Optional
 
 import numpy as np
 
-from .agent import Agent, Sex, HERITABLE_TRAITS, create_initial_population
+import logging
+
+from .agent import Agent, Sex, HERITABLE_TRAITS, IdCounter, create_initial_population
 from .environment import Environment
 from config import Config
+
+_log = logging.getLogger(__name__)
 
 
 class Society:
@@ -19,10 +23,15 @@ class Society:
         self.year = 0
         self.agents: dict[int, Agent] = {}
         self.environment = Environment(config, rng)
-        self.events: list[dict] = []  # all events across all years
+        self._event_window: list[dict] = []        # rolling buffer, last N events
+        self._event_window_size: int = 500          # configurable cap
+        self.event_type_counts: dict[str, int] = {} # running totals by type
         self.tick_events: list[dict] = []  # events from current tick only
         self.equilibrium_flagged: bool = False
         self.equilibrium_year: Optional[int] = None
+
+        # Per-simulation ID generator (Fix #1)
+        self.id_counter = IdCounter()
 
         # DD14: Faction tracking
         self.factions: dict[int, dict] = {}
@@ -33,12 +42,17 @@ class Society:
         self._last_neighborhood_refresh: int = -999
 
         # DD20: Leadership tracking
-        self.faction_leaders: dict[int, dict] = {}  # faction_id → {war_leader, peace_chief, ...}
+        self.faction_leaders: dict[int, dict] = {}
+
+        # Reverse partnership index (Fix #5)
+        self._partner_index: dict[int, set[int]] = {}
 
         # Initialize population
-        pop = create_initial_population(rng, config, config.population_size)
+        pop = create_initial_population(rng, config, config.population_size, self.id_counter)
         for a in pop:
             self.agents[a.id] = a
+            for pid in a.partner_ids:
+                self._index_bond(a.id, pid)
 
     def get_living(self) -> list[Agent]:
         return [a for a in self.agents.values() if a.alive]
@@ -67,7 +81,44 @@ class Society:
         if "year" not in event:
             event["year"] = self.year
         self.tick_events.append(event)
-        self.events.append(event)
+        # Rolling window — trim from front when over cap
+        self._event_window.append(event)
+        if len(self._event_window) > self._event_window_size:
+            self._event_window.pop(0)
+        # Accumulate type counts (never trimmed — cheap summary)
+        etype = event.get("type", "unknown")
+        self.event_type_counts[etype] = self.event_type_counts.get(etype, 0) + 1
+
+    # ── Partnership index (Fix #5) ─────────────────────────────────
+
+    def _index_bond(self, a_id: int, b_id: int):
+        """Record a bond in the reverse index (both directions)."""
+        self._partner_index.setdefault(a_id, set()).add(b_id)
+        self._partner_index.setdefault(b_id, set()).add(a_id)
+
+    def _unindex_bond(self, a_id: int, b_id: int):
+        """Remove a bond from the reverse index (both directions)."""
+        self._partner_index.get(a_id, set()).discard(b_id)
+        self._partner_index.get(b_id, set()).discard(a_id)
+
+    def get_partners_of(self, agent_id: int) -> set[int]:
+        """O(1) lookup: all agent IDs that have agent_id as a partner."""
+        return self._partner_index.get(agent_id, set())
+
+    # ── Dead ledger cleanup (Fix #8) ──────────────────────────────
+
+    def purge_dead_from_ledgers(self, dead_ids: set[int]):
+        """Remove dead agent IDs from all living agents' reputation ledgers."""
+        if not dead_ids:
+            return
+        for agent in self.get_living():
+            for did in dead_ids:
+                agent.reputation_ledger.pop(did, None)
+        # Clean partner index
+        for did in dead_ids:
+            self._partner_index.pop(did, None)
+        for partners in self._partner_index.values():
+            partners -= dead_ids
 
     def inject_migrants(self, count: int):
         """Emergency population injection to prevent extinction.
@@ -91,7 +142,7 @@ class Society:
 
         for i in range(count):
             sex = Sex.FEMALE if i < count // 2 else Sex.MALE
-            a = Agent(sex=sex, age=int(self.rng.integers(18, 35)), generation=0)
+            a = Agent(id=self.id_counter.next(), sex=sex, age=int(self.rng.integers(18, 35)), generation=0)
             for trait in HERITABLE_TRAITS:
                 if use_pop:
                     val = self.rng.normal(trait_means[trait], trait_stds[trait])
@@ -136,10 +187,11 @@ class Society:
                 parent = self.get_by_id(pid)
                 if parent and parent.alive:
                     hh.add(pid)
-        # Reverse partner lookup — agents who list us as partner
-        for a in self.agents.values():
-            if a.alive and agent.id in a.partner_ids:
-                hh.add(a.id)
+        # Reverse partner lookup via index (O(1) instead of O(N))
+        for pid in self.get_partners_of(agent.id):
+            p = self.get_by_id(pid)
+            if p and p.alive:
+                hh.add(pid)
         return hh
 
     def refresh_neighborhoods(self, config, rng):
@@ -315,7 +367,7 @@ class Society:
             for _ in range(n_immigrants):
                 sex = Sex.FEMALE if rng.random() < 0.5 else Sex.MALE
                 age = int(rng.integers(18, 35))
-                a = Agent(sex=sex, age=age, generation=0)
+                a = Agent(id=self.id_counter.next(), sex=sex, age=age, generation=0)
 
                 for trait in HERITABLE_TRAITS:
                     if trait_source == 'population_mean' and len(living) >= 5:

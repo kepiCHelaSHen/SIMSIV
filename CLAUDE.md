@@ -3,7 +3,7 @@
 Emergent social simulation: 500+ agents with 26 heritable traits compete for resources, mates, and status. All social patterns EMERGE from rules — never hardwired. Phase C complete (DD01-DD26).
 
 ## Current Status
-Phase C complete. AutoSIM running (Mode A, 100+ experiments logged). Streamlit dashboard built (`dashboard/app.py`).
+Phase E complete (Engineering hardening: IdCounter, event window, partner index, logging, test suite). Ready for v2 multi-band or autosim scale-up.
 See `STATUS.md` for what to work on next.
 
 ## Key Files
@@ -19,6 +19,10 @@ See `STATUS.md` for what to work on next.
 - **Models know nothing about engines** — no circular imports.
 - **All randomness** via `numpy.random.Generator` seeded from config. Same seed = identical results.
 - **Events are dicts**: `{type, year, agent_ids, description, outcome}`
+- **Isolated simulation instances**: Use `Simulation(config)` freely in loops. Each instance owns its own `IdCounter` at `society.id_counter`. Agent IDs are unique within a run. Two simultaneous simulations both start from ID 1.
+- **Bounded events**: `society._event_window` holds last 500 events (rolling). `society.event_type_counts` holds running totals per event type. Do NOT use `society.events` — that attribute no longer exists.
+- **Structured logging**: All engines use `logging.getLogger(__name__)`. Pass `--verbose` for debug output. No bare `print()` inside engines.
+- **Config validation**: `Config.load()` warns on unrecognized YAML keys. `Config.__post_init__` validates `mating_system` and wires enforcement flags.
 
 ## Engine Tick Order (12 steps)
 1. Environment (scarcity shocks, seasons)
