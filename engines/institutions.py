@@ -196,9 +196,21 @@ class InstitutionEngine:
                         if e.get("type") == "conflict")
         violence_rate = conflicts / pop if pop > 0 else 0
 
+        # DD27: Group loyalty + conscientiousness boost norm compliance
+        avg_group_loyalty = float(np.mean([a.group_loyalty for a in living]))
+        avg_conscientiousness = float(np.mean([a.conscientiousness for a in living]))
+        norm_compliance_bonus = (avg_group_loyalty * 0.1
+                                 + avg_conscientiousness * 0.08)
+
+        # DD27: Future orientation drives institutional investment
+        avg_future_orientation = float(np.mean([a.future_orientation for a in living]))
+        future_boost = avg_future_orientation * 0.05
+
         # Cooperation above threshold drives growth; violence drives decay
         # DD15: Conformity amplifies cooperation's institutional effect
-        coop_factor = max(0, avg_coop - 0.4) * coop_boost * (1.0 + avg_conformity * 0.3)
+        coop_factor = (max(0, avg_coop - 0.4) * coop_boost
+                       * (1.0 + avg_conformity * 0.3)
+                       + norm_compliance_bonus + future_boost)
         violence_factor = violence_rate * vio_decay
 
         # Inertia: harder to change when already at extremes

@@ -61,6 +61,11 @@ class ReproductionEngine:
             maternal_inv_mod = 1.0 - female.maternal_investment * 0.2  # [0.8, 1.0]
             conception_chance = config.base_conception_chance * fertility_mod * resource_mod * health_mod * maternal_inv_mod
 
+            # DD27: Future-oriented agents wait for better conditions when resources low
+            if (female.current_resources < 5.0
+                    and female.future_orientation > 0.6):
+                conception_chance *= 0.7
+
             # DD10: Birth timing sensitivity — higher conception in peak resource years
             if getattr(config, 'seasonal_cycle_enabled', False):
                 phase = society.environment.seasonal_phase
@@ -124,6 +129,8 @@ class ReproductionEngine:
             cb_rate = config.childbirth_mortality_rate
             if female.health < 0.4:
                 cb_rate *= 3.0  # high risk for unhealthy mothers
+            # DD27: High endurance women survive childbirth better
+            cb_rate *= max(0.5, 1.0 - female.endurance * 0.4)
             if rng.random() < cb_rate:
                 female.die("childbirth", society.year)
                 events.append({
@@ -166,6 +173,8 @@ class ReproductionEngine:
 
             # DD15: High maternal investment boosts child survival
             survival_chance *= (1.0 + female.maternal_investment * 0.15)  # up to +15%
+            # DD27: Conscientious parents invest more consistently
+            survival_chance *= (0.8 + female.conscientiousness * 0.4)
 
             # DD06: Grandparent survival bonus
             for pid in female.parent_ids:

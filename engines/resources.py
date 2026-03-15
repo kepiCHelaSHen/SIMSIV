@@ -98,12 +98,19 @@ class ResourceEngine:
         storage_intel_bonus = getattr(config, 'storage_intelligence_bonus', 0.0)
         storage_cap = getattr(config, 'resource_storage_cap', 20.0)
         resource_types = getattr(config, 'resource_types_enabled', False)
+        fo_storage_mult = config.future_orientation_storage_multiplier
         for agent in living:
             # Smarter agents preserve more (better storage)
             effective_decay = config.resource_decay_rate
             if storage_intel_bonus > 0:
                 effective_decay += agent.intelligence_proxy * storage_intel_bonus
                 effective_decay = min(0.9, effective_decay)  # can't keep more than 90%
+            # DD27: Future-oriented agents save more resources
+            effective_decay *= (0.6 + agent.future_orientation * fo_storage_mult)
+            effective_decay = min(0.95, effective_decay)
+            # DD27: Anxious agents hoard as safety buffer
+            effective_decay += agent.anxiety_baseline * 0.10
+            effective_decay = min(0.95, effective_decay)
 
             if resource_types:
                 # DD21: Type-specific decay rates
@@ -161,7 +168,15 @@ class ResourceEngine:
             # Cooperation network bonus — cooperative clusters gain advantage
             network = min(network_sizes[a.id], 5) * config.cooperation_network_bonus
 
-            raw_weight = intelligence + status + experience + wealth + network
+            # DD27: Physical strength competitive weight (sex differential)
+            str_bonus = a.physical_strength * 0.08
+            if a.sex == Sex.FEMALE:
+                str_bonus *= 0.6  # endurance-based tasks favor different physiology
+            raw_weight = intelligence + status + experience + wealth + network + str_bonus
+            # DD27: Endurance foraging bonus
+            raw_weight += a.endurance * config.endurance_foraging_bonus
+            # DD27: Future-oriented agents use resources more efficiently
+            raw_weight += a.future_orientation * 0.10
 
             # DD21: Tools multiply subsistence production
             if resource_types:
@@ -250,6 +265,10 @@ class ResourceEngine:
                         continue
                 # DD14: Lower trust threshold for same-faction members
                 eff_thresh = config.cooperation_trust_threshold
+                # DD27: Outgroup tolerance lowers sharing trust threshold
+                eff_thresh = max(0.25, eff_thresh
+                                 - agent.outgroup_tolerance
+                                 * config.outgroup_tolerance_sharing_threshold)
                 if (factions_active and agent.faction_id is not None
                         and other.faction_id == agent.faction_id):
                     eff_thresh -= in_group_trust_red
@@ -275,6 +294,13 @@ class ResourceEngine:
                 n_in = sum(1 for a in allies if a.faction_id == agent.faction_id)
                 if n_in > 0:
                     share_rate *= (1.0 + in_group_bonus * n_in / len(allies))
+                # DD27: Group loyalty amplifies in-faction sharing
+                if agent.group_loyalty > 0.6 and n_in > 0:
+                    share_rate *= 1.2
+            # DD27: Psychopathy reduces sharing (exploiter strategy)
+            if agent.psychopathy_tendency > 0.6:
+                share_rate *= max(0.2, 1.0 - agent.psychopathy_tendency
+                                  * config.psychopathy_sharing_penalty)
             share_amount = agent.current_resources * share_rate
             if share_amount > 0.5:  # only share if meaningful
                 per_ally = share_amount / len(allies)

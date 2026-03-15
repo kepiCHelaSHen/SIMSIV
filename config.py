@@ -320,6 +320,15 @@ class Config:
     belief_institutional_influence: float = 0.3  # weight of belief aggregate in inst drift
     prestige_transmission_weight: float = 0.6    # how much more prestigious agents influence beliefs
 
+    # ── DD27: Trait completion parameters ─────────────────────────────
+    physical_strength_combat_weight: float = 0.12
+    endurance_foraging_bonus: float = 0.06
+    anxiety_flee_boost: float = 0.10
+    psychopathy_sharing_penalty: float = 0.6
+    outgroup_tolerance_sharing_threshold: float = 0.15
+    future_orientation_storage_multiplier: float = 0.8
+    conscientiousness_skill_decay_modifier: float = 0.5
+
     # ── Environment and safety ──────────────────────────────────────
     scarcity_event_probability: float = 0.03  # base annual chance of scarcity shock
     min_viable_population: int = 20  # inject migrants if below this

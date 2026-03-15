@@ -81,7 +81,9 @@ class ConflictEngine:
 
             # Network deterrence: agents embedded in dense networks fight less
             own_allies = ally_counts.get(agent.id, 0)
-            total_p *= 1.0 / (1.0 + own_allies * 0.05)
+            # DD27: Psychopathy reduces network deterrence (fearless)
+            deterrence_mult = max(0.3, 1.0 - agent.psychopathy_tendency * 0.5)
+            total_p *= 1.0 / (1.0 + own_allies * 0.05 * deterrence_mult)
 
             # Subordination: recent losers are less aggressive
             if agent.conflict_cooldown > 0:
@@ -96,6 +98,9 @@ class ConflictEngine:
                     total_p *= config.mature_conflict_dampening  # -20% for mature
                 elif stage == "ELDER":
                     total_p *= 0.5  # elders rarely initiate
+
+            # DD27: Anxiety suppresses conflict initiation
+            total_p *= max(0.3, 1.0 - agent.anxiety_baseline * 0.4)
 
             # DD25: Violence acceptability belief modifier
             if getattr(config, 'beliefs_enabled', False) and agent.age >= 15:
@@ -130,6 +135,8 @@ class ConflictEngine:
             flee_thresh = config.flee_threshold
             if "degenerative" in target.active_conditions:
                 flee_thresh += getattr(config, 'degenerative_flee_threshold_boost', 0.15)
+            # DD27: Anxiety raises flee threshold (anxious agents flee more readily)
+            flee_thresh += target.anxiety_baseline * config.anxiety_flee_boost
             if effective_risk < flee_thresh:
                 flee_chance = (1.0 - effective_risk) * 0.5
                 if rng.random() < flee_chance:
@@ -160,6 +167,8 @@ class ConflictEngine:
                         defense_p = (config.coalition_defense_probability
                                      * other.trust_of(target.id)
                                      * other.cooperation_propensity)
+                        # DD27: Group loyalty boosts coalition defense
+                        defense_p += other.group_loyalty * 0.3
                         if rng.random() < defense_p:
                             # Ally intervenes — aggressor deterred
                             agent.dominance_score = max(0.0,
@@ -272,9 +281,14 @@ class ConflictEngine:
                                   * config.network_deterrence_factor)
 
             # Strength assessment: cowardly aggressors avoid strong targets
+            # DD27: Psychopathy sharpens prey selection (target weaker)
+            strength_weight = 1.0 + aggressor.psychopathy_tendency * 0.4
             if aggressor.risk_tolerance < 0.4:
                 if c.health > aggressor.health * 1.2:
                     weights[i] *= 0.5
+            # High psychopathy targets weaker agents more
+            if aggressor.psychopathy_tendency > 0.5 and c.health < aggressor.health * 0.8:
+                weights[i] *= strength_weight
 
             # DD14: Out-group targeting preference
             if (getattr(config, 'factions_enabled', False)
@@ -347,6 +361,16 @@ class ConflictEngine:
                      + target.physical_robustness * 0.10      # DD15
                      + target.dominance_drive * 0.10          # DD15
                      + target.pain_tolerance * 0.05)          # DD15
+
+        # DD27: Physical strength additive with sex differential
+        for fighter, label in [(aggressor, 'agg'), (target, 'tgt')]:
+            str_contrib = fighter.physical_strength * config.physical_strength_combat_weight
+            if fighter.sex == Sex.MALE:
+                str_contrib *= 1.4
+            if label == 'agg':
+                agg_power += str_contrib
+            else:
+                tgt_power += str_contrib
 
         # DD26: Combat skill contributes to power
         if getattr(config, 'skills_enabled', False):
@@ -527,6 +551,8 @@ class ConflictEngine:
                         and punisher.trust_of(aggressor.id) < 0.5):
                     # Probability based on cooperation and distrust of aggressor
                     punish_p = (punisher.cooperation_propensity - 0.4) * 0.3
+                    # DD27: Group loyalty boosts punishment of threats
+                    punish_p += punisher.group_loyalty * 0.15
                     # DD25: Low violence_acceptability → more likely to punish violence
                     if getattr(config, 'beliefs_enabled', False):
                         punish_p *= max(0.5, 1.0 - punisher.violence_acceptability * 0.3)

@@ -478,6 +478,17 @@ class MetricsCollector:
             "avg_dominance_drive": trait_means.get("dominance_drive", 0.5),
             "avg_maternal_investment": trait_means.get("maternal_investment", 0.5),
             "avg_sexual_maturation": trait_means.get("sexual_maturation_rate", 0.5),
+            # DD27: New trait metrics
+            "avg_physical_strength": trait_means.get("physical_strength", 0.5),
+            "avg_endurance": trait_means.get("endurance", 0.5),
+            "avg_group_loyalty": trait_means.get("group_loyalty", 0.5),
+            "avg_outgroup_tolerance": trait_means.get("outgroup_tolerance", 0.5),
+            "avg_future_orientation": trait_means.get("future_orientation", 0.5),
+            "avg_conscientiousness": trait_means.get("conscientiousness", 0.5),
+            "avg_psychopathy_tendency": trait_means.get("psychopathy_tendency", 0.2),
+            "avg_anxiety_baseline": trait_means.get("anxiety_baseline", 0.5),
+            "avg_paternal_investment_preference": trait_means.get("paternal_investment_preference", 0.5),
+            "psychopathy_std": trait_stds.get("psychopathy_tendency", 0.0),
             # DD18: Proximity tier metrics
             "avg_household_size": float(np.mean([
                 len(society.household_of(a)) for a in living

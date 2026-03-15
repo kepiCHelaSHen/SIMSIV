@@ -289,6 +289,9 @@ class Society:
         # Pull: cooperation
         avg_coop = float(np.mean([a.cooperation_propensity for a in living]))
         p_imm *= (1.0 + avg_coop * 0.5)
+        # DD27: Outgroup tolerance modulates immigration pull
+        avg_outgroup_tol = float(np.mean([a.outgroup_tolerance for a in living]))
+        p_imm *= (0.7 + avg_outgroup_tol * 0.6)
 
         p_imm = max(0.0, min(0.1, p_imm))
 

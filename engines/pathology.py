@@ -86,6 +86,10 @@ class PathologyEngine:
                 if ctype == "mental_illness" and agent.trauma_score > 0.4:
                     activation_p *= (1.0 + agent.trauma_score)
 
+                # DD27: High anxiety baseline increases mental illness activation
+                if ctype == "mental_illness":
+                    activation_p *= (0.7 + agent.anxiety_baseline * 0.6)
+
                 activation_p = min(0.3, activation_p)  # cap at 30%
 
                 if rng.random() < activation_p:

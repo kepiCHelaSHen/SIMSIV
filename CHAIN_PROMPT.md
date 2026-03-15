@@ -1,7 +1,7 @@
 # SIMSIV — CHAIN PROMPT MASTER FILE
 # Simulation of Intersecting Social and Institutional Variables
 # Root: D:\EXPERIMENTS\SIM
-# Last Updated: 2026-03-14 | Phase C complete
+# Last Updated: 2026-03-15 | Phase D — DD27 trait completion
 
 ================================================================================
 PURPOSE OF THIS FILE
@@ -28,7 +28,7 @@ Name:       SIMSIV
 Full name:  Simulation of Intersecting Social and Institutional Variables
 Location:   D:\EXPERIMENTS\SIM\
 Language:   Python 3.11+
-Status:     PHASE C COMPLETE — All 26 deep dives done (DD01-DD26)
+Status:     PHASE D — DD27 trait completion done (35 heritable traits)
 
 Purpose:
   Model how human social structures may emerge from first-principles interactions
@@ -332,7 +332,7 @@ D:\EXPERIMENTS\SIM\
 │
 ├── models\
 │   ├── __init__.py
-│   ├── agent.py                 ← 26 heritable traits + 5 beliefs + 4 skills
+│   ├── agent.py                 ← 35 heritable traits + 5 beliefs + 4 skills
 │   ├── environment.py
 │   └── society.py               ← proximity tiers, factions, migration
 │

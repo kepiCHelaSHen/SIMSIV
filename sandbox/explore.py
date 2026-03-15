@@ -88,6 +88,15 @@ def agent_df(sim):
             "social": round(a.social_skill, 3),
             "hierarchy_belief": round(a.hierarchy_belief, 3),
             "cooperation_norm": round(a.cooperation_norm, 3),
+            "phys_str": round(a.physical_strength, 3),
+            "endur": round(a.endurance, 3),
+            "grp_loy": round(a.group_loyalty, 3),
+            "out_tol": round(a.outgroup_tolerance, 3),
+            "future_o": round(a.future_orientation, 3),
+            "consc": round(a.conscientiousness, 3),
+            "psycho": round(a.psychopathy_tendency, 3),
+            "anxiety": round(a.anxiety_baseline, 3),
+            "pat_inv": round(a.paternal_investment_preference, 3),
         })
     return pd.DataFrame(records).set_index("id")
 

@@ -59,6 +59,10 @@ class MortalityEngine:
             # DD15: Longevity genes reduce health decay after age 50
             if agent.age > 50:
                 decay *= max(0.5, 1.0 - agent.longevity_genes * 0.4)  # up to 40% slower
+            # DD27: Endurance slows health decay
+            decay *= max(0.7, 1.0 - agent.endurance * 0.15)
+            # DD27: Conscientiousness maintains health through consistent behavior
+            decay *= max(0.75, 1.0 - agent.conscientiousness * 0.12)
             agent.health = max(0.0, agent.health - decay)
 
             # Scarcity stress

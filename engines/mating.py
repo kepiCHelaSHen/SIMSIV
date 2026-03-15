@@ -88,6 +88,14 @@ class MatingEngine:
                 dissolution_chance = base_rate * strength_factor * (
                     1.0 + resource_stress * 0.5 + quality_factor
                 )
+                # DD27: Future-oriented agents resist dissolution
+                dissolution_chance *= max(0.5, 1.0 - female.future_orientation * 0.3)
+                # DD27: Psychopathy accelerates dissolution
+                dissolution_chance *= (1.0 + agent.psychopathy_tendency * 0.5)
+                # DD27: Paternal investment preference resists dissolution (male)
+                if agent.sex == Sex.MALE:
+                    dissolution_chance *= max(0.5,
+                        1.0 - agent.paternal_investment_preference * 0.2)
                 dissolution_chance = min(0.5, dissolution_chance)
 
                 if rng.random() < dissolution_chance:
@@ -171,6 +179,9 @@ class MatingEngine:
                 choosiness += config.female_choosiness_age_effect * (female.age - 30)
             choosiness = max(0.1, min(1.0, choosiness))
 
+            # DD27: Anxious females are more cautious in mate evaluation
+            choosiness = min(1.0, choosiness + female.anxiety_baseline * 0.15)
+
             # Resource desperation: poor females are less choosy
             if female.current_resources < 3.0:
                 choosiness *= 0.7
@@ -194,6 +205,9 @@ class MatingEngine:
                 # Cooperation bonus (STRONG)
                 coop_bonus = 1.0 + m.cooperation_propensity * 0.4  # [1.0, 1.4]
                 weights[i] *= coop_bonus
+
+                # DD27: Physical strength boosts male mate value
+                weights[i] *= (1.0 + m.physical_strength * 0.05)
 
                 # DD17: Active conditions reduce attractiveness signal
                 if getattr(config, 'pathology_enabled', False) and m.active_conditions:
@@ -224,7 +238,31 @@ class MatingEngine:
                     if m.id in female_neighborhood:
                         pass  # full weight (neighborhood = 1.0x for mate choice)
                     else:
-                        weights[i] *= band_weight  # band tier = reduced visibility
+                        # DD27: Outgroup tolerance increases out-of-neighborhood evaluation
+                        effective_band_weight = band_weight + female.outgroup_tolerance * 0.3
+                        weights[i] *= min(1.0, effective_band_weight)
+
+            # DD27: Paternal investment preference reweights mate value
+            if female.paternal_investment_preference != 0.5:
+                pip = female.paternal_investment_preference
+                for i, m in enumerate(candidates):
+                    # Investment signals: resources, reputation, cooperation
+                    res_norm = min(m.current_resources / 20.0, 1.0)
+                    invest_signal = (res_norm * 0.4 + m.reputation * 0.3
+                                     + m.cooperation_propensity * 0.2
+                                     + m.primary_bond_strength * 0.1)
+                    # Genetic signals: health, attractiveness, dominance, strength
+                    genetic_signal = (m.health * 0.3 + m.attractiveness_base * 0.25
+                                      + m.dominance_score * 0.15
+                                      + m.physical_strength * 0.15
+                                      + m.current_status * 0.15)
+                    blend = pip * invest_signal + (1.0 - pip) * genetic_signal
+                    weights[i] *= (0.7 + blend * 0.6)
+
+            # DD27: Psychopathy enhances initial bond formation (charm)
+            for i, m in enumerate(candidates):
+                if m.psychopathy_tendency > 0.3:
+                    weights[i] *= (0.8 + m.psychopathy_tendency * 0.4)
 
             # Apply choosiness (blend toward uniform)
             if choosiness < 1.0:
@@ -329,6 +367,8 @@ class MatingEngine:
 
             bond_str = female.bond_strength_with(partner_id)
             epc_chance = config.infidelity_base_rate * gap * (1.0 - bond_str * 0.5)
+            # DD27: Low paternal_investment_preference increases EPC (genetic quality seeking)
+            epc_chance *= (1.5 - female.paternal_investment_preference)
 
             if rng.random() > epc_chance:
                 continue

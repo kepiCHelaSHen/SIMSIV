@@ -52,6 +52,20 @@ HERITABLE_TRAITS = [
     "autoimmune_risk",           # 23
     "metabolic_risk",            # 24
     "degenerative_risk",         # 25
+    # DD27: Physical performance
+    "physical_strength",         # 26
+    "endurance",                 # 27
+    # DD27: Social architecture
+    "group_loyalty",             # 28
+    "outgroup_tolerance",        # 29
+    # DD27: Temporal and cognitive
+    "future_orientation",        # 30
+    "conscientiousness",         # 31
+    # DD27: Psychopathology spectrum
+    "psychopathy_tendency",      # 32
+    "anxiety_baseline",          # 33
+    # DD27: Evolutionary psychology
+    "paternal_investment_preference",  # 34
 ]
 
 # DD15: Per-trait heritability coefficients (h²)
@@ -84,14 +98,24 @@ TRAIT_HERITABILITY = {
     "autoimmune_risk": 0.40,
     "metabolic_risk": 0.45,
     "degenerative_risk": 0.35,
+    # DD27: New trait heritability
+    "physical_strength": 0.60,
+    "endurance": 0.50,
+    "group_loyalty": 0.42,
+    "outgroup_tolerance": 0.40,
+    "future_orientation": 0.40,
+    "conscientiousness": 0.49,
+    "psychopathy_tendency": 0.50,
+    "anxiety_baseline": 0.40,
+    "paternal_investment_preference": 0.45,
 }
 
 
 def _build_correlation_matrix() -> np.ndarray:
-    """Build 21x21 trait correlation matrix programmatically.
+    """Build NxN trait correlation matrix programmatically.
 
-    Original 8x8 block preserved exactly. New correlations from
-    behavioral genetics literature added for DD15 traits.
+    Original 8x8 block preserved exactly. Correlations from
+    behavioral genetics literature added for DD15, DD17, DD27 traits.
     """
     n = len(HERITABLE_TRAITS)
     idx = {name: i for i, name in enumerate(HERITABLE_TRAITS)}
@@ -139,10 +163,70 @@ def _build_correlation_matrix() -> np.ndarray:
     _set("mental_illness_risk", "impulse_control", -0.2)
     _set("degenerative_risk", "physical_robustness", -0.2)
 
+    # ── DD27: Physical performance correlations ─────────────────
+    _set("physical_strength", "physical_robustness", 0.45)
+    _set("physical_strength", "pain_tolerance", 0.25)
+    _set("physical_strength", "endurance", 0.40)
+    _set("physical_strength", "aggression_propensity", 0.15)
+    _set("physical_strength", "longevity_genes", -0.10)
+    _set("endurance", "physical_robustness", 0.30)
+    _set("endurance", "longevity_genes", 0.25)
+    _set("endurance", "disease_resistance", 0.20)
+
+    # ── DD27: Social architecture correlations ──────────────────
+    _set("group_loyalty", "cooperation_propensity", 0.30)
+    _set("group_loyalty", "empathy_capacity", 0.25)
+    _set("group_loyalty", "conformity_bias", 0.20)
+    _set("group_loyalty", "outgroup_tolerance", -0.35)
+    _set("group_loyalty", "aggression_propensity", 0.15)
+    _set("outgroup_tolerance", "conformity_bias", -0.25)
+    _set("outgroup_tolerance", "novelty_seeking", 0.30)
+    _set("outgroup_tolerance", "empathy_capacity", 0.25)
+    _set("outgroup_tolerance", "jealousy_sensitivity", -0.20)
+
+    # ── DD27: Temporal and cognitive correlations ────────────────
+    _set("future_orientation", "intelligence_proxy", 0.30)
+    _set("future_orientation", "impulse_control", 0.35)
+    _set("future_orientation", "conscientiousness", 0.40)
+    _set("future_orientation", "risk_tolerance", -0.25)
+    _set("future_orientation", "novelty_seeking", -0.20)
+    _set("conscientiousness", "impulse_control", 0.35)
+    _set("conscientiousness", "intelligence_proxy", 0.20)
+    _set("conscientiousness", "risk_tolerance", -0.15)
+    _set("conscientiousness", "novelty_seeking", -0.25)
+
+    # ── DD27: Psychopathology spectrum correlations ──────────────
+    _set("psychopathy_tendency", "empathy_capacity", -0.50)
+    _set("psychopathy_tendency", "cooperation_propensity", -0.35)
+    _set("psychopathy_tendency", "conscientiousness", -0.30)
+    _set("psychopathy_tendency", "risk_tolerance", 0.25)
+    _set("psychopathy_tendency", "dominance_drive", 0.20)
+    _set("anxiety_baseline", "mental_health_baseline", -0.45)
+    _set("anxiety_baseline", "risk_tolerance", -0.45)
+    _set("anxiety_baseline", "impulse_control", 0.15)
+    _set("anxiety_baseline", "novelty_seeking", -0.30)
+    _set("anxiety_baseline", "mental_illness_risk", 0.30)
+
+    # ── DD27: Evolutionary psychology correlations ───────────────
+    _set("paternal_investment_preference", "maternal_investment", 0.30)
+    _set("paternal_investment_preference", "jealousy_sensitivity", 0.20)
+    _set("paternal_investment_preference", "conscientiousness", 0.25)
+    _set("paternal_investment_preference", "future_orientation", 0.20)
+    _set("paternal_investment_preference", "risk_tolerance", -0.15)
+
+    # Ensure matrix is symmetric positive-semidefinite
+    # Eigenvalue clipping: replace negative eigenvalues with small positive
+    eigenvalues, eigenvectors = np.linalg.eigh(C)
+    eigenvalues = np.maximum(eigenvalues, 1e-6)
+    C = eigenvectors @ np.diag(eigenvalues) @ eigenvectors.T
+    # Re-normalize diagonal to 1.0 (correlation matrix)
+    d = np.sqrt(np.diag(C))
+    C = C / np.outer(d, d)
+
     return C
 
 
-# Correlation matrix for initial trait generation (21x21).
+# Correlation matrix for initial trait generation (35x35).
 TRAIT_CORRELATION = _build_correlation_matrix()
 
 
@@ -204,6 +288,20 @@ class Agent:
     autoimmune_risk: float = 0.2
     metabolic_risk: float = 0.2
     degenerative_risk: float = 0.2
+    # DD27: Physical performance
+    physical_strength: float = 0.5
+    endurance: float = 0.5
+    # DD27: Social architecture
+    group_loyalty: float = 0.5
+    outgroup_tolerance: float = 0.5
+    # DD27: Temporal and cognitive
+    future_orientation: float = 0.5
+    conscientiousness: float = 0.5
+    # DD27: Psychopathology spectrum
+    psychopathy_tendency: float = 0.2
+    anxiety_baseline: float = 0.5
+    # DD27: Evolutionary psychology
+    paternal_investment_preference: float = 0.5
 
     # ── Non-heritable (earned/contextual) ────────────────────────────
     health: float = 1.0
@@ -436,9 +534,11 @@ def create_initial_population(
     if config.correlated_traits:
         # Generate correlated trait values via multivariate normal
         # DD17: Condition risk traits start with lower mean (0.2) for healthy population
-        condition_risk_traits = {"cardiovascular_risk", "mental_illness_risk",
-                                 "autoimmune_risk", "metabolic_risk", "degenerative_risk"}
-        mean = np.array([0.2 if t in condition_risk_traits else 0.5
+        # DD27: psychopathy_tendency also defaults to 0.2
+        low_default_traits = {"cardiovascular_risk", "mental_illness_risk",
+                              "autoimmune_risk", "metabolic_risk", "degenerative_risk",
+                              "psychopathy_tendency"}
+        mean = np.array([0.2 if t in low_default_traits else 0.5
                          for t in HERITABLE_TRAITS])
         std = 0.15
         cov = TRAIT_CORRELATION * (std ** 2)

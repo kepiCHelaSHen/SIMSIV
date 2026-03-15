@@ -1,16 +1,17 @@
 # SIMSIV — Current Status
 
-Phase: C — ALL 26 DEEP DIVES COMPLETE (DD01-DD26)
-Last completed: DD26 Skills — skill acquisition and cultural knowledge
+Phase: D — DD27 TRAIT COMPLETION DONE (35 heritable traits)
+Last completed: DD27 Trait completion — 9 new heritable traits (scientific ceiling)
 Current blocker: None
-Next step: Phase D or v2 planning (multi-band dynamics, performance optimization)
+Next step: Apply autosim best_config, run optimization with expanded trait model
 
 ## Summary
 
-- 26 heritable traits, 5 belief dimensions, 4 skill domains
+- 35 heritable traits, 5 belief dimensions, 4 skill domains
 - 9 engines: environment, resources, conflict, mating, reproduction, mortality, pathology, institutions, reputation
-- 26 deep dives complete — see `docs/deep_dive_*.md` for design rationale
-- ~250 config params, ~120 metrics per tick
+- 27 deep dives complete — see `docs/deep_dive_*.md` for design rationale
+- ~257 config params, ~130 metrics per tick
 - Historical results archived to `devlog/DEV_LOG.md`
+- AutoSIM v1.0: Mode A parameter optimization with simulated annealing
 
-Updated: 2026-03-14
+Updated: 2026-03-15

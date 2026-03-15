@@ -121,6 +121,11 @@ class ReputationEngine:
                 # Update ally's ledger: nudge toward gossiper's (noisy) opinion
                 current = ally.trust_of(subject_id)
                 delta = (noisy_opinion - current) * gossip_weight
+                # DD27: Outgroup tolerance speeds trust building with immigrants
+                subject = society.get_by_id(subject_id)
+                if (subject and getattr(subject, 'origin_band_id', 0) > 0
+                        and ally.outgroup_tolerance > 0.5):
+                    delta += ally.outgroup_tolerance * 0.02
                 ally.remember(subject_id, delta)
                 gossip_count += 1
 
@@ -150,6 +155,10 @@ class ReputationEngine:
                     aggregate = float(np.mean(scores))
                     # Blend: 70% aggregate trust, 30% existing reputation (stability)
                     agent.reputation = agent.reputation * 0.3 + aggregate * 0.7
+                    # DD27: Psychopathy boosts initial appearance but amplifies damage
+                    if agent.psychopathy_tendency > 0.4 and len(scores) < 5:
+                        agent.reputation = min(1.0,
+                            agent.reputation + agent.psychopathy_tendency * 0.1)
                 # If no one has an opinion, reputation stays as-is
 
         # ── Phase 5 (DD25): Belief evolution (every 3 ticks) ──────────
@@ -373,15 +382,18 @@ class ReputationEngine:
                 agent.craft_skill = min(1.0, agent.craft_skill + gain)
 
             # ── Skill decay ────────────────────────────────────────
+            # DD27: Conscientiousness reduces skill decay
+            consc_mod = max(0.4, 1.0 - agent.conscientiousness
+                            * config.conscientiousness_skill_decay_modifier)
             agent.foraging_skill = max(0.0,
-                agent.foraging_skill - config.skill_foraging_decay)
+                agent.foraging_skill - config.skill_foraging_decay * consc_mod)
             agent.combat_skill = max(0.0,
-                agent.combat_skill - config.skill_combat_decay)
+                agent.combat_skill - config.skill_combat_decay * consc_mod)
             agent.social_skill = max(0.0,
-                agent.social_skill - config.skill_social_decay)
+                agent.social_skill - config.skill_social_decay * consc_mod)
             if resource_types:
                 agent.craft_skill = max(0.0,
-                    agent.craft_skill - config.skill_craft_decay)
+                    agent.craft_skill - config.skill_craft_decay * consc_mod)
 
         # ── Combat skill growth from conflict events ──────────────
         for event in society.tick_events:

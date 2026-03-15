@@ -1295,6 +1295,47 @@ Key results (Session 005, 3 seeds x 200yr x 500 pop) — Post-DD02 four-way comp
   - RESOURCE_SCARCITY: Gini=0.283, pop=609 (no longer collapses)
   - Aggression-pays-cost signal confirmed across all scenarios
 
+---
+DATE: 2026-03-15
+SESSION: DD27
+AUTHOR: claude
+TYPE: CODE
+SUMMARY: Trait completion -- 26 to 35 heritable traits (scientific ceiling)
+DETAILS:
+  Added 9 new heritable traits in 5 groups:
+  G1: physical_strength (h2=0.60), endurance (h2=0.50)
+  G2: group_loyalty (h2=0.42), outgroup_tolerance (h2=0.40)
+  G3: future_orientation (h2=0.40), conscientiousness (h2=0.49)
+  G4: psychopathy_tendency (h2=0.50, default=0.2), anxiety_baseline (h2=0.40)
+  G5: paternal_investment_preference (h2=0.45)
+
+  35 new correlation pairs. 7 new config parameters. 10 new metrics.
+  Behavioral effects wired into 8 engines + society.py.
+  Correlation matrix forced PSD via eigenvalue clipping.
+
+  Validation results (all PASS):
+  - Psychopathy selection: mean 0.207 across 5 seeds x 200yr (stays low)
+  - Sex differential: male combat 1.37x female (1.4x multiplier verified)
+  - Institutions: avg law_strength 0.498 with emergent institutions
+  - All 5 smoke tests pass, backward compatible
+
+DECISIONS MADE:
+  - future_discounting inverted to future_orientation (1.0=patient) for clarity
+  - psychopathy_tendency defaults to 0.2 (not 0.5) reflecting realistic population distribution
+  - Correlation matrix PSD fix: eigenvalue clipping, diagonal re-normalization
+  - physical_strength sex differential in combat only (not genetic values)
+
+FILES CHANGED:
+  models/agent.py, config.py, metrics/collectors.py, sandbox/explore.py,
+  engines/conflict.py, engines/resources.py, engines/mating.py,
+  engines/reproduction.py, engines/mortality.py, engines/reputation.py,
+  engines/institutions.py, engines/pathology.py, models/society.py,
+  docs/deep_dive_27_trait_completion.md
+
+NEXT ACTIONS:
+  - Apply autosim best_config parameters before next optimization run
+  - Consider DD28: environmental heterogeneity (spatial resources)
+
 ================================================================================
 END OF LOG
 ================================================================================
