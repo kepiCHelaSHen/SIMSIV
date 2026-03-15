@@ -22,7 +22,7 @@ targets:
   violence_death_fraction:
     low: 0.05
     high: 0.15
-    weight: 1.5
+    weight: 2.0
     source: "Ethnographic data (!Kung, Yanomamo, Ache)"
     derived: true
     formula: "violence_deaths / male_deaths"
@@ -38,7 +38,7 @@ targets:
   child_survival_to_15:
     low: 0.50
     high: 0.70
-    weight: 1.5
+    weight: 2.0
     source: "Pre-industrial average (Volk & Atkinson 2013)"
     derived: true
     formula: "1.0 - childhood_deaths / births"
@@ -47,14 +47,14 @@ targets:
   avg_lifetime_births:
     low: 4.0
     high: 7.0
-    weight: 1.0
+    weight: 2.5
     source: "Natural fertility populations (Bentley 1996)"
 
   # Pair bond dissolution over measurement window
   bond_dissolution_rate:
     low: 0.10
     high: 0.30
-    weight: 0.8
+    weight: 1.5
     source: "Cross-cultural average (Betzig 1989)"
     derived: true
     formula: "bonds_dissolved / bonds_formed"
@@ -63,14 +63,14 @@ targets:
   avg_cooperation:
     low: 0.25
     high: 0.70
-    weight: 0.8
+    weight: 0.3
     source: "Cooperation exists in all human societies"
 
   # Aggression should be moderate — not eliminated, not dominant
   avg_aggression:
     low: 0.30
     high: 0.60
-    weight: 0.5
+    weight: 0.3
     source: "Aggression exists but is not dominant in most societies"
 
 # Parameters eligible for Mode A optimization with their allowed ranges.
@@ -96,13 +96,21 @@ tunable_parameters:
   seasonal_conflict_boost:     { low: 0.05, high: 0.40, default: 0.2 }
 
   # Mating / reproduction
-  pair_bond_dissolution_rate:  { low: 0.02, high: 0.20, default: 0.1 }
+  pair_bond_dissolution_rate:  { low: 0.02, high: 0.40, default: 0.1 }
   pair_bond_strength:          { low: 0.3,  high: 0.9,  default: 0.5 }
   base_conception_chance:      { low: 0.3,  high: 0.8,  default: 0.5 }
   female_choice_strength:      { low: 0.3,  high: 0.9,  default: 0.6 }
   infidelity_base_rate:        { low: 0.02, high: 0.12, default: 0.05 }
   maternal_age_fertility_decline: { low: 0.01, high: 0.06, default: 0.03 }
   maternal_health_cost:        { low: 0.01, high: 0.06, default: 0.03 }
+
+  # Fertility and bond dynamics
+  birth_interval_years:        { low: 1,    high: 3,    default: 2 }
+  age_first_reproduction:      { low: 13,   high: 16,   default: 15 }
+  age_max_reproduction_female: { low: 42,   high: 52,   default: 45 }
+  orphan_mortality_multiplier: { low: 1.2,  high: 3.0,  default: 2.0 }
+  grandparent_survival_bonus:  { low: 0.01, high: 0.10, default: 0.05 }
+  widowhood_mourning_years:    { low: 0,    high: 3,    default: 1 }
 
   # Mortality / demographics
   mortality_base:              { low: 0.005, high: 0.04, default: 0.02 }
