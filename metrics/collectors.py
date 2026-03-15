@@ -398,6 +398,8 @@ class MetricsCollector:
             "avg_intelligence": trait_means.get("intelligence_proxy", 0.5),
             "trait_std_aggression": trait_stds.get("aggression_propensity", 0.0),
             "trait_std_cooperation": trait_stds.get("cooperation_propensity", 0.0),
+            "trait_std_intelligence": trait_stds.get("intelligence_proxy", 0.0),
+            "trait_std_risk_tolerance": trait_stds.get("risk_tolerance", 0.0),
             "law_strength": current_law_strength,
             "violence_punishment": current_vps,
             "property_rights": current_property_rights,
