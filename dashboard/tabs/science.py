@@ -94,7 +94,7 @@ def render(df, df_std, living, society, config, sim_events, is_multi_run, seeds_
                                   xaxis_title="Pearson r with offspring count",
                                   height=600, template="plotly_dark",
                                   margin=dict(l=120, r=40, t=40, b=40))
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
             # Time-series selection pressure (rolling 20yr)
             if len(df) >= 25 and "avg_lifetime_births" in df.columns:
@@ -131,7 +131,7 @@ def render(df, df_std, living, society, config, sim_events, is_multi_run, seeds_
                                   yaxis_title="Pearson r", height=350,
                                   template="plotly_dark",
                                   margin=dict(l=40, r=40, t=40, b=40))
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
     # ── PANEL 2: Institutional Impact ────────────────────────────────
     with st.expander("Institutional Effects on Evolution", expanded=False):
@@ -165,7 +165,7 @@ def render(df, df_std, living, society, config, sim_events, is_multi_run, seeds_
                     fig.update_layout(title=title, height=300, template="plotly_dark",
                                       xaxis_title="Law Strength", yaxis_title=metric,
                                       margin=dict(l=40, r=20, t=40, b=40))
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
 
         # Correlation table
         corr_metrics = ["violence_rate", "avg_cooperation", "resource_gini",
@@ -178,7 +178,7 @@ def render(df, df_std, living, society, config, sim_events, is_multi_run, seeds_
                 corr_rows.append({"Metric": m, "Correlation with Law Strength": round(r, 3),
                                   "Direction": direction})
         if corr_rows:
-            st.dataframe(pd.DataFrame(corr_rows), use_container_width=True)
+            st.dataframe(pd.DataFrame(corr_rows), width="stretch")
 
     # ── PANEL 3: Genetic Diversity ───────────────────────────────────
     with st.expander("Gene Pool Diversity Over Time", expanded=False):
@@ -210,7 +210,7 @@ def render(df, df_std, living, society, config, sim_events, is_multi_run, seeds_
             fig.update_layout(title="Genetic Diversity Over Time", height=350,
                               template="plotly_dark", yaxis_title="Trait Std Dev",
                               margin=dict(l=40, r=40, t=40, b=40))
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
             # Diversity stats
             current_div = float(mean_diversity.iloc[-1])
@@ -272,8 +272,8 @@ def render(df, df_std, living, society, config, sim_events, is_multi_run, seeds_
                               xaxis_title="% of Living Population",
                               height=350, template="plotly_dark",
                               margin=dict(l=140, r=40, t=40, b=40))
-            st.plotly_chart(fig, use_container_width=True)
-            st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
+            st.dataframe(pd.DataFrame(table_rows), width="stretch")
         else:
             st.info("No lineage data available.")
 
@@ -297,90 +297,96 @@ def render(df, df_std, living, society, config, sim_events, is_multi_run, seeds_
             core_8 = HERITABLE_TRAITS[:8]
             X = np.array([[getattr(a, t, 0.5) for t in core_8] for a in living])
 
-            km = KMeans(n_clusters=n_clusters, n_init=10, random_state=42)
-            labels = km.fit_predict(X)
-            centers = km.cluster_centers_
+            try:
+                km = KMeans(n_clusters=n_clusters, n_init=10, random_state=42)
+                labels = km.fit_predict(X)
+                centers = km.cluster_centers_
+            except OSError:
+                st.warning("sklearn KMeans failed (Windows threadpool issue). "
+                           "Try: `pip install --upgrade threadpoolctl scikit-learn`")
+                labels = None
+                centers = None
 
-            # Name archetypes
-            archetype_names = []
-            for ci in range(n_clusters):
-                m_agg = centers[ci][0]
-                m_coop = centers[ci][1]
-                m_intel = centers[ci][7]
-                m_risk = centers[ci][4]
-                m_status = centers[ci][3]
-                m_fert = centers[ci][6]
-                # Check extended traits if available
-                cluster_agents = [living[i] for i in range(len(living)) if labels[i] == ci]
-                m_psych = float(np.mean([getattr(a, "psychopathy_tendency", 0.2) for a in cluster_agents]))
-                m_maternal = float(np.mean([getattr(a, "maternal_investment", 0.5) for a in cluster_agents]))
+            if labels is not None:
+                # Name archetypes
+                archetype_names = []
+                for ci in range(n_clusters):
+                    m_agg = centers[ci][0]
+                    m_coop = centers[ci][1]
+                    m_intel = centers[ci][7]
+                    m_risk = centers[ci][4]
+                    m_status = centers[ci][3]
+                    m_fert = centers[ci][6]
+                    cluster_agents = [living[i] for i in range(len(living)) if labels[i] == ci]
+                    m_psych = float(np.mean([getattr(a, "psychopathy_tendency", 0.2) for a in cluster_agents]))
+                    m_maternal = float(np.mean([getattr(a, "maternal_investment", 0.5) for a in cluster_agents]))
 
-                if m_agg > 0.6 and m_coop < 0.4:
-                    name = "Warrior"
-                elif m_coop > 0.6 and m_agg < 0.4:
-                    name = "Diplomat"
-                elif m_intel > 0.6 and m_risk < 0.4:
-                    name = "Scholar"
-                elif m_risk > 0.6 and m_status > 0.6:
-                    name = "Opportunist"
-                elif m_fert > 0.6 and m_maternal > 0.6:
-                    name = "Caregiver"
-                elif m_psych > 0.4:
-                    name = "Predator"
-                else:
-                    name = f"Type {ci + 1}"
-                archetype_names.append(name)
+                    if m_agg > 0.6 and m_coop < 0.4:
+                        name = "Warrior"
+                    elif m_coop > 0.6 and m_agg < 0.4:
+                        name = "Diplomat"
+                    elif m_intel > 0.6 and m_risk < 0.4:
+                        name = "Scholar"
+                    elif m_risk > 0.6 and m_status > 0.6:
+                        name = "Opportunist"
+                    elif m_fert > 0.6 and m_maternal > 0.6:
+                        name = "Caregiver"
+                    elif m_psych > 0.4:
+                        name = "Predator"
+                    else:
+                        name = f"Type {ci + 1}"
+                    archetype_names.append(name)
 
-            # Radar chart
-            core_abbrevs = [TRAIT_ABBREV.get(t, t[:6]) for t in core_8]
-            arc_colors = px.colors.qualitative.Set2
-            fig = go.Figure()
-            for ci in range(n_clusters):
-                vals = list(centers[ci]) + [centers[ci][0]]  # close the polygon
-                fig.add_trace(go.Scatterpolar(
-                    r=vals, theta=core_abbrevs + [core_abbrevs[0]],
-                    fill="toself", name=archetype_names[ci],
-                    line=dict(color=arc_colors[ci % len(arc_colors)]),
-                    opacity=0.7,
-                ))
-            fig.update_layout(
-                polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
-                title="Archetype Trait Profiles", height=400,
-                template="plotly_dark",
-                margin=dict(l=60, r=60, t=60, b=40),
-            )
-            st.plotly_chart(fig, use_container_width=True)
+                # Radar chart
+                core_abbrevs = [TRAIT_ABBREV.get(t, t[:6]) for t in core_8]
+                arc_colors = px.colors.qualitative.Set2
+                fig = go.Figure()
+                for ci in range(n_clusters):
+                    vals = list(centers[ci]) + [centers[ci][0]]
+                    fig.add_trace(go.Scatterpolar(
+                        r=vals, theta=core_abbrevs + [core_abbrevs[0]],
+                        fill="toself", name=archetype_names[ci],
+                        line=dict(color=arc_colors[ci % len(arc_colors)]),
+                        opacity=0.7,
+                    ))
+                fig.update_layout(
+                    polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
+                    title="Archetype Trait Profiles", height=400,
+                    template="plotly_dark",
+                    margin=dict(l=60, r=60, t=60, b=40),
+                )
+                st.plotly_chart(fig, width="stretch")
 
-            # Population counts
-            col1, col2 = st.columns(2)
-            with col1:
-                counts = [int(np.sum(labels == ci)) for ci in range(n_clusters)]
-                fig = go.Figure(go.Bar(
-                    x=archetype_names, y=counts,
-                    marker_color=[arc_colors[i % len(arc_colors)] for i in range(n_clusters)],
-                ))
-                fig.update_layout(title="Population by Archetype", height=250,
-                                  template="plotly_dark",
-                                  margin=dict(l=40, r=40, t=40, b=40))
-                st.plotly_chart(fig, use_container_width=True)
+                # Population counts
+                col1, col2 = st.columns(2)
+                with col1:
+                    counts = [int(np.sum(labels == ci)) for ci in range(n_clusters)]
+                    fig = go.Figure(go.Bar(
+                        x=archetype_names, y=counts,
+                        marker_color=[arc_colors[i % len(arc_colors)] for i in range(n_clusters)],
+                    ))
+                    fig.update_layout(title="Population by Archetype", height=250,
+                                      template="plotly_dark",
+                                      margin=dict(l=40, r=40, t=40, b=40))
+                    st.plotly_chart(fig, width="stretch")
 
-            # PCA scatter
-            with col2:
-                pca = PCA(n_components=2)
-                X2 = pca.fit_transform(X)
-                repro = [len(a.offspring_ids) for a in living]
-                pca_df = pd.DataFrame({
-                    "PC1": X2[:, 0], "PC2": X2[:, 1],
-                    "Archetype": [archetype_names[l] for l in labels],
-                    "Offspring": repro,
-                })
-                fig = px.scatter(pca_df, x="PC1", y="PC2", color="Archetype",
-                                 size="Offspring", opacity=0.6,
-                                 color_discrete_sequence=arc_colors,
-                                 title="PCA \u2014 Trait Space")
-                fig.update_layout(height=250, template="plotly_dark",
-                                  margin=dict(l=40, r=40, t=40, b=40))
-                st.plotly_chart(fig, use_container_width=True)
+                # PCA scatter
+                with col2:
+                    pca = PCA(n_components=2)
+                    X2 = pca.fit_transform(X)
+                    repro = [len(a.offspring_ids) for a in living]
+                    pca_df = pd.DataFrame({
+                        "PC1": X2[:, 0], "PC2": X2[:, 1],
+                        "Archetype": [archetype_names[l] for l in labels],
+                        "Offspring": repro,
+                    })
+                    fig = px.scatter(pca_df, x="PC1", y="PC2", color="Archetype",
+                                     size="Offspring", opacity=0.6,
+                                     color_discrete_sequence=arc_colors,
+                                     title="PCA \u2014 Trait Space")
+                    fig.update_layout(height=250, template="plotly_dark",
+                                      margin=dict(l=40, r=40, t=40, b=40))
+                    st.plotly_chart(fig, width="stretch")
 
     # ── PANEL 6: Civilization Timeline ────────────────────────────────
     with st.expander("Civilization Timeline \u2014 Major Events", expanded=False):
@@ -474,7 +480,7 @@ def render(df, df_std, living, society, config, sim_events, is_multi_run, seeds_
                 xaxis_title="Year", height=400, template="plotly_dark",
                 margin=dict(l=100, r=40, t=40, b=40),
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
             # Text timeline
             st.markdown("#### Event Log")

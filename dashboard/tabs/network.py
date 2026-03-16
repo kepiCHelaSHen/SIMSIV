@@ -171,7 +171,7 @@ def render(df, df_std, living, society, config, sim_events,
             yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, scaleanchor="x"),
             margin=dict(l=20, r=20, t=20, b=20),
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # Bond count distribution + faction distribution
     if living:
@@ -184,7 +184,7 @@ def render(df, df_std, living, society, config, sim_events,
                                        marker_color=COLORS["mating"]))
             fig.update_layout(**standard_layout("Bond Count Distribution", 300),
                               xaxis_title="Number of Bonds", yaxis_title="Agents")
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
         with col2:
             # Faction size distribution
@@ -201,4 +201,4 @@ def render(df, df_std, living, society, config, sim_events,
             ))
             fig.update_layout(**standard_layout("Faction Sizes (Top 20)", 300),
                               xaxis_title="Faction ID", yaxis_title="Members")
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")

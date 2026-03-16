@@ -100,7 +100,7 @@ def render(df, df_std, living, society, config, sim_events, is_multi_run, seeds_
         xaxis=dict(tickangle=-45),
         yaxis=dict(showticklabels=len(display_agents) <= 80),
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     # Chart 2: Trait correlation heatmap
     st.subheader("Trait Co-evolution Correlation (Living Population)")
@@ -120,6 +120,6 @@ def render(df, df_std, living, society, config, sim_events, is_multi_run, seeds_
             title="Trait Co-evolution Correlation (Living Population)",
             xaxis=dict(tickangle=-45),
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     else:
         st.info("Need at least 10 living agents for correlation matrix.")

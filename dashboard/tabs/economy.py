@@ -34,7 +34,7 @@ def render(df, df_std, living, society, config, sim_events,
         fig.update_layout(**standard_layout("Inequality", 400))
         fig.update_yaxes(title_text="Gini", secondary_y=False)
         fig.update_yaxes(title_text="Top 10% Share", secondary_y=True)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         fig = go.Figure()
@@ -47,7 +47,7 @@ def render(df, df_std, living, society, config, sim_events,
             x=df["year"], y=df["avg_status"], name="Avg Status",
             line=dict(color=COLORS["population"])))
         fig.update_layout(**standard_layout("Average Resources & Status", 400))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -61,7 +61,7 @@ def render(df, df_std, living, society, config, sim_events,
             x=df["year"], y=df["resource_transfers"],
             name="Transfer Events", line=dict(color="#9CCC65", dash="dot")))
         fig.update_layout(**standard_layout("Cooperation Networks", 350))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         # Resource distribution of living agents
@@ -73,7 +73,7 @@ def render(df, df_std, living, society, config, sim_events,
             fig.update_layout(
                 **standard_layout("Resource Distribution (Final Year)", 350),
                 xaxis_title="Resources", yaxis_title="Agents")
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
     with st.expander("Scarcity Events"):
         fig = go.Figure()
@@ -81,7 +81,7 @@ def render(df, df_std, living, society, config, sim_events,
             x=df["year"], y=df["scarcity"], name="Scarcity Level",
             fill="tozeroy", line=dict(color=COLORS["violence"])))
         fig.update_layout(**standard_layout("Environmental Scarcity", 250))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # ── Lorenz curve ──────────────────────────────────────────────
     with st.expander("Lorenz Curve (Final Year)"):
@@ -103,6 +103,6 @@ def render(df, df_std, living, society, config, sim_events,
                 yaxis_title="Cumulative Share of Resources",
                 xaxis=dict(range=[0, 1]),
                 yaxis=dict(range=[0, 1]))
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         else:
             st.info("No living agents to compute Lorenz curve.")

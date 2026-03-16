@@ -138,7 +138,7 @@ def render(df, df_std, living, society, config, sim_events, is_multi_run, seeds_
             fig.update_layout(height=650, template="plotly_dark",
                               margin=dict(l=20, r=20, t=30, b=20),
                               title=f"Lineage of {_get_agent_name(root_agent.id, society, root_agent)}")
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
     # Animated scatter: reproductive success by generation
     st.subheader("Reproductive Success Across Generations")
@@ -169,6 +169,6 @@ def render(df, df_std, living, society, config, sim_events, is_multi_run, seeds_
         )
         fig.update_layout(height=500, template="plotly_dark",
                           margin=dict(l=40, r=40, t=40, b=40))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     else:
         st.info("Not enough generational data for animation.")

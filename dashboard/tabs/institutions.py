@@ -29,7 +29,7 @@ def render(df, df_std, living, society, config, sim_events,
         fig.add_trace(go.Scatter(x=df["year"], y=df["property_rights"],
                                  name="Property Rights", line=dict(color=COLORS["cooperation"], dash="dot")))
         fig.update_layout(**standard_layout("Institutional Parameters", 400))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         fig = go.Figure()
@@ -40,7 +40,7 @@ def render(df, df_std, living, society, config, sim_events,
         fig.add_trace(go.Scatter(x=df["year"], y=df["institutions_emerged"],
                                  name="Emergences", line=dict(color="#7E57C2", dash="dot")))
         fig.update_layout(**standard_layout("Institutional Events", 400))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # Composite indices
     fig = go.Figure()
@@ -51,7 +51,7 @@ def render(df, df_std, living, society, config, sim_events,
                              name="Social Cohesion Index", line=dict(color=COLORS["cooperation"], width=2)))
     add_band(fig, df["year"], df["social_cohesion"], _std_col("social_cohesion"), COLORS["cooperation"])
     fig.update_layout(**standard_layout("Composite Stability Indices", 350))
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     # Trait evolution under institutional pressure
     st.markdown("---")
@@ -67,7 +67,7 @@ def render(df, df_std, living, society, config, sim_events,
     fig.update_yaxes(title_text="Law Strength", secondary_y=True)
     fig.update_layout(title="Institutions Substitute for Traits", height=350,
                       template=PLOT_TEMPLATE, margin=dict(l=40, r=40, t=40, b=40))
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     # Phase Portrait expander
     with st.expander("Phase Portrait -- Law vs Violence", expanded=False):
@@ -88,6 +88,6 @@ def render(df, df_std, living, society, config, sim_events,
                                      mode="markers", marker=dict(size=12, color="red", symbol="x"), name="End"))
             fig.update_layout(**standard_layout("Phase Portrait: Law vs Violence", 450),
                               xaxis_title="Law Strength", yaxis_title="Violence Rate")
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         else:
             st.info("Enable institutional_drift_rate > 0 for phase portrait dynamics.")

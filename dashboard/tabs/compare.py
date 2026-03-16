@@ -88,7 +88,7 @@ def render(df=None, df_std=None, living=None, society=None, config=None,
         rows.append({"Metric": label, label_a: f"{va:.3f}", label_b: f"{vb:.3f}",
                       "Delta": f"{delta:+.3f}", "Change %": f"{pct:+.1f}%"})
     if rows:
-        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
 
     # Side-by-side charts
     st.markdown("### Time Series Comparison")
@@ -117,7 +117,7 @@ def render(df=None, df_std=None, living=None, society=None, config=None,
                                          name=label_b, line=dict(color="#FFFFFF", width=2, dash="dash")))
                 fig.update_layout(**standard_layout(ml, 280),
                                   legend=dict(orientation="h", yanchor="bottom", y=1.02))
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
     # Delta bar chart
     st.markdown("### Net Effect (B vs A)")
@@ -138,4 +138,4 @@ def render(df=None, df_std=None, living=None, society=None, config=None,
         fig.add_vline(x=0, line_color="white", line_width=1)
         fig.update_layout(**standard_layout(f"% Change: {label_a} -> {label_b}", 400),
                           margin=dict(l=120, r=60, t=40, b=40))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")

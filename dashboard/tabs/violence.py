@@ -32,7 +32,7 @@ def render(df, df_std, living, society, config, sim_events,
         fig.update_layout(**standard_layout("Violence Over Time", 400))
         fig.update_yaxes(title_text="Rate", secondary_y=False)
         fig.update_yaxes(title_text="Count", secondary_y=True)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         fig = go.Figure()
@@ -48,7 +48,7 @@ def render(df, df_std, living, society, config, sim_events,
             x=df["year"], y=df["punishment_events"], name="Punishments",
             line=dict(color="#7E57C2", dash="dot")))
         fig.update_layout(**standard_layout("Conflict Outcomes", 400))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -58,7 +58,7 @@ def render(df, df_std, living, society, config, sim_events,
             name="In Subordination Cooldown",
             fill="tozeroy", line=dict(color="#FF6F00")))
         fig.update_layout(**standard_layout("Subordination (Recent Losers)", 300))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         # Aggression vs resources scatter for living
@@ -75,7 +75,7 @@ def render(df, df_std, living, society, config, sim_events,
                 color_discrete_map={"male": COLORS["males"], "female": COLORS["females"]},
                 title="Aggression vs Resources (Living Agents)")
             fig.update_layout(**standard_layout("Aggression vs Resources (Living Agents)", 300))
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
     # ── Inter-Faction Violence Matrix ─────────────────────────────
     with st.expander("Inter-Faction Violence Matrix"):
@@ -121,7 +121,7 @@ def render(df, df_std, living, society, config, sim_events,
                 fig.update_layout(
                     **standard_layout("Inter-Faction Conflict Counts", 400),
                     xaxis_title="Faction", yaxis_title="Faction")
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
                 st.caption(f"Based on {len(conflict_events):,} conflict events. "
                            f"'None' = agents without a faction assignment.")
             else:

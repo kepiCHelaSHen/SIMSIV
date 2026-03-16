@@ -109,7 +109,7 @@ def render(df, df_std, living, society, config, sim_events, is_multi_run, seeds_
             margin=dict(l=120, r=40, t=60, b=40),
             yaxis=dict(categoryorder="total ascending"),
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # Static multi-line chart for 6 key traits with bands
     st.subheader("Key Trait Trajectories (\u00b11\u03c3)")
@@ -150,4 +150,4 @@ def render(df, df_std, living, society, config, sim_events, is_multi_run, seeds_
     fig.update_layout(
         title="Key Trait Trajectories with \u00b11\u03c3 Bands", height=450,
         template="plotly_dark", margin=dict(l=40, r=40, t=40, b=40))
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")

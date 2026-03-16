@@ -33,7 +33,7 @@ def render(df, df_std, living, society, config, sim_events,
             x=df["year"], y=df["unmated_female_pct"],
             name="Unmated Females %", line=dict(color=COLORS["females"], dash="dot")))
         fig.update_layout(**standard_layout("Mating Market", 400))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         fig = go.Figure()
@@ -54,7 +54,7 @@ def render(df, df_std, living, society, config, sim_events,
         fig.update_layout(
             **standard_layout("Reproductive Inequality", 400),
             yaxis2=dict(title="Elite Advantage", overlaying="y", side="right"))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -69,7 +69,7 @@ def render(df, df_std, living, society, config, sim_events,
             x=df["year"], y=df["mating_contests"], name="Mating Contests",
             line=dict(color="#FFC107", dash="dot")))
         fig.update_layout(**standard_layout("Bond Dynamics", 350))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         fig = go.Figure()
@@ -83,7 +83,7 @@ def render(df, df_std, living, society, config, sim_events,
             x=df["year"], y=df["paternity_uncertainty"],
             name="Paternity Uncertainty", line=dict(color="#9575CD", dash="dot")))
         fig.update_layout(**standard_layout("Fidelity & Bonds", 350))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # ── Child survival and household ──────────────────────────────
     col1, col2 = st.columns(2)
@@ -98,7 +98,7 @@ def render(df, df_std, living, society, config, sim_events,
             x=df["year"], y=df["avg_maternal_health"],
             name="Maternal Health", line=dict(color=COLORS["females"], dash="dash")))
         fig.update_layout(**standard_layout("Child Survival & Maternal Health", 300))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         fig = go.Figure()
@@ -112,7 +112,7 @@ def render(df, df_std, living, society, config, sim_events,
             x=df["year"], y=df["orphan_count"],
             name="Orphans", line=dict(color="#FFCA28", dash="dot")))
         fig.update_layout(**standard_layout("Childhood Mortality & Orphans", 300))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # ── Bond Duration Histogram ───────────────────────────────────
     with st.expander("Bond Duration Histogram"):
@@ -150,7 +150,7 @@ def render(df, df_std, living, society, config, sim_events,
                 **standard_layout("Bond Duration Distribution", 300),
                 xaxis_title="Duration (years)",
                 yaxis_title="Count")
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
             st.caption(f"Based on {len(durations):,} bond observations. "
                        f"Mean duration: {np.mean(durations):.1f} years, "
                        f"Median: {np.median(durations):.1f} years.")

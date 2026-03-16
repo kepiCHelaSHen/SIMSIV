@@ -56,7 +56,7 @@ def render(df, df_std, living, society, config, sim_events,
             (agent_df["Age"] <= age_range[1])
         ].sort_values(sort_col, ascending=False)
 
-        st.dataframe(filtered, use_container_width=True, height=500)
+        st.dataframe(filtered, width="stretch", height=500)
 
         # Agent detail
         st.markdown("---")

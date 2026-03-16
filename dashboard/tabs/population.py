@@ -34,7 +34,7 @@ def render(df, df_std, living, society, config, sim_events,
         fig.update_yaxes(title_text="Population", secondary_y=False)
         fig.update_yaxes(title_text="Births / Deaths per Year", secondary_y=True)
         add_epidemic_bands(fig, df)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         fig = go.Figure()
@@ -51,7 +51,7 @@ def render(df, df_std, living, society, config, sim_events,
                 x=df["year"], y=df["children_count"], name="Children (<15)",
                 line=dict(color=COLORS["children"], dash="dash")))
         fig.update_layout(**standard_layout("Demographics", 400))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # ── Age pyramid ───────────────────────────────────────────────
     st.subheader("Age & Sex Distribution (Final Year)")
@@ -77,7 +77,7 @@ def render(df, df_std, living, society, config, sim_events,
             barmode="overlay",
             xaxis=dict(title="Count", tickvals=[]),
             yaxis=dict(title="Age Group"))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # ── Survivorship curve ────────────────────────────────────────
     st.subheader("Survivorship Curve")
@@ -99,7 +99,7 @@ def render(df, df_std, living, society, config, sim_events,
             xaxis_title="Age", yaxis_title="Fraction Surviving",
             yaxis=dict(range=[0, 1.05]))
         add_epidemic_bands(fig, df)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # ── Growth rate & health ──────────────────────────────────────
     col1, col2 = st.columns(2)
@@ -112,7 +112,7 @@ def render(df, df_std, living, society, config, sim_events,
                  _std("pop_growth_rate"), COLORS["resources"])
         fig.add_hline(y=0, line_dash="dash", line_color="white", opacity=0.5)
         fig.update_layout(**standard_layout("Population Growth Rate", 300))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         fig = go.Figure()
@@ -129,4 +129,4 @@ def render(df, df_std, living, society, config, sim_events,
             line=dict(color="#FFEE58", dash="dot")))
         fig.update_layout(**standard_layout("Health & Age", 300))
         add_epidemic_bands(fig, df)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")

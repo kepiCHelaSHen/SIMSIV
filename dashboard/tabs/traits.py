@@ -61,7 +61,7 @@ def render(df, df_std, living, society, config, sim_events,
                     elif is_multi_run:
                         add_band(fig, df["year"], df[col_name], _std_col(col_name), band_color)
         fig.update_layout(**standard_layout("Traits (Group 1) with \u00b11\u03c3 Bands", 400))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         fig = go.Figure()
@@ -78,7 +78,7 @@ def render(df, df_std, living, society, config, sim_events,
                     elif is_multi_run:
                         add_band(fig, df["year"], df[col_name], _std_col(col_name), band_color)
         fig.update_layout(**standard_layout("Traits (Group 2) with \u00b11\u03c3 Bands", 400))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # Trait diversity
     col1, col2 = st.columns(2)
@@ -93,7 +93,7 @@ def render(df, df_std, living, society, config, sim_events,
                 fig.add_trace(go.Scatter(x=df["year"], y=df[std_name], name=label,
                                          line=dict(color=color)))
         fig.update_layout(**standard_layout("Trait Diversity (Std Dev)", 350))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         fig = go.Figure()
@@ -101,7 +101,7 @@ def render(df, df_std, living, society, config, sim_events,
                                  name="Max Generation", fill="tozeroy",
                                  line=dict(color="#7E57C2")))
         fig.update_layout(**standard_layout("Generational Depth", 350))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # Trait distribution scatter (final year)
     st.subheader("Trait Distributions (Final Year)")
@@ -127,7 +127,7 @@ def render(df, df_std, living, society, config, sim_events,
                          color_discrete_map={"male": COLORS["males"], "female": COLORS["females"]},
                          title=f"{t1} vs {t2}")
         fig.update_layout(**standard_layout(f"{t1} vs {t2}", 500))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # ── Realized Heritability Section ────────────────────────────
     st.markdown("---")
@@ -208,7 +208,7 @@ def render(df, df_std, living, society, config, sim_events,
             margin=dict(l=40, r=40, t=40, b=40),
             legend=dict(orientation="h", yanchor="bottom", y=1.02),
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
         # Aggregate h2 chart
         if "avg_h2_all_traits" in df.columns:
@@ -231,7 +231,7 @@ def render(df, df_std, living, society, config, sim_events,
                 height=250, template=PLOT_TEMPLATE,
                 margin=dict(l=40, r=40, t=40, b=40),
             )
-            st.plotly_chart(fig2, use_container_width=True)
+            st.plotly_chart(fig2, width="stretch")
 
         st.info(
             "Scientific interpretation: "

@@ -35,7 +35,7 @@ def render(df, df_std, living, society, config, sim_events, is_multi_run, **kwar
     fig.update_layout(**standard_layout("Belief Trajectories Over Time", 400),
                       yaxis=dict(range=[-1.05, 1.05]), yaxis_title="Belief Value")
     add_epidemic_bands(fig, df)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     # Panel 2: Distribution (final year)
     st.subheader("Belief Distribution (Living Agents)")
@@ -52,7 +52,7 @@ def render(df, df_std, living, society, config, sim_events, is_multi_run, **kwar
                 fig.update_layout(title=bf.replace("_", " ").title()[:15], height=200,
                                   template=PLOT_TEMPLATE, margin=dict(l=20, r=20, t=30, b=20),
                                   xaxis=dict(range=[-1, 1]))
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
     # Panel 3: Belief vs Law
     st.subheader("Beliefs vs Institutions")
@@ -76,7 +76,7 @@ def render(df, df_std, living, society, config, sim_events, is_multi_run, **kwar
                     fig.add_trace(go.Scatter(x=x_line, y=p(x_line), mode="lines",
                                              line=dict(color="white", dash="dash"), showlegend=False))
                 fig.update_layout(**standard_layout(title, 300), xaxis_title="Law Strength")
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
     # Panel 4: Faction belief divergence
     if living:
@@ -103,7 +103,7 @@ def render(df, df_std, living, society, config, sim_events, is_multi_run, **kwar
                                              marker_color=list(BELIEF_COLS.values())[i][1]))
                 fig.update_layout(**standard_layout("Mean Beliefs by Faction", 400),
                                   barmode="group", xaxis_title="Faction ID")
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
     # Panel 5: Revolution events
     with st.expander("Belief Revolution Events", expanded=False):
@@ -112,4 +112,4 @@ def render(df, df_std, living, society, config, sim_events, is_multi_run, **kwar
             st.info("No belief revolutions detected in this run.")
         else:
             rev_df = pd.DataFrame(revolutions)
-            st.dataframe(rev_df, use_container_width=True)
+            st.dataframe(rev_df, width="stretch")

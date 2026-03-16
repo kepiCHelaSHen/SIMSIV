@@ -35,7 +35,7 @@ def render(df, df_std, living, society, config, sim_events,
             event_df["outcome"] = event_df["outcome"].astype(str)
         if "agent_ids" in event_df.columns:
             event_df["agent_ids"] = event_df["agent_ids"].astype(str)
-        st.dataframe(event_df, use_container_width=True, height=500)
+        st.dataframe(event_df, width="stretch", height=500)
 
     # Event type breakdown
     if sim_events:
@@ -53,4 +53,4 @@ def render(df, df_std, living, society, config, sim_events,
         ))
         fig.update_layout(**standard_layout("Events by Type (All Years)", 350),
                           xaxis_tickangle=-45)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")

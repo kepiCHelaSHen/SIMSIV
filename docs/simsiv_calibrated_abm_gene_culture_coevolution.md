@@ -1,10 +1,6 @@
 # SIMSIV: A Calibrated Agent-Based Framework for Studying Gene-Culture Coevolution in Pre-State Societies
 
-**Author:** Independent Researcher
-
-**Target journal:** JASSS (Journal of Artificial Societies and Social Simulation)
-
-**Draft date:** 2026-03-15
+**Author:** James P Rice Jr. | March 2026
 
 ---
 
