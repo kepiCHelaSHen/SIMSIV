@@ -10,7 +10,7 @@
 
 ## Abstract
 
-Agent-based models (ABMs) offer a principled way to study gene-culture coevolution, yet most existing frameworks either hard-wire social outcomes or omit realistic demography. We present SIMSIV (Simulation of Intersecting Social and Institutional Variables), an agent-based framework in which 500 agents with 35 heritable traits compete for resources, mates, and status within a single band-level society. Agents inherit traits through a quantitative-genetics model with trait-specific heritability coefficients, form pair bonds, cooperate through trust-based networks, and engage in conflict mediated by institutional governance. Nine engines execute in a fixed annual cycle: environment, resources, conflict, mating, reproduction, mortality, migration, pathology, and institutions. The model was calibrated against nine anthropological benchmarks --- including resource inequality (Gini = 0.310), male reproductive skew (0.578), violence death fraction (0.069), and child survival to age 15 (0.642) --- using simulated annealing over 816 experiments. Held-out validation across 10 unseen seeds (20 independent runs) yielded a mean realism score of 0.934 with zero population collapses. Scenario experiments spanning 200-year and 500-year horizons reveal that institutional governance produces dramatic behavioral substitution --- enforced monogamy reduces violence 37% and unmated males from 28.5% to 11.9%; strong-state governance cuts resource inequality to Gini = 0.200 --- yet heritable cooperation shows no detectable divergence across governance regimes at 500 years (0.523 vs. 0.524 vs. 0.523 for no-institutions, free-competition, and strong-state respectively). Sensitivity analysis identifies mortality rate as the single most influential parameter (mean |r| = 0.315 across 8 of 9 metrics) and confirms that cooperation is weakly driven by any single parameter (max |r| = 0.199). These findings provide computational evidence that institutions substitute for, rather than complement, heritable prosocial traits at band-level timescales --- a result consistent with the institutional-substitution hypothesis (North, 1990) but not with strong gene-culture complementarity (Bowles & Gintis, 2011).
+Agent-based models (ABMs) offer a principled way to study gene-culture coevolution, yet most existing frameworks either hard-wire social outcomes or omit realistic demography. We present SIMSIV (Simulation of Intersecting Social and Institutional Variables), an agent-based framework in which 500 agents with 35 heritable traits compete for resources, mates, and status within a single band-level society. Agents inherit traits through a quantitative-genetics model with trait-specific heritability coefficients, form pair bonds, cooperate through trust-based networks, and engage in conflict mediated by institutional governance. Nine engines execute in a fixed annual cycle: environment, resources, conflict, mating, reproduction, mortality, migration, pathology, and institutions. The model was calibrated against nine anthropological benchmarks --- including resource inequality (Gini = 0.310), male reproductive skew (0.578), violence death fraction (0.069), and child survival to age 15 (0.642) --- using simulated annealing over 816 experiments. Held-out validation across 10 unseen seeds (20 independent runs) yielded a mean realism score of 0.934 with zero population collapses. Scenario experiments spanning 200-year and 500-year horizons reveal that institutional governance produces dramatic behavioral substitution --- enforced monogamy reduces violence 37% and unmated males from 28.5% to 11.9%; strong-state governance cuts resource inequality to Gini = 0.200 --- yet heritable cooperation shows no detectable divergence across governance regimes at 500 years (0.523 vs. 0.524 vs. 0.523 for no-institutions, free-competition, and strong-state respectively). Sensitivity analysis identifies mortality rate as the single most influential parameter (mean |r| = 0.315 across 8 of 9 metrics) and confirms that cooperation is weakly driven by any single parameter (max |r| = 0.199). These findings are consistent with the institutional-substitution hypothesis: institutions appear to substitute for heritable prosocial traits in producing cooperative behavioral outcomes at band-level timescales, though longer time horizons and multi-group dynamics may reveal complementarity.
 
 **Keywords:** agent-based model, gene-culture coevolution, cooperation, institutions, pre-state societies, calibration, ODD protocol
 
@@ -25,6 +25,8 @@ How did human societies come to sustain the extraordinary levels of cooperation 
 The institutional-substitution hypothesis, rooted in the new institutional economics of North (1990) and extended by Greif (2006), offers a contrasting perspective. Institutions --- even informal ones such as gossip networks, reputation systems, and punishment norms --- can enforce cooperative behavior regardless of individual genetic predisposition. If institutions are sufficiently effective at channeling behavior, the selection gradient on heritable prosocial traits weakens or vanishes. Under this view, institutions substitute for genes: they produce cooperative outcomes without requiring (or producing) cooperative genotypes.
 
 Empirically distinguishing these hypotheses is difficult. The archaeological record preserves material culture but not genotypes. Modern behavioral genetics can estimate heritability of prosocial traits (h-squared approximately 0.40 for cooperation; Cesarini et al., 2008) but cannot reconstruct ancestral selection gradients. Cross-cultural comparisons (Henrich et al., 2001; Henrich et al., 2010) document institutional variation in cooperation but confound genetic and cultural transmission. The debate therefore remains largely theoretical.
+
+The dual inheritance theory of Boyd and Richerson (1985) provides the foundational framework for understanding how genetic and cultural evolution interact. Under dual inheritance, cultural transmission constitutes a second inheritance system that can evolve independently of, or in interaction with, genetic inheritance. Crucially, dual inheritance theory neither predicts complementarity nor substitution a priori: the outcome depends on whether cultural variants that emerge under institutions increase or decrease the fitness gradient on prosocial genes. SIMSIV operationalizes this by separating heritable trait values (the genetic channel) from behavioral outcomes and belief transmission (the cultural channel), allowing both to evolve simultaneously.
 
 ### 1.2 Agent-based models as adjudication tools
 
@@ -74,7 +76,7 @@ Section 2 describes the model following a modified ODD (Overview, Design concept
 8. **Pathology** --- condition activation/remission, trauma accumulation, epigenetic stress
 9. **Institutions** --- institutional drift (law strength, property rights), inheritance of resources
 
-Conflict executes before mating so that violence has direct reproductive cost: dead or injured agents cannot mate. Institutions execute after mortality so that inheritance processing sees all deaths in the current tick. Metrics are collected after all engines complete.
+Conflict executes before mating so that violence has direct reproductive cost: dead or injured agents cannot mate. Institutions execute after mortality so that inheritance processing sees all deaths in the current tick. Metrics are collected after all engines complete. Figure 1 illustrates the annual tick execution order.
 
 **AI disclosure.** Simulation code development was assisted by Claude (Anthropic, version claude-sonnet-4-6). All scientific decisions, hypotheses, experimental designs, calibration targets, and interpretations are the author's own.
 
@@ -194,6 +196,8 @@ The best configuration (experiment score 1.000) achieved all nine metrics simult
 | Mean cooperation | 0.507 | 0.25 -- 0.70 | In range |
 | Mean aggression | 0.494 | 0.30 -- 0.60 | In range |
 
+Figure 2 shows the calibrated values relative to their target ranges.
+
 Key calibrated parameters that shifted substantially from defaults include: mortality_base (0.02 default to 0.006 calibrated), childhood_mortality_annual (0.02 to 0.054), base_conception_chance (0.50 to 0.80), pair_bond_dissolution_rate (0.10 to 0.02), epidemic_lethality_base (0.15 to 0.254), female_choice_strength (0.60 to 0.34), and aggression_production_penalty (0.30 to 0.60). The calibrated configuration produces a high-fertility, high-childhood-mortality, low-background-mortality demographic regime characteristic of pre-industrial natural-fertility populations (Coale & Demeny, 1966).
 
 ### 3.4 Held-out validation
@@ -260,6 +264,8 @@ The finding that mortality_base is the single most influential parameter globall
 
 We conducted scenario experiments at two time horizons: 200 years (10 seeds per scenario, sufficient for behavioral comparison) and 500 years (10 seeds per scenario, targeting trait divergence detection). All experiments used the calibrated baseline configuration from AutoSIM Run 3, with scenario-specific parameter overrides as described in Section 2.5. Metrics were computed over the final 30 years of each run. All reported values are means across seeds.
 
+Five parallel 500-year experiment batches were executed: (1) FREE_COMPETITION, STRONG_STATE, and EMERGENT_INSTITUTIONS; (2) NO_INSTITUTIONS, FREE_COMPETITION, and STRONG_STATE; (3) mating system comparisons; (4) resource ecology comparisons; and (5) a full 11-scenario 200-year run at 10 seeds. The governance spectrum analysis in Section 5.2 uses Batch 2 as the canonical dataset, as it is the only batch containing all three governance scenarios (NO_INSTITUTIONS, FREE_COMPETITION, STRONG_STATE) in the same experimental run. FREE_COMPETITION was run independently in both Batch 1 and Batch 2 with the same 10 seeds; the cooperation means differed by 0.021 (0.545 vs. 0.524), which is within one cross-seed standard deviation (SD = 0.040), confirming that this variation reflects normal stochastic variance rather than systematic error.
+
 ### 5.2 Governance spectrum: behavioral substitution without genetic divergence
 
 The governance spectrum experiment compared three scenarios representing a gradient from zero governance (NO_INSTITUTIONS) through endogenous governance (FREE_COMPETITION) to strong imposed governance (STRONG_STATE).
@@ -268,11 +274,10 @@ The governance spectrum experiment compared three scenarios representing a gradi
 
 | Metric | NO_INSTITUTIONS | FREE_COMPETITION | STRONG_STATE |
 |---|---|---|---|
-| Cooperation | 0.526 | 0.519 | 0.510 |
-| Violence rate | 0.021 | 0.017 | 0.009 |
-| Resource Gini | 0.312 | 0.328 | 0.200 |
-| Law strength | 0.000 | 0.481 | 0.985 |
-| Unmated males | 28.8% | 25.1% | 11.7% |
+| Cooperation | 0.526 ± 0.012 | 0.519 ± 0.015 | 0.510 ± 0.021 |
+| Violence rate | 0.022 ± 0.004 | 0.018 ± 0.004 | 0.009 ± 0.001 |
+| Resource Gini | 0.312 ± 0.009 | 0.328 ± 0.010 | 0.200 ± 0.009 |
+| Law strength | 0.000 ± 0.000 | 0.481 ± 0.029 | 0.985 ± 0.013 |
 
 At 200 years, institutional governance produces large behavioral effects. STRONG_STATE reduces violence by 57% relative to NO_INSTITUTIONS (0.009 vs. 0.021), cuts resource inequality by 36% (Gini 0.200 vs. 0.312), and reduces unmated males from 28.8% to 11.7% (via enforced monogamy). FREE_COMPETITION, with its endogenously emergent institutions (law = 0.481), falls between the two extremes on most metrics.
 
@@ -280,17 +285,19 @@ At 200 years, institutional governance produces large behavioral effects. STRONG
 
 | Metric | NO_INSTITUTIONS | FREE_COMPETITION | STRONG_STATE |
 |---|---|---|---|
-| Cooperation | 0.523 | 0.524 | 0.523 |
-| Aggression | 0.448 | 0.452 | 0.478 |
-| Intelligence | 0.632 | 0.644 | 0.596 |
-| Law strength | 0.000 | 0.928 | 1.000 |
-| Final population | 569 | 623 | 536 |
+| Cooperation | 0.523 ± 0.024 | 0.524 ± 0.020 | 0.523 ± 0.028 |
+| Aggression | 0.448 ± 0.029 | 0.452 ± 0.020 | 0.478 ± 0.019 |
+| Intelligence | 0.632 ± 0.020 | 0.644 ± 0.019 | 0.596 ± 0.023 |
+| Law strength | 0.000 ± 0.000 | 0.928 ± 0.043 | 1.000 ± 0.000 |
+| Final population | 569 ± 259 | 623 ± 300 | 536 ± 231 |
+
+Figure 3 plots mean cooperation propensity across all 500 simulated years for the three governance scenarios, confirming the absence of divergence at all time points, not just the final year.
 
 **The central finding is in the cooperation row: 0.523, 0.524, 0.523.** After 500 simulated years --- approximately 20 generations --- heritable cooperation propensity is indistinguishable across the three governance regimes. This is not a ceiling or floor effect: cooperation sits at the midpoint of its possible range (0.0--1.0), with ample room for divergence in either direction. The null result is substantive.
 
 To state the finding precisely: institutions change *behavior* (violence, inequality, mating access) dramatically, but they do not change the *underlying cooperation gene*. The strong-state scenario reduces violence by more than half and restructures mating entirely, yet the heritable trait that drives cooperation is no more or less prevalent than in the ungoverned population. This is behavioral substitution: institutions substitute for genetic predisposition in producing cooperative outcomes.
 
-Two secondary findings merit note. First, aggression shows modest divergence: 0.448 under no institutions versus 0.478 under the strong state, a difference of 0.030. This is counterintuitive --- one might expect strong governance to select against aggression. However, the strong-state scenario reduces the fitness cost of aggression by suppressing its lethal consequences (violence punishment prevents death), which weakens the selection pressure against aggressive genotypes. Second, intelligence shows a suggestive divergence: 0.644 under free competition versus 0.596 under the strong state. This may reflect reduced selection for resource-acquisition skill when the state redistributes resources via taxation, though the 500-year window may be insufficient to confirm this trend.
+Two secondary findings merit note. First, aggression shows modest divergence: 0.448 under no institutions versus 0.478 under the strong state, a difference of 0.030. This is counterintuitive --- one might expect strong governance to select against aggression. However, the strong-state scenario reduces the fitness cost of aggression by suppressing its lethal consequences (violence punishment prevents death), which weakens the selection pressure against aggressive genotypes. This interpretation is mechanistically plausible but should be confirmed with explicit selection gradient tracking across longer run horizons before being treated as a confirmed finding. Second, intelligence shows a suggestive divergence: 0.644 under free competition versus 0.596 under the strong state. This may reflect reduced selection for resource-acquisition skill when the state redistributes resources via taxation, though the 500-year window may be insufficient to confirm this trend.
 
 We note that 500 years represents approximately 20 generations, which is a short evolutionary timescale. It is possible that trait divergence would emerge at longer timescales (1,000+ years) or under between-group competition (not modeled in v1.0). The absence of divergence at 500 years does not definitively rule out gene-culture complementarity --- it indicates that the substitution effect dominates at band-level timescales.
 
@@ -329,7 +336,9 @@ Resource abundance increases population to 938 but does not substantially alter 
 
 At 200 years, emergent institutions produce an unmated-male fraction of 30.3%, substantially higher than the strong state's 11.7%. This is because the emergent-institutions scenario does not impose monogamy: it only develops law enforcement and property rights. The combination of high law strength with unrestricted mating produces a distinctive social equilibrium --- low violence but high mating inequality --- that is not observed in any of the imposed-governance scenarios.
 
-**The cooperation attractor.** Across all scenarios and time horizons, heritable cooperation propensity converges to a narrow band of approximately 0.51--0.53 (with the exception of the population-collapse scenario at 0.489 and the high-female-choice scenario at 0.549). This remarkable stability suggests that cooperation propensity has a strong attractor in the model's fitness landscape --- a basin of attraction maintained by the balance of cooperation's multi-channel fitness benefits against the costs of unconditional cooperation (exploitation by defectors, resource sharing losses). The attractor is not a parameter artifact: sensitivity analysis confirms that no single parameter strongly drives cooperation (Section 4.3).
+**The cooperation attractor.** Across all scenarios and time horizons, heritable cooperation propensity converges to a narrow band of approximately 0.51--0.53 (with the exception of the population-collapse scenario at 0.489 and the high-female-choice scenario at 0.549). This stability is not a ceiling or floor effect: cooperation starts at 0.5 by initialization and has full range [0.0, 1.0] to diverge. It is not a parameter artifact: sensitivity analysis confirms that no single parameter strongly drives cooperation (max |r| = 0.199). And it is not a consequence of weak selection: the model clearly selects on cooperation through resource sharing, reputation, coalition protection, and reduced conflict targeting. Rather, the attractor reflects an evolutionary balance between cooperation's multi-channel fitness benefits and its costs: cooperators who share too freely are exploited by defectors; defectors who cooperate too little lose network benefits and reputation.
+
+This finding is theoretically significant for two reasons. First, it suggests that band-level societies may exhibit a universal cooperation equilibrium that is robust to both ecological conditions (scarcity and abundance produce similar cooperation levels) and institutional conditions (all governance regimes converge near the same value). The principal exceptions --- high female choice (0.549) and population collapse under scarcity (0.489) --- reveal the two mechanisms that can escape the attractor: sexual selection directly rewarding cooperative genotypes, and demographic collapse disrupting selection entirely. Second, if this attractor is real rather than a model artifact, it predicts that cross-cultural variation in cooperation norms should be driven primarily by cultural transmission and institutional enforcement rather than by heritable trait variation --- a prediction that is testable with comparative behavioral genetics data across small-scale societies.
 
 ---
 
@@ -385,7 +394,7 @@ We have presented SIMSIV, an agent-based framework for studying gene-culture coe
 
 Our scenario experiments yield three principal findings:
 
-1. **Behavioral substitution without genetic divergence.** Institutional governance dramatically alters behavior --- reducing violence by more than half, cutting resource inequality by 36%, and restructuring mating access --- yet heritable cooperation propensity is indistinguishable across governance regimes at 500 years (0.523 vs. 0.524 vs. 0.523). This provides computational evidence for the institutional-substitution hypothesis at band-level timescales.
+1. **Behavioral substitution without genetic divergence.** Institutional governance dramatically alters behavior --- reducing violence by more than half, cutting resource inequality by 36%, and restructuring mating access --- yet heritable cooperation propensity is indistinguishable across governance regimes at 500 years (0.523 vs. 0.524 vs. 0.523). This is consistent with the institutional-substitution hypothesis at band-level timescales, though we caution that 500 years (~20 generations) may be insufficient to detect weak selection gradients.
 
 2. **A cooperation attractor.** Heritable cooperation propensity converges to approximately 0.51--0.53 across nearly all scenarios, suggesting a robust evolutionary equilibrium maintained by the multi-dimensional fitness landscape of band-level social life.
 
@@ -393,9 +402,17 @@ Our scenario experiments yield three principal findings:
 
 These findings should be interpreted within the model's limitations, particularly the absence of between-group competition. The next development phase (SIMSIV v2.0) will introduce a multi-band clan simulator with inter-group warfare, trade, and migration, enabling direct testing of the between-group selection mechanism central to the gene-culture complementarity hypothesis.
 
-The model code, calibration data, and scenario configurations are available at [repository URL to be added upon publication].
+We invite independent replications, parameter explorations, and theoretical extensions using the open repository. The model is designed as a platform: the scenario system, calibration pipeline, and experimental runner can support research questions beyond those addressed here. The model code, calibration data, and scenario configurations are available at https://github.com/kepiCHelaSHen/SIMSIV
 
 ---
+
+## Figures
+
+**Figure 1.** Annual simulation tick execution order for SIMSIV v1.0. Each of the nine engines executes in fixed sequence, ensuring causal consistency: conflict precedes mating (dead agents cannot mate), mortality precedes institutions (inheritance sees all deaths). Metrics are collected after all engines complete. *(See docs/figures/fig1_tick_architecture.png)*
+
+**Figure 2.** Calibrated model outputs relative to anthropological target ranges. Green checkmarks indicate metrics within target range; the model achieves all nine targets simultaneously (calibration score = 1.000). Target ranges are shown as gray bars; calibrated values as vertical lines. *(See docs/figures/fig2_calibration.png)*
+
+**Figure 3.** Mean heritable cooperation propensity over 500 simulated years for three governance regimes: No Institutions (law strength fixed at 0), Free Competition (endogenous institutional drift), and Strong State (law strength fixed at 0.8, monogamy enforced). Shaded bands show ±1 SD across 10 seeds. The convergence of all three trajectories to approximately 0.52 confirms that institutional governance does not alter the evolutionary trajectory of the cooperation trait at this timescale. *(See docs/figures/fig3_cooperation_trajectory.png)*
 
 ## References
 
@@ -408,6 +425,8 @@ Betzig, L. (1989). Causes of conjugal dissolution: A cross-cultural study. *Curr
 Betzig, L. (2012). Means, variances, and ranges in reproductive success: Comparative evidence. *Evolution and Human Behavior*, *33*(4), 309--317.
 
 Biraben, J. N. (1980). An essay concerning mankind's evolution. *Population*, Special Issue, 13--25.
+
+Boyd, R., & Richerson, P. J. (1985). *Culture and the evolutionary process*. University of Chicago Press.
 
 Borgerhoff Mulder, M., Bowles, S., Hertz, T., Bell, A., Beise, J., Clark, G., Fazzio, I., Gurven, M., Hill, K., Hooper, P. L., Irons, W., Kaplan, H., Leonetti, D., Low, B., Marlowe, F., McElreath, R., Naidu, S., Nolin, D., Piraino, P., ... Wiessner, P. (2009). Intergenerational wealth transmission and the dynamics of inequality in small-scale societies. *Science*, *326*(5953), 682--688.
 
