@@ -1,0 +1,50 @@
+[
+  {
+    "seed": 42,
+    "scenario": "ELITE_POLYGYNY",
+    "final_population": 1668,
+    "total_births": 13293,
+    "total_deaths": 11349,
+    "total_conflicts": 16033,
+    "avg_resource_gini": 0.9731,
+    "avg_violence_rate": 0.0568,
+    "avg_reproductive_skew": 0.5485,
+    "avg_unmated_male_pct": 0.3924,
+    "avg_child_survival": 0.851,
+    "avg_aggression": 0.4988,
+    "avg_cooperation": 0.5171,
+    "equilibrium_reached": false
+  },
+  {
+    "seed": 43,
+    "scenario": "ELITE_POLYGYNY",
+    "final_population": 1577,
+    "total_births": 10770,
+    "total_deaths": 9077,
+    "total_conflicts": 12823,
+    "avg_resource_gini": 0.9707,
+    "avg_violence_rate": 0.0569,
+    "avg_reproductive_skew": 0.5423,
+    "avg_unmated_male_pct": 0.3823,
+    "avg_child_survival": 0.8403,
+    "avg_aggression": 0.5161,
+    "avg_cooperation": 0.5263,
+    "equilibrium_reached": false
+  },
+  {
+    "seed": 44,
+    "scenario": "ELITE_POLYGYNY",
+    "final_population": 1730,
+    "total_births": 12370,
+    "total_deaths": 10410,
+    "total_conflicts": 15263,
+    "avg_resource_gini": 0.9712,
+    "avg_violence_rate": 0.0579,
+    "avg_reproductive_skew": 0.5429,
+    "avg_unmated_male_pct": 0.413,
+    "avg_child_survival": 0.8481,
+    "avg_aggression": 0.5109,
+    "avg_cooperation": 0.5193,
+    "equilibrium_reached": false
+  }
+]

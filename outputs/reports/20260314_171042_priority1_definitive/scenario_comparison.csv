@@ -1,0 +1,4 @@
+seed,final_population,total_births,total_deaths,total_conflicts,avg_resource_gini,avg_violence_rate,avg_reproductive_skew,avg_unmated_male_pct,avg_child_survival,avg_aggression,avg_cooperation,equilibrium_reached,scenario,n_seeds
+44.0,979.8,8116.4,7113.8,10403.2,0.2365,0.0571,0.5393,0.4038,0.8083,0.4951,0.5141,0.0,FREE_COMPETITION,5
+44.0,994.8,8654.6,7774.4,7610.6,0.2369,0.0367,0.4912,0.2327,0.7673,0.5011,0.5106,0.0,ENFORCED_MONOGAMY,5
+44.0,867.8,10014.8,8994.6,13440.0,0.4119,0.0615,0.5537,0.4107,0.8577,0.4997,0.5273,0.0,ELITE_POLYGYNY,5
