@@ -834,7 +834,6 @@ def test_apply_casualties_attacker_wins_fewer_attacker_deaths():
         rng = np.random.default_rng(seed)
         att_d, def_d = _apply_casualties(
             list(party), list(coalition),
-            att, dfn,
             outcome="attacker_wins",
             power_margin=0.5,
             rng=rng,

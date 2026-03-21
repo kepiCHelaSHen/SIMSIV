@@ -244,7 +244,6 @@ def raid_tick(
     # ── 7. Apply casualties ───────────────────────────────────────────────────
     attacker_deaths, defender_deaths = _apply_casualties(
         raiding_party, defensive_coalition,
-        attacker_band, defender_band,
         outcome, power_margin, rng, config,
     )
 
@@ -486,10 +485,32 @@ def _select_defensive_coalition(
         # If no PRIME/MATURE adults, any living agent can defend (desperation)
         eligible = list(living)
 
+    # bowles_coalition_scale (ClanConfig) amplifies group_loyalty's effect on
+    # p_join.  scale=1.0 is the baseline (Bowles 2006).  Values > 1 make the
+    # Bowles mechanism stronger (higher loyalty → proportionally larger coalition);
+    # values < 1 weaken it (useful for parameter sensitivity analysis).
+    # Configurable via ClanConfig.bowles_coalition_scale (default 1.0).
+    bowles_scale = _cfg(config, "bowles_coalition_scale", _DEFAULT_BOWLES_COALITION_SCALE)
+
     coalition: list = []
     for agent in eligible:
-        p_join = agent.group_loyalty * (1.0 + agent.cooperation_propensity * 0.5)
-        p_join = float(max(0.1, min(1.0, p_join)))
+        # p_join base: group_loyalty scaled by bowles_coalition_scale,
+        # with a cooperation cohesion modifier.
+        # bowles_scale multiplies the effective loyalty signal so that
+        # higher bowles_coalition_scale produces proportionally larger coalitions.
+        # Formula derived from Bowles (2006) Eq. 3: r_C ∝ loyalty × scale.
+        effective_loyalty = agent.group_loyalty * bowles_scale
+        p_join = effective_loyalty * (1.0 + agent.cooperation_propensity * 0.5)
+        # Floor 0.05 (configurable via ClanConfig.p_join_floor, default 0.05):
+        # Ethnographic evidence (Keeley 1996; Bowles 2006) shows that even
+        # low-loyalty group members have a non-trivial probability of joining
+        # defence when the group is physically threatened.  A strictly zero floor
+        # would create bands where some agents never defend under any circumstance,
+        # which is inconsistent with observed forager behaviour.  The floor is kept
+        # low (5%) to avoid biasing the selection mechanism while preserving
+        # minimal social pressure to participate.
+        p_join_floor = _cfg(config, "p_join_floor", 0.05)
+        p_join = float(max(p_join_floor, min(1.0, p_join)))
         if rng.random() < p_join:
             coalition.append(agent)
 
@@ -498,11 +519,11 @@ def _select_defensive_coalition(
         idx = rng.choice(len(coalition), size=max_size, replace=False)
         coalition = [coalition[i] for i in idx]
 
-    bowles_scale = _cfg(config, "bowles_coalition_scale", _DEFAULT_BOWLES_COALITION_SCALE)
     _log.debug(
         "Band %d defensive coalition: %d defenders (from %d eligible, "
-        "max_size=%d, bowles_scale=%.2f)",
-        band.band_id, len(coalition), len(eligible), max_size, bowles_scale,
+        "max_size=%d, bowles_scale=%.2f, p_join_floor=%.2f)",
+        band.band_id, len(coalition), len(eligible), max_size,
+        bowles_scale, _cfg(config, "p_join_floor", 0.05),
     )
     return coalition
 
@@ -662,8 +683,6 @@ def _apply_loot(
 def _apply_casualties(
     raiding_party: list,
     defensive_coalition: list,
-    attacker_band: "Band",
-    defender_band: "Band",
     outcome: str,
     power_margin: float,
     rng: np.random.Generator,

@@ -37,11 +37,14 @@ from engines.reputation import ReputationEngine
 from engines.pathology import PathologyEngine
 from engines.clan_trade import trade_tick
 from engines.clan_raiding import raid_tick
+from engines.clan_selection import selection_tick
 from metrics.collectors import MetricsCollector
+from metrics.clan_collectors import ClanMetricsCollector
 
 if TYPE_CHECKING:
     from models.clan.clan_society import ClanSociety
     from models.clan.band import Band
+    from models.clan.clan_config import ClanConfig
 
 _log = logging.getLogger(__name__)
 
@@ -71,8 +74,11 @@ class ClanEngine:
         self._reputation_engine = ReputationEngine()
         self._pathology_engine = PathologyEngine()
 
-        # Per-band MetricsCollector keyed by band_id
+        # Per-band MetricsCollector (v1 per-band metrics) keyed by band_id
         self._band_metrics: dict[int, MetricsCollector] = {}
+
+        # Clan-level metrics collector (Turn 4: inter-band + divergence metrics)
+        self._clan_metrics: ClanMetricsCollector = ClanMetricsCollector()
 
     # ── Public API ───────────────────────────────────────────────────────────
 
@@ -82,6 +88,7 @@ class ClanEngine:
         year: int,
         rng: np.random.Generator,
         config: Config,
+        clan_config: "ClanConfig | None" = None,
     ) -> dict:
         """Advance all bands by one year.
 
@@ -97,14 +104,20 @@ class ClanEngine:
             that results are reproducible given the same rng state.
         config:
             Shared configuration applied to all bands.
+        clan_config:
+            Optional v2 ClanConfig controlling inter-band parameters
+            (fission threshold, extinction threshold, migration rate, etc.).
+            When None, clan_selection defaults are used.
 
         Returns
         -------
         dict with:
-            year            : int
-            band_metrics    : {band_id: metrics_row_dict}
-            inter_band_events: list[event_dict]
-            total_population: int
+            year              : int
+            band_metrics      : {band_id: metrics_row_dict}
+            inter_band_events : list[event_dict]
+            selection_events  : list[event_dict]
+            clan_metrics      : dict (clan-level snapshot from ClanMetricsCollector)
+            total_population  : int
         """
         _log.debug("ClanEngine tick year=%d, bands=%d", year, len(clan_society.bands))
 
@@ -124,16 +137,43 @@ class ClanEngine:
         # ── Step 2: Schedule inter-band interactions ──────────────────────────
         interaction_pairs = clan_society.schedule_interactions(year, rng)
 
-        # ── Step 3: Process each inter-band interaction (stub) ─────────────────
+        # ── Step 3: Process each inter-band interaction ────────────────────────
         for band_a, band_b in interaction_pairs:
-            events = self._process_interaction(band_a, band_b, year, rng, config)
+            events = self._process_interaction(band_a, band_b, year, rng, config,
+                                               clan_config)
             all_inter_band_events.extend(events)
+
+        # ── Step 4: Between-group selection (Turn 4) ──────────────────────────
+        # Runs after trade/raid so it can observe this tick's fitness outcomes.
+        # A dedicated sub-rng is derived from the shared rng (consuming exactly
+        # one integer from rng) so that selection_tick's internal randomness does
+        # NOT change the shared rng state for subsequent inter-band scheduling.
+        # This preserves the RNG contract for existing tests.
+        sel_rng = np.random.default_rng(int(rng.integers(0, 2**31)))
+        sel_events = selection_tick(clan_society, year, sel_rng, config, clan_config)
+        # Extract selection coefficients from the stats event (index 0)
+        within_coeff = 0.0
+        between_coeff = 0.0
+        if sel_events:
+            stats = sel_events[0]
+            if stats.get("type") == "selection_stats":
+                within_coeff = float(stats.get("within_group_selection_coeff", 0.0))
+                between_coeff = float(stats.get("between_group_selection_coeff", 0.0))
+
+        # Pass coefficients to clan metrics collector so they appear in the row
+        self._clan_metrics.set_selection_coefficients(within_coeff, between_coeff)
+
+        # ── Step 5: Collect clan-level metrics ────────────────────────────────
+        clan_metrics_row = self._clan_metrics.collect(
+            clan_society, year, all_inter_band_events
+        )
 
         _log.debug(
             "ClanEngine tick year=%d complete: %d inter-band interactions, "
-            "total_pop=%d",
+            "%d selection events, total_pop=%d",
             year,
             len(interaction_pairs),
+            len(sel_events),
             clan_society.total_population(),
         )
 
@@ -141,6 +181,8 @@ class ClanEngine:
             "year": year,
             "band_metrics": band_metrics,
             "inter_band_events": all_inter_band_events,
+            "selection_events": sel_events,
+            "clan_metrics": clan_metrics_row,
             "total_population": clan_society.total_population(),
         }
 
@@ -266,6 +308,7 @@ class ClanEngine:
         year: int,
         rng: np.random.Generator,
         config: Config,
+        clan_config: "ClanConfig | None" = None,
     ) -> list[dict]:
         """Process one inter-band interaction: contact record + trade session.
 
@@ -371,7 +414,7 @@ class ClanEngine:
             else:
                 att, dfn = band_b, band_a
 
-            raid_events = raid_tick(att, dfn, trust, rng, config)
+            raid_events = raid_tick(att, dfn, trust, rng, clan_config or config)
             for ev in raid_events:
                 ev["year"] = year
                 band_a.society.add_event(ev)
@@ -425,18 +468,20 @@ class ClanEngine:
     # ── Helpers ──────────────────────────────────────────────────────────────
 
     def reset(self) -> None:
-        """Clear accumulated per-band metrics history.
+        """Clear accumulated per-band and clan-level metrics history.
 
         Call this between independent runs when reusing a ClanEngine instance
         (e.g. in autosim parameter sweeps).  Without this call, get_band_history()
-        would return rows from previous runs mixed with the current run.
+        and get_clan_history() would return rows from previous runs mixed with
+        the current run.
 
         Note: this does NOT reset band Society state — that lives in the Band
         objects themselves and must be reset by recreating the ClanSociety and
         its Bands.
         """
         self._band_metrics.clear()
-        _log.debug("ClanEngine.reset() called — per-band metrics history cleared.")
+        self._clan_metrics.reset()
+        _log.debug("ClanEngine.reset() called — per-band and clan metrics history cleared.")
 
     def _get_metrics_collector(self, band_id: int) -> MetricsCollector:
         """Return (creating if needed) the MetricsCollector for a band."""
@@ -450,6 +495,15 @@ class ClanEngine:
         if collector is None:
             return []
         return collector.rows
+
+    def get_clan_history(self) -> list[dict]:
+        """Return the full per-tick clan-level metrics history.
+
+        Each row is a flat dict from ClanMetricsCollector.collect(), containing
+        per-band snapshots, inter-band trust matrix, interaction counts,
+        divergence metrics (Fst, centroid distances), and selection coefficients.
+        """
+        return self._clan_metrics.get_history()
 
 
 # ── Module-level helper ───────────────────────────────────────────────────────

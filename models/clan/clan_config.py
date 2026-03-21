@@ -80,4 +80,33 @@ class ClanConfig:
 
     # Scale factor for the Bowles coalition-defence benefit.
     # Higher → larger defensive coalitions → bigger defensive bonus.
+    # Applied directly to group_loyalty in p_join computation so that
+    # bowles_coalition_scale > 1 amplifies the loyalty → coalition size link.
+    # Ref: Bowles (2006) Science 314(5805), Eq. 3.
     bowles_coalition_scale: float = 1.0
+
+    # Floor probability for any eligible agent joining the defensive coalition.
+    # Ethnographic evidence (Keeley 1996) indicates that even low-loyalty members
+    # participate in group defence when their band is physically threatened.
+    # The floor prevents a degenerate all-zero coalition in low-loyalty bands.
+    # Set to 0.05 (5%) — low enough to preserve selection signal, high enough
+    # to avoid behavioural implausibility.  Make 0.0 to disable the floor.
+    p_join_floor: float = 0.05
+
+    # ── Between-group selection parameters (Turn 4) ─────────────────────────
+
+    # Band population above which fission (splitting) is triggered.
+    # Default 150: Dunbar (1992) cognitive limit for stable social relationships
+    # in human hunter-gatherer groups.
+    fission_threshold: int = 150
+
+    # Band population below which extinction (absorption by nearest band) occurs.
+    # Default 10: minimum viable population for a forager band to maintain
+    # reproductive and defensive viability (Hill et al. 2011).
+    extinction_threshold: int = 10
+
+    # Annual per-agent probability of inter-band migration (gene flow).
+    # Low values (~0.005) oppose between-group selection by reducing Fst.
+    # Empirical estimate: ~0.5-2% annual inter-band migration in foragers
+    # (Wiessner 1982; Hill et al. 2011).
+    migration_rate_per_agent: float = 0.005
