@@ -160,6 +160,28 @@ Initial test used `min_vp=20, pop=25, migration_rate=1.0` and asserted `>= min_v
 
 5. **Fix `fighter.die("raid", year)` year** — thread the actual year through the `raid_tick → _apply_casualties → _kill_fighters` call chain.
 
+### Council review (2026-03-20)
+
+GPT-4o errored (API issue — no response). Grok reviewed successfully.
+
+**Grok findings:**
+- DRIFT: Not flagged. Implementation directly supports the Bowles-Gintis gene-culture co-evolution test.
+- Science: Aligns well with Bowles-Gintis dynamics. Fst metric (Wright 1951) correctly used. Concern: early-tick raid_win_rate defaults to 0.5 before event window is populated, which may understate between-group selection effects in first 10-20 years. Already documented as Known Limitation — stabilizes after ~20 ticks.
+- Architecture: Sub-rng derivation for selection_tick preserves reproducibility. `_process_fission` compute waste (creates and discards Band initial population) noted as efficiency concern. Already documented as Known Limitation #5 — a future `Band.from_agents()` constructor would fix this.
+- Risk: Marriage exchange (gene flow) absence is the highest risk for next turn. Already in Next Turn roadmap as #1 priority.
+- Next turn: Marriage exchange events + `total_trade_volume` fix. Both already in roadmap.
+
+**Consensus fixes required (both models flagged):**
+- None possible — GPT-4o errored.
+
+**Single-model flags (Grok only — judgment applied):**
+- Early-tick raid_win_rate: Documented in Known Limitations. No code change — stabilizes naturally.
+- `_process_fission` compute waste: Documented in Known Limitations. No correctness issue, only performance. Deferred to future Band constructor refactor.
+- Marriage exchange: Highest-priority next-turn item. Already in roadmap.
+- `total_trade_volume`: Already in roadmap (#4).
+
+No DRIFT flagged. No consensus fix required. Proceeding.
+
 ---
 
 ## Turn 2 — 2026-03-20
