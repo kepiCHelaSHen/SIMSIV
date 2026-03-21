@@ -1089,3 +1089,28 @@ verdict: NEEDS_IMPROVEMENT
 
 next_turn_priority: Fix the fission distance-inheritance bug in engines/clan_selection.py (save parent distances before calling remove_band, then apply them after daughters are registered), then add per-Band Config support so that STRONG_STATE and FREE_COMPETITION institutional configurations can be assigned to individual bands — this is the experimental manipulation the entire v2 build has been constructing toward.
 
+
+---
+
+## CRITIC REVIEW — Turn 5 (FINAL)
+
+gate_1_frozen_compliance:  1.0 — Only 15 files changed between main..HEAD branch; all are new v2 files (models/clan/*, engines/clan_*.py, metrics/clan_collectors.py, tests/test_clan_*.py, V2_INNOVATION_LOG.md). Zero v1 files (engines/conflict.py, simulation.py, etc.) appear in `git diff --name-only main..HEAD`. The known STATUS.md bug at conflict.py lines 508-512 (missing bond_dissolved event) is confirmed present and untouched.
+
+gate_2_architecture:       0.97 — No print() statements confirmed via AST scan across all 9 v2 files; all randomness goes through seeded rng parameters; import graph is a strict DAG (models/clan imports nothing from engines; engines use TYPE_CHECKING guards; clan_selection defers Band import to call time to avoid circular risk); all 163 tests pass in 29.94s (22 v1 + 141 v2). One minor deduction: clan_base.py line 30 imports `from config import Config` unconditionally at module level (not under TYPE_CHECKING), creating a runtime dependency on v1 Config — this is by design and not a circular import, but it is a tight coupling worth noting.
+
+gate_3_scientific:         0.88 — All six required mechanisms are present: trade (clan_trade.py), raiding (clan_raiding.py), selection coefficients (clan_selection.py _compute_within_group_selection / _compute_between_group_selection), band fission/extinction (_process_fission / _process_extinction), gene flow (_process_migration), and Fst decomposition (clan_collectors.py _fst()). The ELDER filter fix (clan_selection.py lines 195-201: now PRIME/MATURE only) is correctly applied. One documented scientific limitation reduces this score: band_fitness uses current population_size / max_pop (lines 267-293 of clan_selection.py) rather than a growth rate. For bands that have been large from initialization, this conflates initial size with fitness, potentially attenuating between-group selection signal. This is documented in Known Limitation 4 of the FINAL SUMMARY but is not flagged as blocking. outgroup_tolerance correctly modulates trade refusal (clan_trade.py line 279) and raid probability via xenophobia (clan_raiding.py — 1 - mean outgroup_tolerance). aggression_propensity + resource scarcity jointly drive raid probability per the formula at clan_raiding.py docstring. Selection coefficients are tracked separately (within_group_selection_coeff, between_group_selection_coeff). All scientific citations (Bowles 2006, Wiessner 1982, Dunbar 1992, Hill et al. 2011) are present in source code.
+
+gate_4_drift:              0.96 — The build is cleanly aligned with the central research question: "Do institutions SUBSTITUTE for prosocial traits (North) or CO-EVOLVE with them (Bowles/Gintis)?" All four measurement instruments needed to test this claim are operational (selection coefficients, Fst, trade volume, violence rate). The FINAL SUMMARY section of the log (lines 108-123) correctly maps each mechanism to the experimental claim. No complexity was added without scientific justification. The only drift risk is the absence of a ClanSimulation wrapper and per-band institutional differentiation, which means the central claim cannot yet be tested in a single long-run experiment. This is a completeness issue (documented as the top priority for Turn 6) rather than a design drift.
+
+blocking_issues:    NONE
+
+nonblocking_issues:
+- band_fitness proxy (clan_selection.py line 293) uses pop_size/max_pop rather than growth rate. A stable large band appears fitter than a growing small band. For publication-quality results, replace with delta_population / initial_pop. Defer to Turn 6 refactor.
+- between_group_selection_coeff is always ±1.0 with n=2 bands (mathematical property of Pearson r on two points). Documented in FINAL SUMMARY Known Limitation 3. Enforce n >= 4 bands in experimental protocol — not a code fix required.
+- _move_agent ID collision creates dangling partner_ids/offspring_ids references in origin band agents (clan_selection.py lines 448-464). Systematic noise but not systematic bias per documentation. Requires cross-band ID registry to fix — out of scope for v2 skeleton.
+- raid casualty year_of_death = 0 (clan_raiding.py). Low-priority cosmetic fix.
+- No ClanSimulation wrapper or CSV exporter. get_clan_history() exists but no long-run experiment can be run without wrapping infrastructure. This is the highest-priority next-turn task.
+
+verdict: PASS
+
+next_turn_priority: Build ClanSimulation(clan_config, config, seed, n_years) wrapper with CSV export and per-band Config support for institutional differentiation — this is the minimum required to run the first experiment testing the Bowles/Gintis vs North substitution claim.
