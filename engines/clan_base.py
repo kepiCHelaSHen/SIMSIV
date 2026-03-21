@@ -124,6 +124,15 @@ class ClanEngine:
         band_metrics: dict[int, dict] = {}
         all_inter_band_events: list[dict] = []
 
+        # Capture pre-tick populations for growth-rate fitness proxy (Turn 7).
+        # selection_tick uses this to compute between-group selection via
+        # population growth rate (Bowles 2006, Price equation) rather than
+        # population level.
+        prev_populations: dict[int, int] = {
+            bid: band.population_size()
+            for bid, band in clan_society.bands.items()
+        }
+
         # ── Step 1: Tick each band independently ─────────────────────────────
         # Each band is ticked with its own per-band rng (band.rng) so that the
         # internal trajectory of a band is independent of band count and band
@@ -157,7 +166,8 @@ class ClanEngine:
         # NOT change the shared rng state for subsequent inter-band scheduling.
         # This preserves the RNG contract for existing tests.
         sel_rng = np.random.default_rng(int(rng.integers(0, 2**31)))
-        sel_events = selection_tick(clan_society, year, sel_rng, config, clan_config)
+        sel_events = selection_tick(clan_society, year, sel_rng, config, clan_config,
+                                    prev_populations)
         # Extract selection coefficients from the stats event (index 0)
         within_coeff = 0.0
         between_coeff = 0.0

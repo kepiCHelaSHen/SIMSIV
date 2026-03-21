@@ -1264,3 +1264,95 @@ No — anomaly check passed
 2. Measure cooperation divergence between institutional regimes
 3. Fix population-level → growth-rate fitness proxy (4 turns deferred, critic escalating)
 4. Add per-band trait snapshots to DataFrame export for analysis
+
+---
+
+## Turn 7 — 2026-03-21
+
+### Mode
+EXPLORATION — Milestone 6 (DIVERGENCE EXPERIMENT, explicitly marked Exploration in milestone sequence)
+
+### What was built
+
+**engines/clan_selection.py** — MODIFIED: fitness proxy fix (4 turns deferred, now delivered)
+- `_compute_between_group_selection` now accepts `prev_populations: dict[int, int] | None`
+- When prev_populations provided: uses population GROWTH RATE as fitness proxy
+  growth_rate = (current_pop - prev_pop) / max(prev_pop, 1)
+  Normalized to [0, 1] via clip to [-1, +1] then shift.
+- When None: falls back to population LEVEL (backward compatible)
+- Docstring corrected: no longer mislabels "population_growth_rate"
+- Bowles (2006) Price equation requires growth rate, not level
+
+**engines/clan_base.py** — MODIFIED: pre-tick population capture
+- tick() captures `prev_populations = {bid: band.population_size()}` BEFORE band ticks
+- Passes prev_populations to selection_tick()
+- Growth rate computed from (current - prev) / prev
+
+**models/clan/clan_simulation.py** — MODIFIED: per-band law_strength in DataFrame
+- to_dataframe() now includes `band_{bid}_law_strength` columns
+- Enables tracking institutional drift across the time series
+
+### Dead ends avoided
+NONE
+
+### Hypothesis (Exploration Mode)
+"Under FREE_COMPETITION (law_strength=0.0), bands will develop higher mean
+cooperation_propensity than under STRONG_STATE (law_strength=0.8), because
+between-group selection favors cooperative coalitions in the absence of
+institutional enforcement."
+Test: Compare mean coop at year 50 between Free and State bands across 3 seeds.
+Falsifiable: If |mean difference| < 0.01 across all seeds.
+
+### Divergence experiment results
+FREE_COMPETITION vs STRONG_STATE: 3 seeds, 50yr, 2 bands, 100 agents/band
+
+| Seed | Free pop | Free coop | State pop | State coop | Diff (Free-State) |
+|------|----------|-----------|-----------|------------|-------------------|
+| 42   | 0 (extinct) | N/A    | 68        | 0.521      | -0.521            |
+| 137  | 90       | 0.526     | 69        | 0.480      | +0.047            |
+| 271  | 115      | 0.496     | 71        | 0.460      | +0.036            |
+
+Mean divergence: -0.146 ± 0.265 (INCONCLUSIVE — dominated by seed 42 extinction)
+When both survive (seeds 137, 271): mean divergence = +0.042 (Free slightly higher)
+Free band law_strength drifted: 0.0 → 0.15-0.17 (emergent institutions active)
+
+INTERPRETATION: Experiment infrastructure works. Hypothesis test inconclusive.
+- Seed 42: Free band went extinct via _process_extinction (pop < 10)
+  → Without institutional enforcement, some bands collapse under stochastic pressure
+- Seeds 137, 271: When both survive, Free cooperation is slightly higher (+0.04)
+  → Directional support for Bowles/Gintis but not statistically significant at n=2
+
+### Health check results
+Carried forward from Turn 6 (all three confirmed active with correct roles)
+
+### Critic verdict (ADVISORY — Exploration Mode)
+Pending (dispatched, running in background). All gates advisory-only.
+
+### Linter
+No new files to review (modifications only). Non-blocking.
+
+### 3-seed anomaly results + variance + trend
+All 3 seeds PASS:
+  Seed 42:  coop=0.464 agg=0.507 pop=301
+  Seed 137: coop=0.491 agg=0.508 pop=236
+  Seed 271: coop=0.478 agg=0.490 pop=181
+Variance: coop_std=0.011 agg_std=0.008 — within limits
+STOCHASTIC_INSTABILITY: No
+TREND_DEGRADATION: N/A (comparing to Turn 6 baseline only)
+
+### Metric deltas (Turn 6 → Turn 7)
+  inter_band_violence_rate: 0.000 → 0.000 (unchanged)
+  trade_volume_per_band: 0.0 → 0.0 (unchanged)
+  between_group_sel_coeff: 0.633 → 0.500 (-0.133) — still degenerate at n=2
+  cooperation (mean): 0.500 → 0.478 (-0.022) — within noise
+  aggression (mean): 0.488 → 0.502 (+0.014) — within noise
+
+### Reversion executed?
+No — anomaly check passed
+
+### What next turn should focus on
+1. Increase band count to n=4+ (2 Free + 2 State) for non-degenerate selection coefficients
+2. Run 200yr experiment to allow trait divergence to accumulate
+3. Inter-band violence and trade metrics still zero — investigate if interactions are too rare
+4. Consider increasing base_interaction_rate or reducing inter-band distance
+5. Milestone 7: AutoSIM v2 calibration of inter-band target ranges

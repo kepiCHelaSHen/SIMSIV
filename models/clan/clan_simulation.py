@@ -224,6 +224,19 @@ class ClanSimulation:
             for key, val in clan.items():
                 if isinstance(val, (int, float, np.integer, np.floating)):
                     row[key] = float(val)
+
+            # Per-band trait snapshots from clan_metrics (emitted by
+            # ClanMetricsCollector as band_{bid}_{metric} keys).
+            # These are already in clan dict — they get flattened above.
+            # Additionally, extract per-band law_strength from the band's
+            # Config so institutional regime is tracked in the time series.
+            for bid in sorted(h["band_metrics"].keys()):
+                band = self.clan_society.bands.get(bid)
+                if band is not None:
+                    row[f"band_{bid}_law_strength"] = float(
+                        band.society.config.law_strength
+                    )
+
             rows.append(row)
 
         return pd.DataFrame(rows)

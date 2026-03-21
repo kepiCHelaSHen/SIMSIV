@@ -99,6 +99,7 @@ def selection_tick(
     rng: np.random.Generator,
     config: "Config",
     clan_config: "ClanConfig | None" = None,
+    prev_populations: dict[int, int] | None = None,
 ) -> list[dict]:
     """Run one year of between-group and within-group selection.
 
@@ -115,6 +116,12 @@ def selection_tick(
     clan_config:
         Optional v2 ClanConfig.  Provides fission_threshold, etc.
         Falls back to module-level defaults when None or attribute absent.
+    prev_populations:
+        Optional dict {band_id: population_count} from the previous tick.
+        When provided, _compute_between_group_selection uses population
+        growth rate as the fitness proxy (Bowles 2006, Price equation).
+        When None, falls back to population level (less accurate but
+        backward compatible).
 
     Returns
     -------
@@ -128,7 +135,7 @@ def selection_tick(
     within_coeff = _compute_within_group_selection(clan_society)
 
     # ── Step 2: Compute between-group selection coefficients ─────────────────
-    between_coeff = _compute_between_group_selection(clan_society)
+    between_coeff = _compute_between_group_selection(clan_society, prev_populations)
 
     # Emit a stats event so callers can extract the coefficients without
     # re-running the computation.
@@ -231,24 +238,24 @@ def _compute_within_group_selection(clan_society: "ClanSociety") -> float:
 
 # ── Between-group selection ────────────────────────────────────────────────────
 
-def _compute_between_group_selection(clan_society: "ClanSociety") -> float:
+def _compute_between_group_selection(
+    clan_society: "ClanSociety",
+    prev_populations: dict[int, int] | None = None,
+) -> float:
     """Estimate between-group selection coefficient.
 
     Between-group selection coefficient = Pearson r between a band's mean
     prosocial trait and a band-level fitness proxy.
 
     Band fitness proxy:
-        band_fitness = population_growth_rate + raid_win_bonus
+        band_fitness = 0.6 * demographic_component + 0.4 * raid_win_rate
 
-    where:
-        population_growth_rate  = pop / initial_pop (approximated from
-                                  Society.population_size() — no historical
-                                  baseline in the model, so we use current
-                                  living count normalised by initial_pop from
-                                  config as best available proxy)
-        raid_win_bonus = fraction of inter_band_raid events in the recent
-                         event window where this band was the defender/attacker
-                         and won.
+    The demographic component depends on whether prev_populations is available:
+      - With prev_populations: population growth rate (Bowles 2006, Price equation)
+        growth_rate = (current_pop - prev_pop) / max(prev_pop, 1)
+        Normalized to [0, 1] via sigmoid-like clamping.
+      - Without prev_populations (backward compat): population level
+        pop_size / max_pop across bands.
 
     Returns the mean r across prosocial traits across all band pairs.
     Returns 0.0 if fewer than _MIN_BAND_COUNT_FOR_BETWEEN bands exist.
@@ -263,9 +270,27 @@ def _compute_between_group_selection(clan_society: "ClanSociety") -> float:
     band_ids = [x[0] for x in active_bands]
     bands = [x[1] for x in active_bands]
 
-    # Band fitness proxy: normalised population size (larger = more fit)
     pop_sizes = np.array([b.population_size() for b in bands], dtype=float)
-    max_pop = max(pop_sizes.max(), 1.0)
+
+    # Demographic fitness component
+    if prev_populations is not None:
+        # Growth rate: (current - prev) / max(prev, 1)
+        # Bands not in prev_populations (newly created via fission) default
+        # to current_pop as prev (growth_rate=0, neutral fitness).
+        prev_pops = np.array(
+            [float(prev_populations.get(bid, int(pop_sizes[i])))
+             for i, bid in enumerate(band_ids)],
+            dtype=float,
+        )
+        prev_pops = np.maximum(prev_pops, 1.0)
+        growth_rates = (pop_sizes - prev_pops) / prev_pops
+        # Normalize to [0, 1]: clamp growth rate to [-1, +1] then shift to [0, 1]
+        growth_rates = np.clip(growth_rates, -1.0, 1.0)
+        demographic_component = (growth_rates + 1.0) / 2.0
+    else:
+        # Fallback: population level (backward compatible)
+        max_pop = max(pop_sizes.max(), 1.0)
+        demographic_component = pop_sizes / max_pop
     # Raid wins from recent event window (stored in band.society._event_window)
     raid_wins = np.zeros(len(bands), dtype=float)
     raid_totals = np.zeros(len(bands), dtype=float)
@@ -290,7 +315,7 @@ def _compute_between_group_selection(clan_society: "ClanSociety") -> float:
     # Avoid division by zero: use safe_div pattern (divide only where totals > 0)
     with np.errstate(divide="ignore", invalid="ignore"):
         raid_win_rate = np.where(raid_totals > 0, raid_wins / raid_totals, 0.5)
-    band_fitness = 0.6 * (pop_sizes / max_pop) + 0.4 * raid_win_rate
+    band_fitness = 0.6 * demographic_component + 0.4 * raid_win_rate
     bf_std = band_fitness.std()
 
     if bf_std < 1e-8:
