@@ -420,4 +420,5 @@ def _execute_trade_pair(
         "outcome": "success",
         "band_a_id": band_a.band_id,
         "band_b_id": band_b.band_id,
+        "volume": total_transferred,  # actual resources exchanged (sum of both directions)
     }

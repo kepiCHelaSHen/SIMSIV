@@ -298,6 +298,29 @@ class ClanMetricsCollector:
                 t_ba = clan_society.bands[id_b].trust_toward(id_a)
                 row[f"inter_band_trust_{id_a}_{id_b}"] = round((t_ab + t_ba) / 2.0, 4)
 
+        # ── 2b. Aggregate inter-band trust scalar ────────────────────────────
+        # Mean of all pairwise bilateral trust scores (one scalar per tick).
+        # Useful for tracking overall inter-band relationship trajectory.
+        pairwise_trust_scores: list[float] = []
+        for i in range(n_bands):
+            for j in range(i + 1, n_bands):
+                id_a = band_ids[i]
+                id_b = band_ids[j]
+                key = f"inter_band_trust_{id_a}_{id_b}"
+                if key in row:
+                    pairwise_trust_scores.append(row[key])
+        row["mean_inter_band_trust"] = _safe_mean(pairwise_trust_scores)
+
+        # ── 2c. Band-level resource Gini (across bands, not within bands) ────
+        # Gini coefficient of the mean resources ACROSS bands — measures how
+        # unequally resources are distributed between bands (inter-band inequality).
+        # Distinct from band_{bid}_resource_gini which measures within-band inequality.
+        band_mean_resources = [
+            row.get(f"band_{bid}_mean_resources", 0.0)
+            for bid in band_ids
+        ]
+        row["band_resource_gini"] = _gini(band_mean_resources)
+
         # ── 3. Interaction counts from events ─────────────────────────────────
         trade_count = sum(1 for e in events if e.get("type") == "inter_band_trade"
                           and e.get("outcome") == "success")
@@ -318,11 +341,20 @@ class ClanMetricsCollector:
             raid_count / total_interactions if total_interactions > 0 else 0.0
         )
 
-        # Trade volume: sum all resource transfers in successful trade events.
-        # (clan_trade stores no volume field directly; count successes as proxy)
-        # For a precise volume we would need the engine to store it in the event.
-        # Use count * mean_band_resources as best-available proxy.
-        row["total_trade_volume"] = float(trade_count)  # will be improved in future turns
+        # Trade volume: sum the actual resource volume from each successful trade event.
+        # clan_trade._execute_trade_pair now stores a "volume" key in each success event
+        # (added Turn 5 — total resources exchanged in both directions for that pair).
+        # Refused events carry no volume; we skip them.
+        row["total_trade_volume"] = float(
+            sum(
+                e.get("volume", 0.0)
+                for e in events
+                if e.get("type") == "inter_band_trade" and e.get("outcome") == "success"
+            )
+        )
+        # Backwards-compatible alias used by older code paths or tests that check
+        # the key name "trade_volume" directly.
+        row["trade_volume"] = row["total_trade_volume"]
 
         # ── 4. Divergence metrics ──────────────────────────────────────────────
         # Centroid distances between each band pair
