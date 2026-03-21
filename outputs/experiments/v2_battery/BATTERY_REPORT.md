@@ -221,43 +221,58 @@ Experiments 1, 2, and 3 form a coherent three-part story:
 2. But raiding causally amplifies Free cooperation (causal mechanism, Exp 2)
 3. And cooperation increases with raid intensity (dose-response, Exp 3)
 
-The narrative: **The Bowles mechanism is real but slow.** At 200yr it has not yet
-produced a detectable regime-level divergence, but the factorial demonstrates it
-is causally operating, and the dose-response confirms it scales with conflict
-intensity. At 500yr, it manifests through demographic events (band extinction)
-rather than gradual trait shifting.
+**UPDATE**: The Exp 2 interaction effect (+0.039) did NOT replicate at n=10
+(interaction = +0.0004, p=0.954). The n=3 result was a false positive.
+See `exp2_replication/exp2_replication_report.md`.
+
+The definitive result comes from Exp 7 (20-band mixed competition).
 
 ---
 
-## 7. WHAT TO TELL BOWLES
+## 7. THE DEFINITIVE EXPERIMENT (Exp 7 — 20-Band Competition)
 
-Your mechanism works. In our multi-band agent simulation with 35 heritable traits,
-intergroup raiding causally shifts cooperation in favor of bands without
-institutional enforcement. The 2x2 factorial (institutions x raiding) shows an
-interaction effect of +0.039: Free bands develop higher cooperation than State bands
-ONLY when exposed to intergroup conflict. Without raiding, institutional governance
-makes no difference to cooperation levels.
+10 Free + 10 State bands in the SAME simulation, 200yr, 6 seeds.
 
-The mechanism operates through the coalition defence pathway you described in 2006:
-cooperative bands form larger defensive coalitions, and cooperation increases with
-raid intensity (0.468 at raid_p=0.1 to 0.509 at raid_p=0.7). Migration opposes
-the mechanism as predicted (Fst decreases from 0.314 to 0.219 across migration
-rates).
+| Seed | Coop (Free) | Coop (State) | Divergence | Free Bands | State Bands |
+|------|------------|-------------|-----------|------------|-------------|
+| 42   | 0.405      | 0.482       | -0.077    | 2/10       | 20          |
+| 137  | 0.413      | 0.506       | -0.094    | 3/10       | 19          |
+| 271  | 0.398      | 0.500       | -0.103    | 3/10       | 17          |
+| 512  | 0.425      | 0.528       | -0.102    | 3/10       | 18          |
+| 999  | 0.411      | 0.537       | -0.125    | 2/10       | 22          |
+| 1337 | 0.413      | 0.500       | -0.087    | 2/10       | 20          |
 
-However, the effect is slow. At 200yr with n=6 seeds, the net cooperation
-divergence between Free and State regimes is -0.012 +/- 0.029 — indistinguishable
-from zero. The mechanism becomes visible at 500yr through demographic events: in 2/3
-of our long-run simulations, State bands go extinct while Free bands survive with
-elevated cooperation (0.63-0.67). This suggests your mechanism requires long
-timescales and operates through population-level selection (band extinction/fission),
-not gradual within-band trait shifting.
+**Mean divergence: -0.098 +/- 0.016, t(5) = -14.62, p < 0.0001, d = -5.97.**
+State > Free in 6/6 seeds. Free bands go nearly extinct.
 
-The most surprising finding: founder effects from band fission (Dunbar threshold)
-create more between-group trait variance (Fst 0.341 at threshold=75) than any other
-mechanism we tested, including raiding. This is consistent with your 2006 observation
-that "the group-level advantage of altruism rarely compensates for its
-individual-level cost without additional mechanisms" — the additional mechanism here
-is demographic structure, not just warfare.
+---
+
+## 8. WHAT TO TELL BOWLES
+
+Your mechanism is real but insufficient. When we scale our multi-band simulation
+to 20 groups (10 Free + 10 State) competing over 200 years, institutional
+governance wins decisively: State bands maintain cooperation ~0.50 vs Free
+bands ~0.41 (p < 0.0001, d = -5.97, 6/6 seeds).
+
+The coalition defence mechanism you described does raise cooperation with
+conflict intensity (confirmed in our dose-response experiment: 0.468 at
+raid_p=0.1 to 0.509 at raid_p=0.7). Migration opposes between-group selection
+as predicted (Fst 0.314 to 0.219 across rates 0.001-0.010).
+
+But when Free and State bands compete directly at adequate scale, institutional
+governance wins — not by suppressing your mechanism, but by co-opting
+between-group selection. The governance regime that maintains cooperation is the
+one that grows, fissions, and proliferates (State bands: 17-22 at year 200;
+Free bands: 2-3 survivors out of 10).
+
+The mechanism that determines cooperation is not trait-level between-group
+selection — it is institutional-regime selection. Between-group competition
+selects for the GOVERNANCE SYSTEM that best maintains cooperation, not for
+the TRAITS that produce cooperation without governance.
+
+This is consistent with your 2006 conclusion that "the group-level advantage
+of altruism rarely compensates for its individual-level cost without additional
+mechanisms." The additional mechanism turns out to be North's institutions.
 
 ---
 
@@ -265,13 +280,16 @@ is demographic structure, not just warfare.
 
 - `exp1_power.csv` — 24 rows (6 seeds x 4 snapshot years)
 - `exp2_factorial.csv` — 12 rows (4 conditions x 3 seeds)
+- `exp2_replication/` — 120 rows (4 conditions x 10 seeds x 3 years) + report
 - `exp3_raid_sweep.csv` — 24 rows (4 raid levels x 3 seeds x 2 years)
 - `exp4_fission.csv` — 18 rows (3 thresholds x 3 seeds x 2 years)
 - `exp5_migration.csv` — 24 rows (4 rates x 3 seeds x 2 years)
 - `exp6_longrun.csv` — 30 rows (3 seeds x 10 snapshot years)
 
-Total: 132 data rows from 54 simulation runs (~12,600 simulation-years)
+- `exp7_20band/` — 24 rows (6 seeds x 4 years) + report
+
+Total: ~280 data rows from ~100 simulation runs (~20,000 simulation-years)
 
 ---
 
-Generated by SIMSIV v2 experiment battery runner, 2026-03-21 (post-fix re-run).
+Generated by SIMSIV v2 experiment battery runner + Turn 11 additions, 2026-03-21.
