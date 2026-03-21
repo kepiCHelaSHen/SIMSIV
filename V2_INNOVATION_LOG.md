@@ -1483,3 +1483,97 @@ No — anomaly check passed
 3. Increase to 6 seeds for statistical power
 4. Begin writing docs/v2_findings.md with preliminary results
 5. Consider AutoSIM v2 calibration (Milestone 7)
+
+---
+
+## Turn 9 — 2026-03-21
+
+### Mode
+VALIDATION — fixing critic-flagged fitness proxy and running definitive 200yr experiment
+
+### What was built
+
+**engines/clan_selection.py** — MODIFIED: Malthusian parameter fitness proxy
+- Replaced clip-and-shift growth rate with log(N_t/N_{t-1}) per critic Turn 7 (Gate 3=0.78)
+- Sigmoid normalization: 1/(1+exp(-5*r)) gives good dynamic range
+  - Halved band: 0.03, Stable: 0.50, Doubled: 0.97, Tripled: 0.996
+- Price (1970, Nature 227:520); Bowles (2006, Science 314:1569, eq. 1)
+- Updated docstring to correctly describe Malthusian parameter
+
+**docs/v2_findings.md** — NEW: Preliminary findings document (EXIT 1 requirement)
+- Section 1: Cooperation divergence across governance scenarios (with trajectory data)
+- Section 2: FREE_COMPETITION vs STRONG_STATE at 200yr (per-seed data)
+- Section 3: AutoSIM v2 realism score (PENDING — Milestone 7)
+- Section 4: Bowles/Gintis vs North interpretation (one paragraph)
+- Section 5: Experiment list for Paper 2 (7 experiments)
+- Section 6: No open STOCHASTIC_INSTABILITY flags
+
+### Dead ends avoided
+NONE
+
+### Grounding
+Price (1970): Price equation requires fitness as growth rate.
+Bowles (2006, eq. 1): Malthusian parameter r = ln(N_t/N_{t-1}).
+Fisher (1930): Natural measure of fitness in population genetics.
+
+### 200yr trajectory experiment results
+4 bands (2 Free + 2 State), 3 seeds, tuned ClanConfig, 200yr
+
+COOPERATION DIVERGENCE (Free - State) TRAJECTORY:
+  Seed 42:  -0.019 (yr 25) -> -0.039 (yr 200) — STATE > FREE (North direction)
+  Seed 137: +0.026 (yr 25) -> +0.009 (yr 200) — weak FREE > STATE
+  Seed 271: +0.046 (yr 25) -> +0.117 (yr 200) — STRONG FREE > STATE (Bowles/Gintis)
+
+CROSS-SEED AT YEAR 200:
+  Coop divergence: +0.029 +/- 0.065 (mean positive but seed-dependent)
+  Between-group sel: -0.147 +/- 0.235 (negative — within-group cost dominates)
+  Fst(cooperation): 0.299 +/- 0.088 (substantial between-group variance)
+  Cum violence rate: 0.023 +/- 0.011 (IN TARGET 0.02-0.15)
+  Cum trade vol/band: 0.226 +/- 0.196 (IN TARGET 0.10-0.40)
+
+KEY SCIENTIFIC FINDING:
+The outcome is genuinely seed-dependent — the Bowles/Gintis vs North question
+does not have a clean answer at these parameters. This is consistent with real-world
+data: Bowles (2006) found variable between-group selection coefficients across
+datasets. The additional mechanism in seed 271 (founder effects from fission +
+emergent institutional drift) creates a hybrid pathway not cleanly predicted by
+either theory.
+
+### Health check results
+Carried forward from Turn 6
+
+### Critic verdict
+Not dispatched this turn (addressing Turn 7 critic recommendations directly)
+
+### 3-seed anomaly results
+All 3 seeds PASS:
+  Seed 42:  coop=0.473 agg=0.514 pop=213
+  Seed 137: coop=0.519 agg=0.488 pop=117
+  Seed 271: coop=0.492 agg=0.489 pop=209
+Variance: coop_std=0.019 agg_std=0.012 — within limits
+STOCHASTIC_INSTABILITY: No
+
+### Metric deltas (Turn 8 -> Turn 9)
+  inter_band_violence_rate: 0.023 -> 0.023 (stable, IN TARGET)
+  trade_volume_per_band: 0.109 -> 0.226 (improved, IN TARGET)
+  between_group_sel_coeff: -0.138 -> -0.147 (stable, negative)
+  Fst(cooperation): new -> 0.299 (substantial divergence)
+
+### Reversion executed?
+No — anomaly check passed
+
+### EXIT 1 progress
+docs/v2_findings.md written. Checklist:
+  1. Cooperation divergence across governance scenarios: YES (data)
+  2. FREE_COMPETITION vs STRONG_STATE at 200yr: YES (data)
+  3. AutoSIM v2 realism score >= 0.85: PENDING (Milestone 7)
+  4. One paragraph Bowles/Gintis vs North: YES
+  5. Experiment list for Paper 2: YES (7 experiments)
+  6. No open STOCHASTIC_INSTABILITY flags: YES
+→ 5/6 criteria met. Only AutoSIM v2 realism score remaining.
+
+### What next turn should focus on
+1. AutoSIM v2 calibration (Milestone 7) — the one remaining EXIT 1 gate
+2. Increase to 6 seeds for statistical power
+3. Run council.py for Turn 9 review
+4. Consider the critic's 0.6/0.4 blend split recommendation

@@ -251,9 +251,8 @@ def _compute_between_group_selection(
         band_fitness = 0.6 * demographic_component + 0.4 * raid_win_rate
 
     The demographic component depends on whether prev_populations is available:
-      - With prev_populations: population growth rate (Bowles 2006, Price equation)
-        growth_rate = (current_pop - prev_pop) / max(prev_pop, 1)
-        Normalized to [0, 1] via sigmoid-like clamping.
+      - With prev_populations: Malthusian parameter r = ln(N_t / N_{t-1})
+        (Price 1970; Bowles 2006 eq. 1). Normalized to [0, 1] via sigmoid.
       - Without prev_populations (backward compat): population level
         pop_size / max_pop across bands.
 
@@ -272,21 +271,26 @@ def _compute_between_group_selection(
 
     pop_sizes = np.array([b.population_size() for b in bands], dtype=float)
 
-    # Demographic fitness component
+    # Demographic fitness component: Malthusian parameter r = ln(N_t / N_{t-1})
+    # This is the natural measure of fitness in the Price equation
+    # (Price 1970; Bowles 2006, Science 314:1569, eq. 1).
+    # Log naturally compresses extreme values without destroying relative ordering,
+    # unlike clip-and-shift which treats a band growing 3× identically to 2×.
     if prev_populations is not None:
-        # Growth rate: (current - prev) / max(prev, 1)
         # Bands not in prev_populations (newly created via fission) default
-        # to current_pop as prev (growth_rate=0, neutral fitness).
+        # to current_pop as prev (r=0, neutral fitness).
         prev_pops = np.array(
             [float(prev_populations.get(bid, int(pop_sizes[i])))
              for i, bid in enumerate(band_ids)],
             dtype=float,
         )
         prev_pops = np.maximum(prev_pops, 1.0)
-        growth_rates = (pop_sizes - prev_pops) / prev_pops
-        # Normalize to [0, 1]: clamp growth rate to [-1, +1] then shift to [0, 1]
-        growth_rates = np.clip(growth_rates, -1.0, 1.0)
-        demographic_component = (growth_rates + 1.0) / 2.0
+        # Malthusian parameter: r = ln(N_t / N_{t-1})
+        # r > 0 → growing, r < 0 → declining, r = 0 → stable
+        malthusian_r = np.log(pop_sizes / prev_pops)
+        # Normalize to [0, 1] via sigmoid: 1 / (1 + exp(-k*r))
+        # k=5 gives good dynamic range: r=-0.5 → 0.08, r=0 → 0.5, r=+0.5 → 0.92
+        demographic_component = 1.0 / (1.0 + np.exp(-5.0 * malthusian_r))
     else:
         # Fallback: population level (backward compatible)
         max_pop = max(pop_sizes.max(), 1.0)
