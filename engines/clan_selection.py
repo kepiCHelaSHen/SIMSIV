@@ -192,9 +192,12 @@ def _compute_within_group_selection(clan_society: "ClanSociety") -> float:
 
     for bid, band in clan_society.bands.items():
         living = band.get_living()
+        # Filter to PRIME and MATURE only — ELDERs are post-reproductive and
+        # their inclusion dilutes the within-group selection signal.
+        # (Turn 4 critic warning; fixed Turn 5 following Grok council review.)
         adults = [
             a for a in living
-            if a.life_stage in ("PRIME", "MATURE", "ELDER") and a.age >= 15
+            if a.life_stage in ("PRIME", "MATURE") and a.age >= 15
         ]
         if len(adults) < 5:
             continue

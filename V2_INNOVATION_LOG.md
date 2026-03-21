@@ -97,7 +97,7 @@
 
 5. **fighter.die("raid", 0) year=0**: Raid casualties receive `year_of_death = 0`. Low priority for v2 skeleton; fix by threading the `year` parameter through `_apply_casualties → _kill_fighters`.
 
-6. **Within-group selection includes ELDER agents**: The Turn 4 critic noted this. ELDERs are post-reproductive; their inclusion dilutes the selection signal. Turn 5 does not change this (the filter is `PRIME | MATURE | ELDER with age >= 15`). A future fix would restrict to `PRIME | MATURE` only.
+6. **Within-group selection ELDER filter (FIXED Turn 5)**: ELDERs were previously included in the within-group selection filter (`PRIME | MATURE | ELDER`). Following Grok's council review, the filter was restricted to `PRIME | MATURE` only. ELDERs are post-reproductive and their inclusion diluted the trait-fitness correlation that the selection coefficient measures.
 
 7. **Marriage exchange not implemented**: Bilateral agent transfer as alliance-sealing mechanism is more realistic gene-flow than anonymous migration. Deferred — the anonymous migration in `_process_migration` is functional for testing the Bowles/Gintis claim.
 
@@ -231,13 +231,39 @@ Fix: Redesigned the test to maximise the non-scarcity raid factors that persist 
 - between_group_selection_coeff degenerate at n=2: documented in FINAL SUMMARY. Use n ≥ 4 bands for publication.
 - No ClanSimulation wrapper: `get_clan_history()` accessible but no CSV output path.
 
+### Council review (2026-03-20 — Turn 5)
+
+GPT-4o errored (API issue — no response). Grok reviewed successfully.
+
+**Grok findings:**
+- DRIFT: Not flagged. Implementation aligned with Bowles-Gintis predictions.
+- Science: Concerns about population-size proxy (not growth rate) and ELDER inclusion in within-group selection diluting fitness signal. Both flagged in Turn 4 as known limitations; ELDER fix applied below.
+- Architecture: Deferred Band import in fission and compute waste in fission already documented. No new issues.
+- Risk: Missing ClanSimulation wrapper blocks long-run experiments. Highest priority for next turn.
+- Next turn: ClanSimulation wrapper + CSV export + per-band Config (institutional differentiation).
+
+**Consensus fixes required (both models flagged):**
+- None possible — GPT-4o errored.
+
+**Single-model flags applied (Grok):**
+
+Fix applied — ELDER filter in within-group selection:
+`_compute_within_group_selection` changed from `("PRIME", "MATURE", "ELDER")` to `("PRIME", "MATURE")`. ELDERs are post-reproductive; their inclusion dilutes the trait-fitness correlation that the selection coefficient is measuring. All 163 tests pass after fix.
+
+Not applied (deferred):
+- Population-size proxy vs growth rate: requires historical population tracking per band. Architecture change, defer to next turn.
+- Marriage exchange: larger feature, defer to next turn.
+- ClanSimulation wrapper: largest feature, defer to next turn as top priority.
+
+No DRIFT flagged. No consensus fix required.
+
 ### What the next turn should do
 
 1. **ClanSimulation wrapper + CSV exporter** — `ClanSimulation(clan_config, config, seed)` runs N years and writes `clan_metrics.csv`, `band_fingerprints.csv`, `events.csv`. This enables the first long-run experiment testing the Bowles/Gintis claim.
 
 2. **Institutional differentiation** — Allow each Band a distinct Config so law_strength can be varied between bands. The core experimental manipulation for Paper 3.
 
-3. **Filter ELDERs from within-group selection** — Restrict `_compute_within_group_selection` to PRIME/MATURE only. Small change, removes a known bias.
+3. **Population growth rate in between-group fitness** — Replace `pop / max_pop` proxy with `(pop_t - pop_{t-1}) / pop_{t-1}` to better capture dynamic selection pressure. Requires storing previous-tick population per band.
 
 4. **Fix fighter.die("raid", year)** — Thread the actual year parameter from `raid_tick` through `_apply_casualties` to `_kill_fighters`.
 
