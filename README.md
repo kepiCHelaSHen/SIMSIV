@@ -160,6 +160,20 @@ SIMSIV/
 
 ---
 
+## Philosophy — The Anti-Drift Framework
+
+SIMSIV v2 uses **Recursive Multi-Agent Orchestration** to solve stochastic drift — the core failure mode of long-running autonomous AI loops.
+
+**σ-Gated Commits:** No code is merged unless variance across n=3 seeds is < 0.15 on all primary metrics. A single-seed result that looks clean but is stochastic noise cannot pass the gate.
+
+**Critic-Led Friction:** A dedicated Critic agent ("The Pessimist") enforces 100% compliance with frozen scientific grounding. Before scoring any build, it must first argue against the science — actively looking for reasons the implementation violates or misrepresents the literature. Gate 1 (frozen code compliance) must score 1.0 or nothing proceeds.
+
+**Automated Kill-Switches:** Five hard-coded Exit Conditions prevent compute-waste and logical decoupling — the loop stops when science is complete, when metrics stop improving, when anomalies are unresolvable, when the build is fundamentally misaligned, or when the human says stop. No arbitrary turn limits.
+
+The result: a system that gets smarter every turn instead of drifting, and stops itself before it goes off the rails.
+
+---
+
 ## Development Methodology
 
 Built over 27 deep-dive design sessions (DD01-DD27), each adding a

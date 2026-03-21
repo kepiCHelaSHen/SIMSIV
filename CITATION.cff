@@ -1,0 +1,56 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "SIMSIV: Simulation of Intersecting Social and Institutional Variables"
+abstract: >
+  A calibrated agent-based simulation of band-level human social evolution,
+  grounded in behavioral genetics, evolutionary anthropology, and institutional
+  economics. SIMSIV models 500 agents with 35 heritable traits across 9
+  simulation engines, calibrated to score 1.000 against 9 anthropological
+  benchmarks drawn from ethnographic data on the Hadza, !Kung, and Ache.
+  Designed to test the Bowles/Gintis vs North debate on whether institutional
+  governance substitutes for or co-evolves with heritable prosocial traits.
+authors:
+  - family-names: Rice
+    given-names: James P.
+    alias: kepiCHelaSHen
+    email: ricejam@outlook.com
+repository-code: "https://github.com/kepiCHelaSHen/SIMSIV"
+license: MIT
+version: "1.0.0"
+date-released: "2026-03-14"
+keywords:
+  - agent-based modeling
+  - social simulation
+  - evolutionary anthropology
+  - gene-culture coevolution
+  - behavioral genetics
+  - institutional economics
+  - between-group selection
+  - Bowles-Gintis
+references:
+  - type: article
+    title: "Bowles, S. (2006). Group Competition, Reproductive Leveling, and the Evolution of Human Altruism"
+    authors:
+      - family-names: Bowles
+        given-names: Samuel
+    journal: Science
+    volume: 314
+    issue: 5805
+    year: 2006
+  - type: article
+    title: "North, D.C. (1990). Institutions, Institutional Change and Economic Performance"
+    authors:
+      - family-names: North
+        given-names: Douglass C.
+    publisher: Cambridge University Press
+    year: 1990
+  - type: article
+    title: "Bowles, S. & Gintis, H. (2011). A Cooperative Species: Human Reciprocity and Its Evolution"
+    authors:
+      - family-names: Bowles
+        given-names: Samuel
+      - family-names: Gintis
+        given-names: Herbert
+    publisher: Princeton University Press
+    year: 2011
