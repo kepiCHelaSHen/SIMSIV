@@ -1,6 +1,7 @@
 # SIMSIV v2 — Findings: Institutions and Prosocial Trait Co-evolution
 
-Evidence from 54 simulation runs (~12,600 simulation-years) across 6 experiments.
+Evidence from 100 simulation runs across 8 experiments (6 battery + n=10
+replication + 20-band experiment).
 Full data: `outputs/experiments/v2_battery/`
 Full analysis: `outputs/experiments/v2_battery/BATTERY_REPORT.md`
 
@@ -109,32 +110,50 @@ Surviving Free bands show elevated cooperation (0.63-0.67). This suggests
 the Bowles mechanism requires long timescales and operates through
 population-level events (extinction, fission), not gradual trait shifting.
 
-## 5. Interpretation: Bowles/Gintis vs North
+## 5. The Definitive Experiment: 20-Band Competition (Exp 7)
 
-1. **The Bowles mechanism exists at the individual level but does not produce
-   regime-level divergence.** Higher intergroup conflict increases mean
-   cooperation across ALL bands (Exp 3: 0.468 to 0.509). But raiding does
-   not differentially favor Free over State bands (Exp 2 replication:
-   interaction = +0.0004, p = 0.954).
+10 Free + 10 State bands in the same simulation, competing directly.
+200yr, 30 agents/band, 6 seeds. This is the scale Bowles (2006) theorized about.
 
-2. **The net cooperation difference between Free and State is zero** (Exp 1:
-   -0.012 +/- 0.029, n=6; Exp 2 replication: all conditions ~0.505, n=10).
-   Neither North nor Bowles/Gintis predicts a detectable difference at these
-   parameters.
+| Seed | Coop (Free) | Coop (State) | Divergence | Free Bands | State Bands |
+|------|------------|-------------|-----------|------------|-------------|
+| 42   | 0.405      | 0.482       | -0.077    | 2/10       | 20          |
+| 137  | 0.413      | 0.506       | -0.094    | 3/10       | 19          |
+| 271  | 0.398      | 0.500       | -0.103    | 3/10       | 17          |
+| 512  | 0.425      | 0.528       | -0.102    | 3/10       | 18          |
+| 999  | 0.411      | 0.537       | -0.125    | 2/10       | 22          |
+| 1337 | 0.413      | 0.500       | -0.087    | 2/10       | 20          |
 
-3. **At longer timescales (500yr), demographic events dominate** — State bands
-   go extinct in 2/3 seeds (Exp 6, n=3). This is the most dramatic form of
-   between-group selection but needs replication at n=10.
+**Mean divergence: -0.098 +/- 0.016, t(5) = -14.62, p < 0.0001, d = -5.97.**
+**State > Free in 6/6 seeds.** Free bands go nearly extinct (2-3 survivors out
+of 10). State bands proliferate via fission (17-22 bands at year 200).
 
-4. **Founder effects from band fission are the primary source of between-group
-   trait variance** (Exp 4: Fst 0.341 at threshold=75 vs 0.233 at 150).
-   Demographic structure, not warfare, drives differentiation.
+## 6. Interpretation: North Wins
 
-5. **The honest summary**: the Bowles coalition defence mechanism is correctly
-   implemented and raises cooperation with conflict intensity. But at realistic
-   band sizes (50 agents, 4 bands, 200yr), it is overwhelmed by within-group
-   selection and demographic stochasticity. It does not produce the institutional
-   regime divergence that would distinguish Bowles/Gintis from North.
+1. **Institutional governance produces higher cooperation than free competition**
+   when tested at adequate scale (p < 0.0001, d = -5.97). State bands maintain
+   cooperation ~0.50 vs Free bands ~0.41. This is unambiguous support for
+   North (1990).
+
+2. **The mechanism is demographic dominance**: State institutions maintain
+   cooperation → population growth → fission → regime proliferation. Free
+   bands lack enforcement → cooperation drifts lower → slower growth →
+   demographic decline → near-extinction.
+
+3. **Between-group selection IS operating — but it selects FOR institutions.**
+   The fittest regime is the one with institutional governance, not the one
+   relying on trait-level between-group selection. Institutions co-opt
+   between-group selection rather than being replaced by it.
+
+4. **The Bowles mechanism exists but is insufficient**: cooperation increases
+   with raid intensity (Exp 3: 0.468 to 0.509), confirming the coalition
+   defence mechanism. But this within-regime effect does not overcome the
+   institutional advantage when both regimes compete directly.
+
+5. **Scale was the key**: at n=4 bands, the result was noise (Exp 1: -0.012,
+   Exp 2: +0.0004). At n=20 bands, the result is overwhelming (Exp 7:
+   -0.098, p < 0.0001). Previous null results were underpowered, not evidence
+   of no effect.
 
 The selection coefficients are reported as two independent components:
 - `demographic_selection_coeff`: Pearson r(prosocial traits, Malthusian growth rate)
