@@ -102,9 +102,10 @@ class ClanSimulation:
         # Shared clan-level rng for inter-band scheduling and interactions.
         self._rng = np.random.default_rng(int(master_rng.integers(0, 2**31)))
 
+        from dataclasses import replace as dc_replace
+
         # Build band setups if not provided
         if band_setups is None:
-            from dataclasses import replace as dc_replace
             default_config = Config()
             band_setups = [
                 (f"Band_{i+1}", dc_replace(default_config))
@@ -116,7 +117,6 @@ class ClanSimulation:
 
         # Create bands — each with its own Config and per-band rng.
         # We use dataclasses.replace to avoid mutating caller-provided Configs.
-        from dataclasses import replace as dc_replace
         self._band_name_to_id: dict[str, int] = {}
         for band_id, (name, band_config) in enumerate(band_setups, start=1):
             band_config = dc_replace(band_config, population_size=population_per_band)
@@ -154,6 +154,13 @@ class ClanSimulation:
         circular import: models/clan/ must not import from engines/ at
         module load time.
         """
+        if self._ran:
+            raise RuntimeError(
+                "ClanSimulation.run() has already been called. Create a new "
+                "ClanSimulation instance for a fresh run (re-running advances "
+                "the rng state and produces different results)."
+            )
+
         # Deferred import — engines import from models.clan via TYPE_CHECKING,
         # so models.clan must not import engines at module level.
         from engines.clan_base import ClanEngine
@@ -161,8 +168,12 @@ class ClanSimulation:
         engine = ClanEngine()
         self._history = []
 
-        # Use a default Config for inter-band operations (trade/raid dispatch).
-        # Per-band intra-band ticks use band.society.config automatically.
+        # A default Config() is used for inter-band operations (the `config`
+        # param passed to ClanEngine.tick).  This is intentional: inter-band
+        # engines (clan_trade, clan_raiding) read raid/trade parameters from
+        # ClanConfig, not from Config.  The per-band institutional params
+        # (law_strength, property_rights_strength) drive intra-band dynamics
+        # via band.society.config in _tick_band, not inter-band dispatch.
         default_config = Config()
 
         for year in range(1, self.n_years + 1):

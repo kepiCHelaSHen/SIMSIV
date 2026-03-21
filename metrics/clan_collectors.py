@@ -7,7 +7,7 @@ ClanMetricsCollector gathers three categories of data each tick:
    - Population count
    - Mean and SD of all 35 heritable traits
    - Mean beliefs (5 dims), mean skills (4 domains)
-   - law_strength from band.society
+   - law_strength from band.society.config
    - mean_resources, resource_gini within band
 
 2. Inter-band metrics
@@ -188,6 +188,8 @@ class ClanMetricsCollector:
         # its fitness regression, then folded in at the next collect() call.
         self._pending_within_coeff: float = 0.0
         self._pending_between_coeff: float = 0.0
+        self._pending_demographic_coeff: float = 0.0
+        self._pending_raid_coeff: float = 0.0
         # Cumulative interaction counters (Turn 8).
         # Per-tick metrics are noisy when most ticks have zero interactions.
         # Cumulative counters give stable rates across the full run.
@@ -202,14 +204,21 @@ class ClanMetricsCollector:
         self,
         within_coeff: float,
         between_coeff: float,
+        demographic_coeff: float = 0.0,
+        raid_coeff: float = 0.0,
     ) -> None:
         """Record selection coefficients computed by clan_selection.py.
 
         Called after selection_tick() finishes each year so that the next
         call to collect() includes the coefficients in the metrics row.
+
+        between_coeff is the legacy mean of demographic + raid.
+        demographic_coeff and raid_coeff are the split components (Turn 11).
         """
         self._pending_within_coeff = float(within_coeff)
         self._pending_between_coeff = float(between_coeff)
+        self._pending_demographic_coeff = float(demographic_coeff)
+        self._pending_raid_coeff = float(raid_coeff)
 
     # ── Primary API ───────────────────────────────────────────────────────────
 
@@ -287,7 +296,7 @@ class ClanMetricsCollector:
                 row[f"{prefix}mean_{skl}"] = _safe_mean(vals)
 
             # Institutional
-            law_strength = getattr(band.society, "law_strength", 0.0)
+            law_strength = getattr(band.society.config, "law_strength", 0.0)
             row[f"{prefix}law_strength"] = float(law_strength)
 
             # Resource distribution
@@ -398,6 +407,8 @@ class ClanMetricsCollector:
         # ── 5. Selection coefficients (set externally by clan_selection.py) ───
         row["within_group_selection_coeff"] = self._pending_within_coeff
         row["between_group_selection_coeff"] = self._pending_between_coeff
+        row["demographic_selection_coeff"] = self._pending_demographic_coeff
+        row["raid_selection_coeff"] = self._pending_raid_coeff
 
         # ── 6. Cumulative interaction metrics (Turn 8) ───────────────────────
         # Stable rates across the full run, unaffected by per-tick noise.
@@ -446,6 +457,8 @@ class ClanMetricsCollector:
         self._history.clear()
         self._pending_within_coeff = 0.0
         self._pending_between_coeff = 0.0
+        self._pending_demographic_coeff = 0.0
+        self._pending_raid_coeff = 0.0
         self._cum_trades = 0
         self._cum_raids = 0
         self._cum_interactions = 0

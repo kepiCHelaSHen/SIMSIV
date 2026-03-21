@@ -136,6 +136,7 @@ def raid_tick(
     trust: float,
     rng: np.random.Generator,
     config: "Config | ClanConfig",
+    year: int = 0,
 ) -> list[dict]:
     """Attempt an inter-band raid by attacker_band against defender_band.
 
@@ -244,7 +245,7 @@ def raid_tick(
     # ── 7. Apply casualties ───────────────────────────────────────────────────
     attacker_deaths, defender_deaths = _apply_casualties(
         raiding_party, defensive_coalition,
-        outcome, power_margin, rng, config,
+        outcome, power_margin, rng, config, year,
     )
 
     # ── 8. Update trauma scores for survivors ────────────────────────────────
@@ -687,6 +688,7 @@ def _apply_casualties(
     power_margin: float,
     rng: np.random.Generator,
     config: "Config | ClanConfig",
+    year: int = 0,
 ) -> tuple[int, int]:
     """Kill some fighters and remove them from their band's society.
 
@@ -718,8 +720,8 @@ def _apply_casualties(
         att_rate = base_att_rate * 0.75
         def_rate = base_def_rate * 0.75
 
-    attacker_deaths = _kill_fighters(raiding_party, att_rate, rng)
-    defender_deaths = _kill_fighters(defensive_coalition, def_rate, rng)
+    attacker_deaths = _kill_fighters(raiding_party, att_rate, rng, year)
+    defender_deaths = _kill_fighters(defensive_coalition, def_rate, rng, year)
 
     _log.debug(
         "Casualties: attackers=%d/%d, defenders=%d/%d (outcome=%s, margin=%.3f)",
@@ -730,7 +732,9 @@ def _apply_casualties(
     return attacker_deaths, defender_deaths
 
 
-def _kill_fighters(fighters: list, base_rate: float, rng: np.random.Generator) -> int:
+def _kill_fighters(
+    fighters: list, base_rate: float, rng: np.random.Generator, year: int = 0,
+) -> int:
     """For each fighter, roll a death check and kill them if it fires.
 
     Individual death probability:
@@ -749,7 +753,7 @@ def _kill_fighters(fighters: list, base_rate: float, rng: np.random.Generator) -
         p_die = base_rate * max(0.1, 1.0 - fighter.physical_robustness * 0.5)
         p_die = float(min(1.0, max(0.0, p_die)))
         if rng.random() < p_die:
-            fighter.die("raid", 0)  # year = 0, will be overwritten by event year
+            fighter.die("raid", year)
             deaths += 1
     return deaths
 

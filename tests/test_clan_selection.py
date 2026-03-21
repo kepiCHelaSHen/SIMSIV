@@ -164,8 +164,9 @@ def test_between_group_coeff_zero_with_one_band():
     clan = ClanSociety()
     clan.add_band(b1)
 
-    coeff = _compute_between_group_selection(clan)
-    assert coeff == 0.0, f"Expected 0.0 for single-band clan, got {coeff}"
+    demo_coeff, raid_coeff = _compute_between_group_selection(clan)
+    assert demo_coeff == 0.0, f"Expected 0.0 for single-band clan, got {demo_coeff}"
+    assert raid_coeff == 0.0, f"Expected 0.0 for single-band clan, got {raid_coeff}"
 
 
 def test_within_group_coeff_fallback_with_few_adults():

@@ -171,14 +171,20 @@ class ClanEngine:
         # Extract selection coefficients from the stats event (index 0)
         within_coeff = 0.0
         between_coeff = 0.0
+        demographic_coeff = 0.0
+        raid_coeff = 0.0
         if sel_events:
             stats = sel_events[0]
             if stats.get("type") == "selection_stats":
                 within_coeff = float(stats.get("within_group_selection_coeff", 0.0))
                 between_coeff = float(stats.get("between_group_selection_coeff", 0.0))
+                demographic_coeff = float(stats.get("demographic_selection_coeff", 0.0))
+                raid_coeff = float(stats.get("raid_selection_coeff", 0.0))
 
         # Pass coefficients to clan metrics collector so they appear in the row
-        self._clan_metrics.set_selection_coefficients(within_coeff, between_coeff)
+        self._clan_metrics.set_selection_coefficients(
+            within_coeff, between_coeff, demographic_coeff, raid_coeff
+        )
 
         # ── Step 5: Collect clan-level metrics ────────────────────────────────
         clan_metrics_row = self._clan_metrics.collect(
@@ -431,7 +437,7 @@ class ClanEngine:
             else:
                 att, dfn = band_b, band_a
 
-            raid_events = raid_tick(att, dfn, trust, rng, clan_config or config)
+            raid_events = raid_tick(att, dfn, trust, rng, clan_config or config, year)
             for ev in raid_events:
                 ev["year"] = year
                 band_a.society.add_event(ev)

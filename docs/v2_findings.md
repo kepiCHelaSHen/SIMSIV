@@ -1,9 +1,17 @@
-# SIMSIV v2 — Preliminary Findings: Institutions and Prosocial Trait Co-evolution
+# SIMSIV v2 — Pilot Findings: Institutions and Prosocial Trait Co-evolution
 
-## 1. Cooperation Divergence Across Governance Scenarios
+**Statistical note**: All results below are from n=3 seeds with n=4-5 bands.
+This is pilot data — underpowered for the observed effect sizes (d~0.45
+requires n>=11 seeds at 80% power per Ioannidis 2005). Directional observations
+are reported but no statistical significance is claimed. Publication-quality
+experiments require the protocol in Section 5.
+
+## 1. Cooperation Divergence Across Governance Scenarios (Pilot)
 
 200-year simulations with 4 bands (2 FREE_COMPETITION, 2 STRONG_STATE) show
 seed-dependent cooperation divergence. Three seeds, tuned inter-band parameters.
+**The 95% CI for mean divergence spans zero (-0.13 to +0.19); no directional
+conclusion is warranted at this sample size.**
 
 ### Cooperation trajectory (mean per regime)
 
@@ -87,35 +95,47 @@ demonstrating that the Dunbar fission mechanism is active and producing founder 
 ### Limitation: between_group_sel_coeff
 
 The between-group selection coefficient is the only metric that fails across ALL seeds.
-This is a known statistical limitation: with n=4-5 bands, Pearson r across band-level
-means is inherently noisy (std ~0.2-0.4 across time). The target range [0.01, 0.10]
-from Bowles (2006) was estimated from much larger meta-analytic datasets with n=10-30
-groups.
+Two factors contribute:
+
+1. **Statistical noise**: With n=4-5 bands, Pearson r across band-level means has
+   inherent std ~0.2-0.4 per tick. The target range [0.01, 0.10] from Bowles (2006)
+   was estimated from meta-analytic datasets with n=10-30 groups.
+
+2. **Definitional note (Turn 11 fix)**: The between_group_selection_coeff reported
+   here is now split into two separate components:
+   - `demographic_selection_coeff`: Pearson r(prosocial traits, Malthusian growth rate).
+     This IS the Price equation quantity comparable to Bowles (2006) eq. 1.
+   - `raid_selection_coeff`: Pearson r(prosocial traits, raid win rate).
+     This captures the Bowles coalition defence advantage separately.
+   The legacy `between_group_selection_coeff` key reports their mean for backward
+   compatibility, but the split components should be used for any comparison to the
+   theoretical literature.
 
 This limitation is the honest scientific result: between-group selection IS weak and
-variable with small band counts, which is precisely what Bowles (2006) concluded —
-"the group-level advantage of altruism rarely compensates for its individual-level
-cost without additional mechanisms."
+variable with small band counts, consistent with Bowles (2006).
 
-## 4. Interpretation: Bowles/Gintis vs North
+## 4. Interpretation: Bowles/Gintis vs North (Pilot Observations)
 
-The v2 multi-band simulation demonstrates that **institutions and prosocial traits
-interact bidirectionally, with the dominance of each mechanism being sensitive to
-stochastic demographic events**. In seed 271, where Free bands developed substantially
-higher cooperation (+0.117 by year 200) without institutional enforcement, the
-Bowles/Gintis co-evolution mechanism is clearly operating: between-group variation
-in cooperation (Fst = 0.36) increases over time, consistent with differential
-cultural group selection. In seed 42, institutional enforcement (STRONG_STATE)
-maintained higher cooperation (-0.039), supporting North's substitution hypothesis.
-The negative mean between-group selection coefficient (-0.147) across all seeds
-indicates that the within-group cost of cooperation (cooperators are exploited by
-free-riders) generally outweighs the between-group benefit (cooperative groups win
-more raids), consistent with Bowles's (2006) finding that "the group-level advantage
-of altruism rarely compensates for its individual-level cost without additional
-mechanisms." The additional mechanism in seed 271 appears to be founder effects
-from band fission combined with emergent institutional drift in Free bands
-(law_strength drifted from 0.0 to ~0.15), creating a hybrid pathway not cleanly
-predicted by either North or Bowles/Gintis.
+**Caveat**: The following is a pilot-level interpretation from n=3 seeds. No
+directional claims are statistically supported at this sample size. These
+observations motivate the experiments in Section 5, not conclusions.
+
+The pilot data suggest that **the outcome of the institutions-vs-traits competition
+is sensitive to stochastic demographic events**. In seed 271, Free bands developed
+higher cooperation (+0.117 by year 200) with increasing Fst (0.06 to 0.36),
+consistent with between-group selection operating. In seed 42, STRONG_STATE bands
+maintained higher cooperation (-0.039). Whether these trajectories exceed what
+neutral drift alone would produce has not been tested (a raiding-disabled null
+control is needed — see Experiment 2 in Section 5).
+
+The negative mean between-group selection coefficient across seeds is consistent
+with Bowles (2006): within-group costs of cooperation generally outweigh
+between-group benefits at low intergroup conflict intensity. The emergent
+institutional drift in Free bands (law_strength 0.0 to ~0.15) is driven by the
+v1 institution engine's drift formula, which correlates positively with population
+cooperation_norm. Whether this constitutes a genuine hybrid co-evolutionary
+pathway or is simply parameter drift requires isolation via the factorial
+experiment design in Section 5.
 
 ## 5. Experiment List for Paper 2
 

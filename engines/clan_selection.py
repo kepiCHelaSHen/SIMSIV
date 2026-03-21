@@ -135,7 +135,13 @@ def selection_tick(
     within_coeff = _compute_within_group_selection(clan_society)
 
     # ── Step 2: Compute between-group selection coefficients ─────────────────
-    between_coeff = _compute_between_group_selection(clan_society, prev_populations)
+    # Returns two separate coefficients: demographic (Price equation) and raid.
+    demographic_coeff, raid_coeff = _compute_between_group_selection(
+        clan_society, prev_populations
+    )
+    # Legacy key: mean of the two for backward compatibility with tests that
+    # read "between_group_selection_coeff".  New code should use the split keys.
+    between_coeff = (demographic_coeff + raid_coeff) / 2.0
 
     # Emit a stats event so callers can extract the coefficients without
     # re-running the computation.
@@ -144,18 +150,20 @@ def selection_tick(
         "year": year,
         "agent_ids": [],
         "description": (
-            f"Year {year} selection: within_coeff={within_coeff:.4f}, "
-            f"between_coeff={between_coeff:.4f}"
+            f"Year {year} selection: within={within_coeff:.4f}, "
+            f"demo={demographic_coeff:.4f}, raid={raid_coeff:.4f}"
         ),
         "outcome": "computed",
         "within_group_selection_coeff": within_coeff,
         "between_group_selection_coeff": between_coeff,
+        "demographic_selection_coeff": demographic_coeff,
+        "raid_selection_coeff": raid_coeff,
     }
     events.append(stats_event)
 
     _log.debug(
-        "selection_tick year=%d: within_coeff=%.4f, between_coeff=%.4f",
-        year, within_coeff, between_coeff,
+        "selection_tick year=%d: within=%.4f, demo=%.4f, raid=%.4f",
+        year, within_coeff, demographic_coeff, raid_coeff,
     )
 
     # ── Step 3: Inter-band migration (gene flow) ───────────────────────────────
@@ -241,61 +249,58 @@ def _compute_within_group_selection(clan_society: "ClanSociety") -> float:
 def _compute_between_group_selection(
     clan_society: "ClanSociety",
     prev_populations: dict[int, int] | None = None,
-) -> float:
-    """Estimate between-group selection coefficient.
+) -> tuple[float, float]:
+    """Estimate between-group selection coefficients (demographic + raid).
 
-    Between-group selection coefficient = Pearson r between a band's mean
-    prosocial trait and a band-level fitness proxy.
+    Returns TWO separate coefficients rather than a blended composite:
 
-    Band fitness proxy:
-        band_fitness = 0.6 * demographic_component + 0.4 * raid_win_rate
+    1. demographic_selection_coeff: Pearson r between band mean prosocial
+       trait and Malthusian growth rate r = ln(N_t / N_{t-1}).
+       This IS the Price equation fitness measure (Price 1970; Bowles 2006
+       eq. 1). Positive = prosocial bands grow faster.
 
-    The demographic component depends on whether prev_populations is available:
-      - With prev_populations: Malthusian parameter r = ln(N_t / N_{t-1})
-        (Price 1970; Bowles 2006 eq. 1). Normalized to [0, 1] via sigmoid.
-      - Without prev_populations (backward compat): population level
-        pop_size / max_pop across bands.
+    2. raid_selection_coeff: Pearson r between band mean prosocial trait
+       and raid win rate (wins / total raids in recent event window).
+       Positive = prosocial bands win more raids (Bowles coalition defence).
 
-    Returns the mean r across prosocial traits across all band pairs.
-    Returns 0.0 if fewer than _MIN_BAND_COUNT_FOR_BETWEEN bands exist.
+    Previously these were blended 0.6/0.4 into a single coefficient.
+    That blend was uncited and not comparable to the Bowles (2006) empirical
+    estimates. Splitting them makes each coefficient independently
+    interpretable against the literature.
+
+    Returns (0.0, 0.0) if fewer than _MIN_BAND_COUNT_FOR_BETWEEN bands exist.
     """
     active_bands = [
         (bid, band) for bid, band in clan_society.bands.items()
         if band.population_size() > 0
     ]
     if len(active_bands) < _MIN_BAND_COUNT_FOR_BETWEEN:
-        return 0.0
+        return 0.0, 0.0
 
     band_ids = [x[0] for x in active_bands]
     bands = [x[1] for x in active_bands]
 
     pop_sizes = np.array([b.population_size() for b in bands], dtype=float)
 
-    # Demographic fitness component: Malthusian parameter r = ln(N_t / N_{t-1})
+    # ── Demographic fitness: Malthusian parameter r = ln(N_t / N_{t-1}) ──
     # This is the natural measure of fitness in the Price equation
     # (Price 1970; Bowles 2006, Science 314:1569, eq. 1).
-    # Log naturally compresses extreme values without destroying relative ordering,
-    # unlike clip-and-shift which treats a band growing 3× identically to 2×.
     if prev_populations is not None:
-        # Bands not in prev_populations (newly created via fission) default
-        # to current_pop as prev (r=0, neutral fitness).
         prev_pops = np.array(
             [float(prev_populations.get(bid, int(pop_sizes[i])))
              for i, bid in enumerate(band_ids)],
             dtype=float,
         )
         prev_pops = np.maximum(prev_pops, 1.0)
-        # Malthusian parameter: r = ln(N_t / N_{t-1})
-        # r > 0 → growing, r < 0 → declining, r = 0 → stable
-        malthusian_r = np.log(pop_sizes / prev_pops)
-        # Normalize to [0, 1] via sigmoid: 1 / (1 + exp(-k*r))
-        # k=5 gives good dynamic range: r=-0.5 → 0.08, r=0 → 0.5, r=+0.5 → 0.92
-        demographic_component = 1.0 / (1.0 + np.exp(-5.0 * malthusian_r))
+        # Suppress log(0) warning for extinct bands — sigmoid maps -inf to 0.
+        with np.errstate(divide="ignore"):
+            malthusian_r = np.log(pop_sizes / prev_pops)
+        demographic_fitness = 1.0 / (1.0 + np.exp(-5.0 * malthusian_r))
     else:
-        # Fallback: population level (backward compatible)
         max_pop = max(pop_sizes.max(), 1.0)
-        demographic_component = pop_sizes / max_pop
-    # Raid wins from recent event window (stored in band.society._event_window)
+        demographic_fitness = pop_sizes / max_pop
+
+    # ── Raid fitness: win rate from recent event window ──
     raid_wins = np.zeros(len(bands), dtype=float)
     raid_totals = np.zeros(len(bands), dtype=float)
     for i, band in enumerate(bands):
@@ -316,38 +321,33 @@ def _compute_between_group_selection(
                 if outcome == "defender_wins":
                     raid_wins[i] += 1
 
-    # Avoid division by zero: use safe_div pattern (divide only where totals > 0)
     with np.errstate(divide="ignore", invalid="ignore"):
         raid_win_rate = np.where(raid_totals > 0, raid_wins / raid_totals, 0.5)
-    band_fitness = 0.6 * demographic_component + 0.4 * raid_win_rate
-    bf_std = band_fitness.std()
 
-    if bf_std < 1e-8:
-        return 0.0  # no fitness variation across bands
+    # ── Compute Pearson r for each fitness component separately ──
+    def _mean_r_vs_fitness(fitness_vec: np.ndarray) -> float:
+        """Pearson r between prosocial trait means and a fitness vector."""
+        if fitness_vec.std() < 1e-8:
+            return 0.0
+        coefficients: list[float] = []
+        for trait in _PROSOCIAL_TRAITS:
+            trait_means = np.array(
+                [float(np.mean([getattr(a, trait) for a in b.get_living()])
+                       if b.get_living() else 0.0)
+                 for b in bands],
+                dtype=float,
+            )
+            if trait_means.std() < 1e-8:
+                continue
+            r = float(np.corrcoef(trait_means, fitness_vec)[0, 1])
+            if np.isfinite(r):
+                coefficients.append(r)
+        return float(np.mean(coefficients)) if coefficients else 0.0
 
-    coefficients: list[float] = []
-    for trait in _PROSOCIAL_TRAITS:
-        trait_means = np.array(
-            [
-                float(
-                    np.mean([getattr(a, trait) for a in b.get_living()])
-                    if b.get_living() else 0.0
-                )
-                for b in bands
-            ],
-            dtype=float,
-        )
-        t_std = trait_means.std()
-        if t_std < 1e-8:
-            continue
-        r = float(np.corrcoef(trait_means, band_fitness)[0, 1])
-        if np.isfinite(r):
-            coefficients.append(r)
+    demographic_coeff = _mean_r_vs_fitness(demographic_fitness)
+    raid_coeff = _mean_r_vs_fitness(raid_win_rate)
 
-    if not coefficients:
-        return 0.0
-
-    return float(np.mean(coefficients))
+    return demographic_coeff, raid_coeff
 
 
 # ── Inter-band migration ───────────────────────────────────────────────────────
