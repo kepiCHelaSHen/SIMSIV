@@ -386,36 +386,28 @@ def _process_migration(
 
     events: list[dict] = []
 
-    # Evaluate all directed pairs: agent in band_i may migrate to band_j
+    # Evaluate each agent independently for migration (Wright island model).
+    # Each migrant independently draws a destination band, weighted by
+    # proximity and trust.  This matches the island-model assumption of
+    # uniform gene flow across all bands, unlike the previous implementation
+    # which picked ONE destination per origin band and sent ALL migrants
+    # there (pulsed directional flow — caused the migration-Fst anomaly
+    # in the v2 experiment battery, Exp 5).
+    min_vp = _cfg(config, "min_viable_population", 10.0)
+
     for i in range(n):
         id_origin = band_ids[i]
         band_origin = clan_society.bands[id_origin]
         living = band_origin.get_living()
 
-        # Never deplete a band below min_viable_population + 1
-        min_vp = _cfg(config, "min_viable_population", 10.0)
         if len(living) <= int(min_vp) + 1:
             continue
 
-        # Pick a random destination band (not itself)
         other_ids = [bid for bid in band_ids if bid != id_origin]
         if not other_ids:
             continue
 
-        id_dest = int(rng.choice(other_ids))
-        band_dest = clan_society.bands[id_dest]
-
-        distance = clan_society.get_distance(id_origin, id_dest)
-        trust = (
-            band_origin.trust_toward(id_dest) + band_dest.trust_toward(id_origin)
-        ) / 2.0
-
-        # Per-agent migration probability
-        p_migrate = migration_rate * trust * (1.0 - distance)
-        p_migrate = float(max(0.0, min(1.0, p_migrate)))
-
-        # Sample migrants from living agents (adults only to avoid
-        # separating dependent children from parents)
+        # Eligible: adults without partners (avoid splitting pair bonds)
         adult_migrants = [
             a for a in living
             if a.life_stage in ("PRIME", "MATURE") and not a.partner_ids
@@ -423,18 +415,37 @@ def _process_migration(
         if not adult_migrants:
             continue
 
-        migrated: list = []
+        # Pre-compute per-destination weights (proximity * trust)
+        dest_weights = []
+        for dest_id in other_ids:
+            dist = clan_society.get_distance(id_origin, dest_id)
+            trust = (
+                band_origin.trust_toward(dest_id)
+                + clan_society.bands[dest_id].trust_toward(id_origin)
+            ) / 2.0
+            dest_weights.append(trust * (1.0 - dist))
+        dest_weights = np.array(dest_weights, dtype=float)
+        dest_weights = np.maximum(dest_weights, 0.0)
+        weight_sum = dest_weights.sum()
+        if weight_sum < 1e-10:
+            continue
+        dest_probs = dest_weights / weight_sum  # normalize for destination choice
+
+        # Each agent independently decides whether to migrate and where
         for agent in adult_migrants:
-            # Guard again: stop if origin band would fall below minimum
             if len(band_origin.get_living()) <= int(min_vp) + 1:
                 break
-            if rng.random() < p_migrate:
-                migrated.append(agent)
+            # Total migration probability uses the max weight (closest/most trusted)
+            p_migrate = migration_rate * float(dest_weights.max())
+            p_migrate = float(max(0.0, min(1.0, p_migrate)))
+            if rng.random() >= p_migrate:
+                continue
 
-        for agent in migrated:
-            # Move agent: mark them dead in origin society, add to destination.
-            # We cannot use agent.die() (that's a permanent death).  Instead
-            # we move the agent object directly between the two Society registries.
+            # Choose destination proportional to proximity * trust
+            dest_idx = int(rng.choice(len(other_ids), p=dest_probs))
+            id_dest = other_ids[dest_idx]
+            band_dest = clan_society.bands[id_dest]
+
             _move_agent(agent, band_origin, band_dest)
             events.append({
                 "type": "inter_band_migration",
@@ -442,17 +453,15 @@ def _process_migration(
                 "agent_ids": [agent.id],
                 "description": (
                     f"Agent {agent.id} migrated from Band {id_origin} "
-                    f"to Band {id_dest} (trust={trust:.2f}, dist={distance:.2f})"
+                    f"to Band {id_dest}"
                 ),
                 "outcome": "migrated",
                 "origin_band_id": id_origin,
                 "destination_band_id": id_dest,
             })
-
-        if migrated:
             _log.debug(
-                "Migration: %d agents moved Band %d → Band %d (year %d)",
-                len(migrated), id_origin, id_dest, year,
+                "Migration: agent %d Band %d -> Band %d (year %d)",
+                agent.id, id_origin, id_dest, year,
             )
 
     return events
