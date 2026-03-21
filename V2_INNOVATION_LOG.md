@@ -81,6 +81,32 @@ Unchanged from Turn 4 roadmap:
 4. Fix `total_trade_volume` (add volume field to trade events)
 5. Fix `fighter.die("raid", year)` year threading
 
+### Council review (2026-03-20 — bug fix session)
+
+GPT-4o errored (API issue — no response).  Grok reviewed successfully.
+
+**Grok findings:**
+- DRIFT: Not flagged.  Bug fix and regression test are directly in service of
+  the fission/demographic event accuracy required by the Bowles-Gintis test.
+- Architecture: Correctly notes that `deferred import` in `_process_fission`
+  (`from models.clan.band import Band`) is a minor stylistic deviation.
+  No circular import — it is only evaluated at call time.  Acceptable.
+- Science: Same ongoing concerns from Turn 4 (population-size proxy, early-tick
+  raid_win_rate default).  No new issues introduced by this fix.
+- Risk: Same as Turn 4 — absence of marriage exchange is highest priority.
+- Next turn: Marriage exchange + total_trade_volume fix.  Both in roadmap.
+
+**Consensus fixes required (both models flagged):**
+- None possible — GPT-4o errored.
+
+**Single-model flags (Grok only — judgment applied):**
+- Deferred import: architectural note, not a bug.  Deferred import is the
+  standard pattern in this codebase to break circular imports at the module
+  level when Band is only needed inside _process_fission.  No change made.
+- All other flags are carry-forwards from Turn 4, already in roadmap.
+
+No DRIFT flagged.  No consensus fix required.  Proceeding.
+
 ---
 
 ## Turn 4 — 2026-03-20
