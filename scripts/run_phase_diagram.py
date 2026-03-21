@@ -84,8 +84,31 @@ for law in LAW_STRENGTHS:
                     if not living:
                         continue
                     coop = float(np.mean([a.cooperation_propensity for a in living]))
+                    # Classify by ORIGINAL band name, not current law_strength
+                    # (institutional drift moves law_strength, corrupting the classifier)
+                    name = band.name
+                    is_free = name.startswith("Free") or "(fission of" in name and any(
+                        f"fission of {fid}" in name for fid in range(1, 11)
+                    )
+                    # Simpler: original Free bands have IDs 1-10, State 11-20.
+                    # Fission daughters inherit parent Config. Check the CONFIG
+                    # value at construction time, not the drifted value.
+                    # Since we can't recover original ID reliably after fission,
+                    # use a threshold relative to the STATE law_strength for this run.
+                    # If law > 0: Free started at 0, State at law.
+                    # Midpoint = law/2. Below midpoint = Free regime.
+                    midpoint = law / 2.0 if law > 0 else -1  # law=0: all same regime
                     band_law = band.society.config.law_strength
-                    if band_law < 0.1:  # Free regime
+                    if law == 0.0:
+                        # Both regimes identical — classify by original ID
+                        # IDs 1-10 were Free, 11-20 were State
+                        if bid <= 10:
+                            free_coops.append(coop)
+                            free_alive += 1
+                        else:
+                            state_coops.append(coop)
+                            state_alive += 1
+                    elif band_law < midpoint:
                         free_coops.append(coop)
                         free_alive += 1
                     else:
