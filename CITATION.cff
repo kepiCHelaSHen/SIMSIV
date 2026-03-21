@@ -16,6 +16,7 @@ authors:
     alias: kepiCHelaSHen
     email: ricejam@outlook.com
 repository-code: "https://github.com/kepiCHelaSHen/SIMSIV"
+doi: "10.5281/zenodo.19065475"
 license: MIT
 version: "1.0.0"
 date-released: "2026-03-14"

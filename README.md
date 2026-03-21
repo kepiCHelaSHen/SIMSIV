@@ -1,9 +1,7 @@
 # SIMSIV
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-<!-- Uncomment and replace YOUR_DOI when Zenodo DOI is created:
-[![DOI](https://zenodo.org/badge/DOI/YOUR_DOI.svg)](https://doi.org/YOUR_DOI)
--->
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19065475.svg)](https://doi.org/10.5281/zenodo.19065475)
 
 ### Simulation of Intersecting Social and Institutional Variables
 

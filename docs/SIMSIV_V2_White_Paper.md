@@ -5,6 +5,7 @@
 **Date:** March 2026
 **Status:** Working Paper with Controlled Experiment
 **Corresponding Codebase:** github.com/kepiCHelaSHen/SIMSIV, branch `v2-clan-experiment`
+**DOI:** [10.5281/zenodo.19065475](https://doi.org/10.5281/zenodo.19065475)
 **Frozen Specification:** bioRxiv 2026/711970
 
 ---
