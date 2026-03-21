@@ -129,9 +129,16 @@ class ClanEngine:
         # internal trajectory of a band is independent of band count and band
         # ordering in the clan.  The shared clan-level rng is reserved for
         # inter-band scheduling and interactions only.
+        #
+        # Per-band Config: each band uses band.society.config (set at Band
+        # construction) for its intra-band dynamics.  This enables institutional
+        # differentiation — e.g. Band A runs FREE_COMPETITION while Band B
+        # runs STRONG_STATE — which is the core Bowles/Gintis vs North
+        # experimental manipulation.
         for band_id in sorted(clan_society.bands.keys()):
             band = clan_society.bands[band_id]
-            metrics_row = self._tick_band(band, year, band.rng, config)
+            band_config = band.society.config
+            metrics_row = self._tick_band(band, year, band.rng, band_config)
             band_metrics[band_id] = metrics_row
 
         # ── Step 2: Schedule inter-band interactions ──────────────────────────

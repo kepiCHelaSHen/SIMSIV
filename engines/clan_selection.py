@@ -541,17 +541,24 @@ def _process_fission(
         # Import here to avoid circular import at module level
         from models.clan.band import Band
 
+        # Daughters inherit the parent band's Config — not the shared default.
+        # This preserves institutional regime across fission events: a
+        # STRONG_STATE band that fissions produces STRONG_STATE daughters.
+        # Uses dataclasses.replace to create independent copies so that
+        # institutional drift in one daughter does not affect the other.
+        from dataclasses import replace as dc_replace
+        parent_config = band.society.config
         daughter1 = Band(
             band_id=daughter_id_1,
             name=f"Band{daughter_id_1}(fission of {bid})",
-            config=config,
+            config=dc_replace(parent_config),
             rng=np.random.default_rng(seed1),
             origin_year=year,
         )
         daughter2 = Band(
             band_id=daughter_id_2,
             name=f"Band{daughter_id_2}(fission of {bid})",
-            config=config,
+            config=dc_replace(parent_config),
             rng=np.random.default_rng(seed2),
             origin_year=year,
         )
