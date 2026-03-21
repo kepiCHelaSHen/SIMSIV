@@ -102,6 +102,27 @@ CHILDHOOD and YOUTH agents are excluded. ELDER agents are also excluded. This is
 
 5. Update `ClanEngine.tick()` docstring to remove the word "stub" — the interaction pipeline is now real (trade engine implemented, interaction-type draw active).
 
+### Council review (2026-03-20)
+
+GPT-4o errored (API issue). Grok reviewed successfully.
+
+**Grok findings:**
+- DRIFT: None flagged. Project aligned with Bowles/Gintis co-evolution research question.
+- Science: Trade mechanics grounded in Wiessner/Smith & Bird ethnographic evidence. Interaction-type draw (trade/neutral/hostile) plausible for Bowles-Gintis dynamics. Limitation: without raiding and gene flow, between-group selection is still partial.
+- Architecture: No circular imports, per-band rng correct. Concern: ClanEngine reuse without guaranteed fresh instance could corrupt autosim data.
+- Risk: Missing `metrics/clan_collectors.py` blocks trait divergence measurement — the core scientific instrument.
+- Next: Prioritize `metrics/clan_collectors.py` and marriage exchange (gene flow).
+
+**Consensus fixes required (both models flagged):**
+- None possible — GPT-4o errored.
+
+**Single-model flags (Grok only — judgment applied):**
+- ClanEngine reuse risk: Already addressed in Turn 2 via `reset()` method. Class docstring will be updated in Turn 3 to make the "one engine per run OR call reset()" contract explicit.
+- Missing metrics: Correctly scoped as Turn 3 priority. No code change needed now.
+- Raiding/gene flow absence: Correctly scoped as Turn 3 work. No drift.
+
+No code changes required. No DRIFT flagged. Proceeding.
+
 ---
 
 ## Turn 1 — 2026-03-20
