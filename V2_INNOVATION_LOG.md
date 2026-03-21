@@ -424,6 +424,28 @@ The first draft of the hostile branch ended by falling through to the shared `ba
 
 5. **Expose ClanConfig to ClanEngine** — the engine currently passes the v1 Config to `raid_tick` and `trade_tick`. These engines fall back to default constants for clan-specific params. Plumbing ClanConfig through the tick call would allow proper parameter sweeps of raid/trade behaviour.
 
+### Council review (2026-03-20)
+
+GPT-4o errored (API issue — no response). Grok reviewed successfully.
+
+**Grok findings:**
+- DRIFT: Not flagged. Project aligned with Bowles/Gintis gene-culture coevolution question.
+- Science: Trade and raiding engines align with Bowles-Gintis dynamics. Cooperative defence bonus and trust asymmetry are well-grounded. Concern: absence of gene flow (marriage exchange) and metrics/clan_collectors.py limits testability of between-group selection.
+- Architecture: No circular imports, per-band RNG correct. Minor: ClanEngine docstring should clarify the "one instance per run OR call reset()" contract. Existing reset() method mitigates the risk.
+- Risk: Continued absence of metrics/clan_collectors.py is the highest risk — blocks measurement of trait divergence and selection coefficients. Cross-band reputation ledger ID collisions could introduce noise but are low-severity.
+- Next: Build metrics/clan_collectors.py (core measurement instrument). Implement marriage exchange / gene flow (enables between-group heterogeneity).
+
+**Consensus fixes required (both models flagged):**
+- None possible — GPT-4o errored.
+
+**Single-model flags (Grok only — judgment applied):**
+- metrics/clan_collectors.py absence: Correctly scoped as Turn 4 priority. No code change in Turn 3.
+- Marriage exchange / gene flow: Correctly scoped as Turn 4 work.
+- Cross-band reputation ledger: Documented in Known Limitations. Accepted as Turn 4+ fix.
+- ClanEngine docstring: Minor. The module docstring was already updated in Turn 3 to describe the three-way dispatch. The "one instance per run" contract will be made explicit in Turn 4's class docstring update.
+
+No code changes required. No DRIFT flagged. Proceeding.
+
 ---
 
 ## CRITIC REVIEW — Turn 2
