@@ -5,7 +5,11 @@ Responsibilities per tick:
   1. Run the full v1 12-step simulation tick on every band's Society
      (using the existing engine singletons, each band isolated).
   2. Schedule inter-band interactions via ClanSociety.schedule_interactions().
-  3. Apply stub inter-band events (trade, conflict, migration stubs).
+  3. Classify each scheduled interaction as trade, neutral, or hostile, then
+     dispatch to the appropriate inter-band engine:
+       - trade   → clan_trade.trade_tick()
+       - hostile → clan_raiding.raid_tick()  [Turn 3: Bowles raiding engine]
+       - neutral → small trust bump, no exchange
   4. Return a structured result dict with per-band metrics and inter-band events.
 
 Architecture rules obeyed:
@@ -32,6 +36,7 @@ from engines.mortality import MortalityEngine
 from engines.reputation import ReputationEngine
 from engines.pathology import PathologyEngine
 from engines.clan_trade import trade_tick
+from engines.clan_raiding import raid_tick
 from metrics.collectors import MetricsCollector
 
 if TYPE_CHECKING:
@@ -354,25 +359,63 @@ class ClanEngine:
                 "other_band_id": band_b.band_id,
             }
 
-        else:  # hostile
-            # Hostile contact: trust decreases.  Magnitude scales with
-            # aggression pressure (1 - mean_tol): very intolerant bands lose more.
-            trust_loss = float(rng.uniform(0.01, 0.04)) * (1.0 - mean_tol)
-            band_a.update_trust(band_b.band_id, -trust_loss)
-            band_b.update_trust(band_a.band_id, -trust_loss)
+        else:  # hostile — attempt a raid (Bowles raiding engine)
+            # Determine which band is the attacker (higher scarcity + aggression
+            # drives raid motivation; lower mean resources → more likely attacker).
+            mean_res_a = _mean_resources(band_a)
+            mean_res_b = _mean_resources(band_b)
 
-            contact_event = {
-                "type": "inter_band_contact",
-                "year": year,
-                "agent_ids": [],
-                "description": (
-                    f"Band {band_a.band_id} hostile contact with Band {band_b.band_id} "
-                    f"(trust -{trust_loss:.3f})"
-                ),
-                "outcome": "hostile_contact",
-                "other_band_id": band_b.band_id,
-            }
+            if mean_res_a <= mean_res_b:
+                # band_a is more resource-stressed — more likely to be the attacker
+                att, dfn = band_a, band_b
+            else:
+                att, dfn = band_b, band_a
 
+            raid_events = raid_tick(att, dfn, trust, rng, config)
+            for ev in raid_events:
+                ev["year"] = year
+                band_a.society.add_event(ev)
+                band_b.society.add_event(ev)
+            events.extend(raid_events)
+
+            # Build a summary contact_event for this hostile interaction.
+            if not raid_events:
+                # Raid probability check failed — plain hostile contact.
+                trust_loss = float(rng.uniform(0.01, 0.04)) * (1.0 - mean_tol)
+                band_a.update_trust(band_b.band_id, -trust_loss)
+                band_b.update_trust(band_a.band_id, -trust_loss)
+                contact_event = {
+                    "type": "inter_band_contact",
+                    "year": year,
+                    "agent_ids": [],
+                    "description": (
+                        f"Band {band_a.band_id} hostile contact with Band {band_b.band_id} "
+                        f"(trust -{trust_loss:.3f}; no raid triggered)"
+                    ),
+                    "outcome": "hostile_contact",
+                    "other_band_id": band_b.band_id,
+                }
+            else:
+                contact_event = {
+                    "type": "inter_band_contact",
+                    "year": year,
+                    "agent_ids": [],
+                    "description": (
+                        f"Band {att.band_id} raided Band {dfn.band_id} "
+                        f"({len(raid_events)} raid event(s))"
+                    ),
+                    "outcome": "raid",
+                    "other_band_id": band_b.band_id,
+                }
+
+            # The hostile path adds its own contact_event inline (unlike the
+            # trade/neutral paths which fall through to the shared block below).
+            band_a.society.add_event(contact_event)
+            band_b.society.add_event(contact_event)
+            events.append(contact_event)
+            return events  # early return for hostile — avoids duplicate add
+
+        # ── Shared finalisation for trade and neutral paths ───────────────────
         band_a.society.add_event(contact_event)
         band_b.society.add_event(contact_event)
         events.append(contact_event)
@@ -420,3 +463,15 @@ def _mean_outgroup_tolerance(band: "Band") -> float:
     if not living:
         return 0.5
     return float(sum(a.outgroup_tolerance for a in living) / len(living))
+
+
+def _mean_resources(band: "Band") -> float:
+    """Return mean current_resources across all living agents in the band.
+
+    Falls back to 0.0 if no living agents exist (maximally resource-stressed,
+    triggering the highest raid motivation in _process_interaction).
+    """
+    living = band.get_living()
+    if not living:
+        return 0.0
+    return float(sum(a.current_resources for a in living) / len(living))

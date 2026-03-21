@@ -56,6 +56,7 @@ import numpy as np
 if TYPE_CHECKING:
     from models.clan.band import Band
     from config import Config
+    from models.clan.clan_config import ClanConfig
 
 _log = logging.getLogger(__name__)
 
@@ -189,7 +190,7 @@ def _compute_n_pairs(
     traders_a: list,
     traders_b: list,
     trust: float,
-    config: "Config",
+    config: "Config | ClanConfig",
 ) -> int:
     """Compute the number of trader pairs for this session.
 
@@ -197,7 +198,8 @@ def _compute_n_pairs(
         base = min(len(traders_a), len(traders_b), trade_party_size)
         n    = max(1, round(base * trust))
 
-    trade_party_size defaults to 3 if not present in config.
+    trade_party_size is read from config if present (ClanConfig defines it
+    explicitly at 3); falls back to module constant 3 for v1 Config objects.
     """
     party_size: int = getattr(config, "trade_party_size", 3)
     base = min(len(traders_a), len(traders_b), party_size)
@@ -214,11 +216,15 @@ def _is_scarce(band: "Band") -> bool:
     return mean_res < _SCARCITY_THRESHOLD
 
 
-def _compute_refusal_threshold(scarce: bool, config: "Config") -> float:
+def _compute_refusal_threshold(scarce: bool, config: "Config | ClanConfig") -> float:
     """Return outgroup_tolerance threshold below which an agent may refuse.
 
     Scarce bands are desperate: they lower their selectivity so that even
     low-outgroup-tolerance agents participate (survival need overrides xenophobia).
+
+    trade_refusal_threshold is read from config if present (ClanConfig defines
+    it explicitly at 0.25); falls back to _DEFAULT_REFUSAL_THRESHOLD for v1
+    Config objects.
     """
     threshold: float = getattr(config, "trade_refusal_threshold", _DEFAULT_REFUSAL_THRESHOLD)
     if scarce:
@@ -318,9 +324,11 @@ def _execute_trade_pair(
     resource_fields = ("current_resources", "current_tools", "current_prestige_goods")
 
     # Social skill bonus: more skilled negotiators secure a better surplus.
-    # Range: [1.05, 1.15] for social_skill in [0, 1].
-    skill_bonus_a = 1.0 + (trader_a.social_skill * 0.10) + _SURPLUS_MIN
-    skill_bonus_b = 1.0 + (trader_b.social_skill * 0.10) + _SURPLUS_MIN
+    # Range: [1.00, 1.10] for social_skill in [0, 1].
+    # NOTE: _SURPLUS_MIN must NOT appear here — it is baked into the rng.uniform
+    # draw below.  Adding it here was a double-inflation bug (Turn 2 critique #1).
+    skill_bonus_a = 1.0 + (trader_a.social_skill * 0.10)
+    skill_bonus_b = 1.0 + (trader_b.social_skill * 0.10)
 
     # Positive-sum surplus fraction drawn uniformly per pair.
     surplus_frac = float(rng.uniform(_SURPLUS_MIN, _SURPLUS_MAX))
@@ -340,6 +348,14 @@ def _execute_trade_pair(
 
         offer_a = surplus_a * offer_fraction
         offer_b = surplus_b * offer_fraction
+
+        # Asymmetric-loss guard (Turn 2 critique #2): skip this resource type
+        # if one side has nothing to offer.  A trade requires both parties to
+        # give something — a one-sided transfer is not exchange; it is looting.
+        if offer_a <= 0.0 or offer_b <= 0.0:
+            transferred_a_to_b[field] = 0.0
+            transferred_b_to_a[field] = 0.0
+            continue
 
         transferred_a_to_b[field] = offer_a
         transferred_b_to_a[field] = offer_b

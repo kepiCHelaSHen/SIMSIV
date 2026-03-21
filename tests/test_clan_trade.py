@@ -162,9 +162,11 @@ def test_trade_tick_positive_sum_gain():
         gain_a = ta.current_resources - res_before_a
         gain_b = tb.current_resources - res_before_b
         total_gain = gain_a + gain_b
-        # The gain may be small but must be non-negative (positive-sum).
-        assert total_gain >= -0.01, (
-            f"Expected positive-sum trade; total gain={total_gain:.4f}"
+        # The documented surplus range is 5–15%, so the combined gain MUST be
+        # strictly positive.  A tolerance of -0.01 permitted tiny net-negative
+        # results (Turn 2 critique #5).  The correct invariant is total_gain > 0.
+        assert total_gain > 0.0, (
+            f"Expected strict positive-sum trade; total gain={total_gain:.4f}"
         )
 
 
