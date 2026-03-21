@@ -1,5 +1,10 @@
 # SIMSIV
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+<!-- Uncomment and replace YOUR_DOI when Zenodo DOI is created:
+[![DOI](https://zenodo.org/badge/DOI/YOUR_DOI.svg)](https://doi.org/YOUR_DOI)
+-->
+
 ### Simulation of Intersecting Social and Institutional Variables
 
 SIMSIV is a calibrated agent-based simulation of band-level human social
@@ -160,17 +165,28 @@ SIMSIV/
 
 ---
 
-## Philosophy — The Anti-Drift Framework
+## Specification Drift — Working Paper
 
-SIMSIV v2 uses **Recursive Multi-Agent Orchestration** to solve stochastic drift — the core failure mode of long-running autonomous AI loops.
+**"LLMs Generate from Priors, Not Specifications"** — we ran a controlled experiment measuring coefficient drift across GPT-4o, Grok-3, and Claude on SIMSIV implementation tasks.
 
-**σ-Gated Commits:** No code is merged unless variance across n=3 seeds is < 0.15 on all primary metrics. A single-seed result that looks clean but is stochastic noise cannot pass the gate.
+**Key finding:** Without source code in the prompt, frontier LLMs produced incorrect coefficients on 99% of measurements (95/96, Fisher's exact p = 4×10⁻¹⁰). With the SIMSIV-V2 Builder/Critic/Reviewer protocol, drift dropped to 0%.
 
-**Critic-Led Friction:** A dedicated Critic agent ("The Pessimist") enforces 100% compliance with frozen scientific grounding. Before scoring any build, it must first argue against the science — actively looking for reasons the implementation violates or misrepresents the literature. Gate 1 (frozen code compliance) must score 1.0 or nothing proceeds.
+- **Paper:** [`docs/SIMSIV_V2_White_Paper.md`](docs/SIMSIV_V2_White_Paper.md)
+- **Figure 1 — Drift scatter plot:** [`docs/figures/figure1_drift_scatter.png`](docs/figures/figure1_drift_scatter.png)
+- **Figure 2 — Drift sensitivity:** [`docs/figures/figure2_drift_sensitivity.png`](docs/figures/figure2_drift_sensitivity.png)
+- **Experiment code:** [`experiments/drift_experiment/`](experiments/drift_experiment/)
+- **Convergence battery:** [`tests/test_milestone_battery.py`](tests/test_milestone_battery.py) (4 milestones × 30 seeds)
+- **Tag:** `v2-working-paper-alpha`
 
-**Automated Kill-Switches:** Five hard-coded Exit Conditions prevent compute-waste and logical decoupling — the loop stops when science is complete, when metrics stop improving, when anomalies are unresolvable, when the build is fundamentally misaligned, or when the human says stop. No arbitrary turn limits.
+## Development Protocol — Anti-Drift Framework
 
-The result: a system that gets smarter every turn instead of drifting, and stops itself before it goes off the rails.
+SIMSIV v2 uses a **Builder/Critic/Reviewer** protocol to prevent specification drift in LLM-generated scientific code.
+
+**σ-Gated Commits:** No code is merged unless variance across n=30 seeds is < 0.15 on all primary metrics.
+
+**Critic-Led Friction:** The Critic enforces 100% compliance with the frozen bioRxiv specification. Every coefficient must trace to a source-code line and a literature citation.
+
+**Automated Kill-Switches:** Five exit conditions halt the loop: science complete, performance gate, anomaly, misalignment, or human stop.
 
 ---
 
