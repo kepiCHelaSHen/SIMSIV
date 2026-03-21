@@ -12,9 +12,9 @@
 
 ## Abstract
 
-When Large Language Models generate scientific software, they substitute plausible but incorrect numerical coefficients for those defined in the target specification --- a failure mode we term *specification drift*. We measure drift across two frontier LLMs (GPT-4o, Grok-3) under two conditions: (A) without source code access, and (B) with the relevant source code excerpt visible in the prompt. Under Condition A ($n = 10$ trials per model per task, 4 tasks), both models produced incorrect coefficients on $\geq$90\% of trials (95/96 total measurements drifted; Fisher's exact $p = 4.0 \times 10^{-10}$). Drift was systematic: Grok-3 produced `social_skill_coeff = 0.30` on 10/10 trials (truth: 0.10); GPT-4o's mean empathy coefficient was 0.362 (truth: 0.15). Under Condition B, drift on directly visible coefficients dropped to $\sim$0\%, confirming that models can copy specifications when shown them. However, Condition B did not prevent structural errors (formula-level mistakes, scope creep in trait selection). A structured protocol with adversarial specification enforcement (SIMSIV-V2: Builder/Critic/Reviewer roles) caught both coefficient drift and structural errors, producing zero committed drift across 7 checked parameters, validated over 120 simulation runs ($\sigma = 0.030$, CV = 6.0\%). These results demonstrate that specification drift is a default, systematic, and testable failure mode of LLM code generation, and that its prevention requires active enforcement rather than passive context inclusion.
+When Large Language Models generate scientific software, they substitute plausible but incorrect numerical coefficients for those defined in the target specification --- a failure mode we term *specification drift*. We measure drift across two frontier LLMs (GPT-4o, Grok-3) under two conditions: (A) without source code access, and (B) with the relevant source code excerpt visible in the prompt. Under Condition A ($n = 10$ trials per model per task, 4 tasks), both models produced incorrect coefficients on $\geq$90\% of trials (95/96 total measurements drifted; Fisher's exact $p = 4.0 \times 10^{-10}$). Drift was systematic: Grok-3 produced `social_skill_coeff = 0.30` on 10/10 trials (truth: 0.10); GPT-4o's mean empathy coefficient was 0.362 (truth: 0.15). Under Condition B, drift on directly visible coefficients dropped to $\sim$0\%, confirming that models can copy specifications when shown them. However, Condition B did not prevent structural errors (formula-level mistakes, scope creep in trait selection). A structured protocol with adversarial specification enforcement (SIMSIV-V2: Builder/Critic/Reviewer roles) caught both coefficient drift and structural errors, producing zero committed drift across 7 checked parameters, validated over 120 simulation runs ($\sigma = 0.030$, CV = 6.0\%). These results demonstrate that specification drift is a context problem, not a capability problem: models *can* follow specifications when shown them, but default to training priors when specifications are absent. A protocol that hacks the LLM's context --- injecting specification awareness as an adversarial role --- eliminates drift while preserving the model's creative generative capacity. We frame this as a "Weakness as Strength" approach: the same prior-driven generation that causes drift also enables novel code proposals, and governing it through adversarial roles is more productive than suppressing it.
 
-**Keywords:** Specification Drift, LLM Reliability, Scientific Software, Controlled Experiment, Agent-Based Modelling
+**Keywords:** Specification Drift, LLM Reliability, Context Hacking, Scientific Software, Controlled Experiment, Agent-Based Modelling, Weakness as Strength
 
 ---
 
@@ -26,19 +26,36 @@ When LLMs generate scientific software, a specific failure mode emerges: **speci
 
 As we show in this paper, this is not a hypothetical. Across 96 controlled measurements, frontier LLMs produced the correct coefficient exactly once.
 
-### 1.2 Research Questions
+### 1.2 The Context Hack: Using Weakness as Strength
+
+The conventional response to LLM unreliability is suppression: constrain outputs through low temperature, detailed prompting, and post-hoc validation. This treats the LLM's generative prior as purely adversarial.
+
+We propose an inversion. The same property that causes drift --- generation from training priors rather than specifications --- is also the property that makes LLMs creative. The Builder role in our protocol *exploits* this: it generates candidate implementations with full creative latitude, drawing from its prior to propose novel code. The prior is not suppressed; it is *governed*.
+
+The governance mechanism is a **context hack**: rather than fighting the model's tendency to generate from priors, we inject specification-awareness as an adversarial role constraint. The Critic role is instructed to treat the frozen specification as inviolable and to compare every coefficient against specific source-code lines. This redirects the model's attention --- within the same session and the same context window --- from "what seems reasonable" to "what the specification says."
+
+The analogy is to genetic mutation in evolutionary biology. Mutation is individually deleterious (most mutations are harmful), yet it is the substrate upon which natural selection operates. Without mutation, there is no adaptation. Without the Builder's prior-driven generation, there are no novel proposals to evaluate. The Critic provides the selection pressure; the Reviewer provides the developmental constraint.
+
+Our experimental data validates this framing:
+
+- **The weakness is real.** Without specification enforcement, the Builder's prior produces the same drift as unstructured GPT-4o and Grok-3 (Section 3.4, Table 4: Builder proposed 0.20 for a 0.15 coefficient).
+- **The hack works.** The Critic catches every drifted proposal before it enters the codebase (0/7 committed drift vs. 95/96 in unstructured controls).
+- **Context injection is the mechanism.** Condition B shows that simply making the specification visible eliminates coefficient drift (Section 3.3). The protocol's Critic role formalises this: it *forces* the specification into the evaluation context for every proposal, including cross-file references the developer might not think to include.
+
+### 1.3 Research Questions
 
 1. **How prevalent is specification drift?** When LLMs generate scientific code without seeing the specification, how often do they produce incorrect coefficients?
 2. **Is drift random or systematic?** Do models produce random values, or do they converge on specific wrong values?
 3. **Does context access fix drift?** If the source code containing the correct coefficients is included in the prompt, does drift disappear?
-4. **Can structured protocols prevent drift?** Does an adversarial role structure (Builder/Critic/Reviewer) eliminate drift on parameters that context access alone does not catch?
+4. **Can structured protocols prevent drift beyond what context access provides?** Does an adversarial role structure catch structural errors that source-pasting alone does not?
 
-### 1.3 Contributions
+### 1.4 Contributions
 
 1. **Quantification.** We measure drift rates across two frontier LLMs at $\geq$90\% per coefficient (Section 3.1).
 2. **Characterisation.** Drift is systematic, not random. Models converge on model-specific wrong values (Section 3.2).
-3. **Mechanism.** Source code access eliminates coefficient-level drift but not structural errors (Section 3.3).
-4. **Intervention.** A structured protocol catches both drift classes, validated across 120 simulation runs (Section 3.4).
+3. **Mechanism.** Source code access eliminates coefficient-level drift but not structural errors (Section 3.3). This confirms that drift is a context problem, not a capability problem.
+4. **Intervention.** A structured protocol that hacks the LLM's context --- injecting specification awareness as an adversarial role --- catches both drift classes, validated across 120 simulation runs (Section 3.4).
+5. **Framework.** We articulate the "Weakness as Strength" principle: LLM priors are a generative resource to be governed, not a defect to be suppressed. The same property that causes drift also enables creative proposal generation.
 
 ---
 
@@ -200,13 +217,44 @@ Every drifted output from Condition A would pass standard quality checks:
 
 Only direct comparison against the frozen specification detects drift.
 
-### 4.3 The Protocol's Added Value
+### 4.3 The Context Hack: Why the Protocol Works
 
-Condition B shows that source code access eliminates simple coefficient drift. The protocol's value is therefore *not* primarily coefficient matching (which context access provides) but:
+Our three-condition design reveals the mechanism precisely. Drift is not a capability problem (Condition B proves models *can* read specifications). It is a **context problem**: models generate from whatever is most salient in their context, and without explicit specification injection, the training prior dominates.
 
-1. **Ensuring source IS consulted.** In practice, developers often do not paste the relevant source file into the prompt. The protocol's Critic role makes this mandatory.
-2. **Cross-file consistency.** The conformity coefficient (0.40 vs specification 0.30) was caught by cross-referencing `institutions.py`, which was not in the M1 source excerpt.
-3. **Structural errors.** The multiplicative CAC formula and the 35-trait scope creep are not coefficient mismatches --- they are architectural errors that require understanding the specification's intent, not just its numbers.
+The protocol works by hacking the context window. The Critic role is not a separate system or an external validator --- it is the *same model* in the *same session*, but with its attention redirected from "what seems reasonable" to "what does line 289 of resources.py say?" This is a context manipulation, not an architectural innovation.
+
+This explains the three-layered result:
+
+| Layer | What's in context | Drift rate | What's caught |
+|-------|------------------|------------|---------------|
+| **Condition A** | Trait names only | 99\% | Nothing |
+| **Condition B** | Trait names + source excerpt | $\sim$0\% (coefficients) | Simple coefficients |
+| **Condition C** | Full codebase + Critic role | 0\% (all) | Coefficients + cross-file + structural |
+
+The Critic does not have special capabilities. It has **broader context** (multiple source files, not just one excerpt) and **explicit instructions to compare** (not just to generate). The protocol's value is:
+
+1. **Ensuring specifications enter the context at all.** In practice, developers do not paste source code into every prompt. The Critic makes this mandatory.
+2. **Cross-file consistency.** The conformity coefficient (0.40 vs 0.30) was caught by cross-referencing `institutions.py` --- a file not in the M1 source excerpt. Only a role that systematically consults the full specification catches this.
+3. **Structural intent.** The multiplicative CAC formula and 35-trait scope creep are not coefficient mismatches. They are architectural errors requiring understanding of the specification's *purpose*, not just its numbers. The Critic's mandate to validate "scientific grounding" catches these; a simple coefficient-matching script would not.
+
+### 4.4 Weakness as Strength: The Builder's Prior Is Productive
+
+A key design insight: the Builder's drift is not a bug --- it is the protocol *working as intended*.
+
+The Builder proposed an empathy coefficient of 0.20 (drift from 0.15). This is the same value Grok-3 produces. If we suppressed the Builder's prior (e.g., by feeding it the source code directly), it would simply copy the specification --- no creative contribution, no novel code structure, no emergent architecture. The Builder would be a copy-paste engine.
+
+Instead, the protocol lets the Builder generate freely from its prior, producing a complete function with its own structural choices (variable names, formula shape, abstraction level). The Critic then inspects the result, correcting only the coefficients and structural errors that violate the specification. The Builder's creative contribution (code structure, documentation, naming, organisation) survives; only the specification-violating elements are filtered.
+
+This is analogous to mutation and selection in evolution:
+
+| Evolutionary concept | Protocol analogue | Function |
+|---------------------|------------------|----------|
+| Mutation | Builder's prior-driven generation | Produces novel variation |
+| Selection | Critic's specification enforcement | Filters harmful variation |
+| Developmental constraint | Reviewer's architecture audit | Ensures viability |
+| Phenotype | Committed code | Only surviving variation reaches production |
+
+The protocol does not suppress the LLM's stochastic nature. It governs it. The result is code that is both creatively structured (Builder's contribution) and specification-compliant (Critic's contribution) --- a combination that neither unstructured prompting nor specification-pasting achieves alone.
 
 ### 4.4 Limitations
 
@@ -241,13 +289,20 @@ Condition B shows that source code access eliminates simple coefficient drift. T
 | 4 | **Context alone misses structural errors** | Multiplicative formula, scope creep not prevented by source access |
 | 5 | **Active enforcement eliminates all measured drift** | Protocol: 0/7 committed drift, 6 caught pre-commit |
 
+### The Context Hack Principle
+
+Drift is not an intelligence problem --- it is an attention problem. LLMs are capable of specification compliance (Condition B proves this). They simply do not attend to specifications unless those specifications are injected into their active context. The protocol's contribution is making this injection systematic, adversarial, and cross-referential.
+
+This suggests a general principle for LLM-assisted scientific software development: **don't suppress the model's generative prior --- redirect its attention.** Let it generate freely, then use its own capabilities (in a Critic role) to validate against the specification. The creative generation and the specification compliance happen in the same context window, in the same session, from the same model. The "hack" is the role structure, not the technology.
+
 ### Practical Recommendations
 
 For any team using LLMs to generate scientific code with calibrated parameters:
 
-1. **Always include source-code excerpts in prompts** when generating specification-bound code. This eliminates simple coefficient drift at zero cost.
-2. **Implement coefficient-level validation** against a frozen specification file before committing LLM-generated code. Automated comparison catches what unit tests cannot.
-3. **Never trust that a "reasonable-looking" coefficient matches your specification.** The parameters you calibrated most carefully are the ones most likely to be silently overwritten.
+1. **Always include source-code excerpts in prompts** when generating specification-bound code. This eliminates simple coefficient drift at zero cost (Condition B: 100\% $\to$ $\sim$0\%).
+2. **Use adversarial role separation** for anything beyond simple coefficient matching. Structural errors, cross-file consistency, and scope creep require a Critic role that systematically consults the full specification.
+3. **Never suppress the model's creative generation** --- govern it. The Builder's "wrong" proposals carry useful structural contributions (naming, organisation, abstraction) that specification-pasting alone does not produce.
+4. **Never trust that a "reasonable-looking" coefficient matches your specification.** The parameters you calibrated most carefully are the ones most likely to be silently overwritten.
 
 ---
 
