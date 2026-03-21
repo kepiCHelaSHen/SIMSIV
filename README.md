@@ -11,8 +11,8 @@ institutional economics. Every agent is a complete simulated person with a
 genome, developmental history, medical biography, earned skills, culturally
 transmitted beliefs, and a life story from birth to death.
 
-**Band-level simulator v1.0 — 35 heritable traits, 9 engines, calibrated to
-score 1.000 against 9 anthropological benchmarks.**
+**v1.0 band simulator (under review at JASSS) + v2.0 multi-band clan simulator with drift experiment.**
+35 heritable traits, 13 engines, 187 tests, calibrated to score 1.000 against 9 anthropological benchmarks.
 
 All findings are emergent. Nothing is scripted.
 
@@ -155,7 +155,7 @@ SIMSIV/
 ├── autosim/              # Calibration engine + results
 ├── scripts/              # Validation, experiments, sensitivity analysis
 ├── dashboard/            # Streamlit visualization
-├── tests/                # 22 test cases
+├── tests/                # 187 tests (22 v1 + 141 v2 clan + 24 drift/convergence)
 ├── docs/                 # Architecture, validation, calibration docs
 ├── devlog/               # Full development history
 └── prompts/              # Executable build prompts
@@ -182,7 +182,7 @@ SIMSIV v2 uses a **Builder/Critic/Reviewer** protocol to prevent specification d
 
 **σ-Gated Commits:** No code is merged unless variance across n=30 seeds is < 0.15 on all primary metrics.
 
-**Critic-Led Friction:** The Critic enforces 100% compliance with the frozen bioRxiv specification. Every coefficient must trace to a source-code line and a literature citation.
+**Critic-Led Friction:** The Critic enforces 100% compliance with the frozen JASSS specification (submission 2026:81:1). Every coefficient must trace to a source-code line and a literature citation.
 
 **Automated Kill-Switches:** Five exit conditions halt the loop: science complete, performance gate, anomaly, misalignment, or human stop.
 

@@ -6,7 +6,7 @@
 **Status:** Working Paper with Controlled Experiment
 **Corresponding Codebase:** github.com/kepiCHelaSHen/SIMSIV, branch `v2-clan-experiment`
 **DOI:** [10.5281/zenodo.19065475](https://doi.org/10.5281/zenodo.19065475)
-**Frozen Specification:** bioRxiv 2026/711970
+**Frozen Specification:** JASSS submission 2026:81:1
 
 ---
 
@@ -68,7 +68,7 @@ All Condition A and B trials used temperature 0.7 to ensure genuine variation.
 | **Critic** | Validates against frozen specification | Hard-blocker |
 | **Reviewer** | Checks code quality and architecture | Advisory |
 
-The Critic hard-blocks proposals where any coefficient diverges from the frozen specification (bioRxiv 2026/711970). Every coefficient must be traceable to a specific source-code line and literature citation.
+The Critic hard-blocks proposals where any coefficient diverges from the frozen specification (JASSS submission 2026:81:1). Every coefficient must be traceable to a specific source-code line and literature citation.
 
 ### 2.3 Ground Truth
 
@@ -84,7 +84,7 @@ Five coefficients from the frozen SIMSIV specification:
 
 ### 2.4 Target Codebase
 
-SIMSIV: a gene-culture coevolutionary agent-based model (500+ agents, 35 heritable traits, 9 engine files, 6,957 lines of v2 code, 163 tests). Frozen specification: bioRxiv 2026/711970.
+SIMSIV: a gene-culture coevolutionary agent-based model (500+ agents, 35 heritable traits, 9 engine files, 6,957 lines of v2 code, 163 tests). Frozen specification: JASSS submission 2026:81:1.
 
 ### 2.5 Multi-Seed Validation
 
@@ -259,7 +259,7 @@ For any team using LLMs to generate scientific code with calibrated parameters:
 - de Waal, F.B.M. (2008). Putting the altruism back into altruism. *Annual Review of Psychology*, 59, 279--300.
 - Price, G.R. (1970). Selection and covariance. *Nature*, 227, 520--521.
 - Railsback, S.F. & Grimm, V. (2019). *Agent-Based and Individual-Based Modeling* (2nd ed.). Princeton University Press.
-- Rice, J. et al. (2026). Emergent institutions in gene-culture coevolution. *bioRxiv*, 2026/711970.
+- Rice, J. et al. (2026). SIMSIV: A calibrated agent-based framework for studying gene-culture coevolution in pre-state societies. *Under review, JASSS*, submission 2026:81:1.
 - Smith, E.A. & Bird, R. (2000). Turtle hunting and tombstone opening. *Evolution and Human Behavior*, 21(4), 245--261.
 - Stodden, V. et al. (2016). Enhancing reproducibility for computational methods. *Science*, 354(6317), 1240--1241.
 - Wiessner, P. (1982). Risk, reciprocity and social influences on !Kung San economics. In *Politics and History in Band Societies*, Cambridge University Press.

@@ -9,7 +9,7 @@
 **Gate 1 threshold:** 1.0 (Builder, Critic, Reviewer all active)
 
 ### Objective
-Initialize `models/clan/clan_base.py` with a cooperation function grounded in the frozen bioRxiv 2026/711970 mechanism. Stress-test across 3 seeds.
+Initialize `models/clan/clan_base.py` with a cooperation function grounded in the frozen JASSS submission 2026:81:1 mechanism. Stress-test across 3 seeds.
 
 ### Critic Blocking Event
 **CRITIC BLOCKED Builder Draft 1** — two coefficient violations detected:
@@ -763,7 +763,7 @@ No code changes required. No DRIFT flagged. Proceeding.
 ### What was built
 
 Five new files on branch `v2-clan-experiment`. No existing files were modified.
-The frozen v1.0 codebase (paper submitted to bioRxiv) is untouched.
+The frozen v1.0 codebase (paper submitted to JASSS) is untouched.
 
 **models/clan/__init__.py**
 Public exports: `Band`, `ClanSociety`.
@@ -1287,7 +1287,7 @@ co-evolution with traits. Per-band Config is the implementation mapping: FREE_CO
 
 ### Health check results
 - BUILDER: ✅ PASS — correctly cited CLAUDE.md first rule, enumerated all restrictions
-- CRITIC: ✅ PASS — Gate 1 = frozen code compliance, must = 1.0; adversarial mindset; bioRxiv protection
+- CRITIC: ✅ PASS — Gate 1 = frozen code compliance, must = 1.0; adversarial mindset; JASSS protection
 - REVIEWER: ⚠️ PARTIAL — confirmed read-only role but did not explicitly state scope exclusions
 
 ### Critic verdict + gate scores

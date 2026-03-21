@@ -2,7 +2,7 @@
 Clan cooperation model — emergent cooperation metrics from agent state.
 
 Computes cooperation, trade, defence, and selection metrics described in
-Rice et al. (2026, bioRxiv 2026/711970).  All coefficients match the
+Rice et al. (2026, JASSS submission 2026:81:1).  All coefficients match the
 frozen v1/v2 engine implementations exactly:
 
   Milestone 1 (Cooperation):

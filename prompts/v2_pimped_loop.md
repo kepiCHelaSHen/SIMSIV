@@ -29,7 +29,7 @@ Read both before deciding anything.
 FROZEN CODE — ABSOLUTE RULE
 ================================================================================
 
-The v1.0 codebase produced bioRxiv paper BIORXIV/2026/711970.
+The v1.0 codebase produced paper submitted to JASSS (2026:81:1).
 DO NOT touch any existing file.
 DO NOT fix bugs listed in STATUS.md.
 Build ONLY in:
@@ -98,7 +98,7 @@ SIMSIV-CRITIC — "THE PESSIMIST"
   Goal: Prove the science is wrong and the code is fragile.
   Mindset: Assume the build failed until proven otherwise.
   Specific mission: Actively look for reasons why the implementation
-    VIOLATES or MISREPRESENTS the frozen bioRxiv paper.
+    VIOLATES or MISREPRESENTS the frozen JASSS paper.
   Ask: "If I wanted to prove this mechanism is NOT Bowles/Gintis,
         what would I point to?"
   Gates (unchanged):
@@ -133,7 +133,7 @@ SUBAGENT HEALTH CHECK — EVERY TURN
     Fail: retry once. Still failing → EXIT 2.
 
   CRITIC: "Confirm active. You are The Pessimist. What is Gate 1 and threshold?
-           What is your specific mission regarding the bioRxiv paper?"
+           What is your specific mission regarding the JASSS paper?"
     Expected: "frozen code compliance, must = 1.0" +
               "actively look for violations of the frozen paper"
     Wrong or missing second part: log "critic role drift" and re-invoke
