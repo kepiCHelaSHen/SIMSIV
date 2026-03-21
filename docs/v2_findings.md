@@ -21,29 +21,39 @@ Full analysis: `outputs/experiments/v2_battery/BATTERY_REPORT.md`
 No statistically significant cooperation difference between institutional regimes
 at 200yr. The effect is seed-dependent: 2/6 Free > State, 3/6 State > Free.
 
-## 2. Causal Mechanism: 2x2 Factorial (Exp 2)
+## 2. Causal Mechanism: 2x2 Factorial (Exp 2 + n=10 Replication)
 
-The key experiment. Isolates whether raiding (between-group selection) causally
-drives cooperation divergence.
+Isolates whether raiding (between-group selection) causally drives cooperation
+divergence between institutional regimes.
 
-4 conditions: (Free/State) x (Raiding ON/OFF), n=3 seeds each, 200yr.
+### Original (n=3, Exp 2)
 
 |             | Raiding ON | Raiding OFF |
 |-------------|-----------|------------|
 | **Free**    | 0.506     | 0.482      |
 | **State**   | 0.469     | 0.484      |
 
-- Free-State divergence WITH raiding: **+0.037** (Free > State)
-- Free-State divergence WITHOUT raiding: **-0.002** (~zero)
-- **Interaction effect: +0.039**
+Interaction effect: +0.039 (suggested raiding amplifies Free cooperation).
 
-**Interpretation**: Raiding causally shifts cooperation +0.039 in favor of
-FREE_COMPETITION bands. Without raiding, institutions make no difference.
-WITH raiding, Free bands develop higher cooperation — the Bowles/Gintis
-prediction. Cooperative coalitions provide a survival advantage that
-reinforces prosocial traits in the absence of institutional enforcement.
+### Replication (n=10)
 
-Caveat: n=3 per condition. Publication requires n=10+.
+|             | Raiding ON             | Raiding OFF            |
+|-------------|------------------------|------------------------|
+| **Free**    | 0.505 (CI: +/-0.027)   | 0.504 (CI: +/-0.020)   |
+| **State**   | 0.508 (CI: +/-0.018)   | 0.507 (CI: +/-0.012)   |
+
+- Interaction effect: **+0.0004** (95% CI: [-0.013, +0.014])
+- Paired t-test: t(9) = 0.059, **p = 0.954**
+- Cohen's d = 0.019 (negligible)
+
+**The original finding did NOT replicate.** The n=3 interaction effect (+0.039)
+was a sampling artifact driven by one outlier seed. At n=10, all four conditions
+converge to ~0.505 +/- 0.02. Raiding does not differentially favor Free or
+State bands.
+
+The Bowles mechanism exists mechanistically (confirmed by Exp 3 dose-response)
+but does not produce detectable regime-level cooperation divergence at 200yr
+with n=4 bands and 50 agents/band.
 
 ## 3. Parameter Robustness
 
@@ -101,30 +111,34 @@ population-level events (extinction, fission), not gradual trait shifting.
 
 ## 5. Interpretation: Bowles/Gintis vs North
 
-The evidence supports a **nuanced middle ground**:
+1. **The Bowles mechanism exists at the individual level but does not produce
+   regime-level divergence.** Higher intergroup conflict increases mean
+   cooperation across ALL bands (Exp 3: 0.468 to 0.509). But raiding does
+   not differentially favor Free over State bands (Exp 2 replication:
+   interaction = +0.0004, p = 0.954).
 
-1. **The Bowles mechanism is real and causally operative** (Exp 2 interaction
-   +0.039; Exp 3 dose-response). Intergroup conflict selects for cooperation
-   in the absence of institutional enforcement.
+2. **The net cooperation difference between Free and State is zero** (Exp 1:
+   -0.012 +/- 0.029, n=6; Exp 2 replication: all conditions ~0.505, n=10).
+   Neither North nor Bowles/Gintis predicts a detectable difference at these
+   parameters.
 
-2. **But the net effect is near zero at 200yr** (Exp 1: -0.012 +/- 0.029).
-   Within-group selection costs and demographic stochasticity balance the
-   between-group advantage at realistic band sizes.
-
-3. **At longer timescales (500yr), the mechanism manifests through demographic
-   events** — band extinction rather than gradual trait evolution. This is
-   consistent with Bowles (2006): "the group-level advantage of altruism
-   rarely compensates for its individual-level cost without additional
-   mechanisms." The additional mechanism is demographic structure (fission,
-   extinction), not warfare alone.
+3. **At longer timescales (500yr), demographic events dominate** — State bands
+   go extinct in 2/3 seeds (Exp 6, n=3). This is the most dramatic form of
+   between-group selection but needs replication at n=10.
 
 4. **Founder effects from band fission are the primary source of between-group
-   trait variance** (Exp 4: Fst 0.341 at threshold=75 vs 0.233 at 150),
-   not differential group survival from raiding.
+   trait variance** (Exp 4: Fst 0.341 at threshold=75 vs 0.233 at 150).
+   Demographic structure, not warfare, drives differentiation.
 
-The selection coefficients are now reported as two independent components:
+5. **The honest summary**: the Bowles coalition defence mechanism is correctly
+   implemented and raises cooperation with conflict intensity. But at realistic
+   band sizes (50 agents, 4 bands, 200yr), it is overwhelmed by within-group
+   selection and demographic stochasticity. It does not produce the institutional
+   regime divergence that would distinguish Bowles/Gintis from North.
+
+The selection coefficients are reported as two independent components:
 - `demographic_selection_coeff`: Pearson r(prosocial traits, Malthusian growth rate)
-  — the Price equation quantity comparable to Bowles (2006) eq. 1.
+  — the Price equation quantity (Bowles 2006, eq. 1).
 - `raid_selection_coeff`: Pearson r(prosocial traits, raid win rate) — the
   coalition defence advantage.
 
