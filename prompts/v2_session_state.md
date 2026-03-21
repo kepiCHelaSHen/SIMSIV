@@ -1,37 +1,27 @@
 # SIMSIV v2 — Session State
-# Current state of the v2 clan simulator build.
-# Updated each turn by the innovation loop.
+# Updated: Turn 7 (2026-03-21)
 
----
-
-## Current State (Turn 6 — 2026-03-20)
-
-TURN: 6
-MODE: VALIDATION — ClanSimulation wrapper delivered
-MILESTONE: 5+6 complete (session memory + ClanSimulation wrapper + per-band Config)
+TURN: 7
+MILESTONE: 6 complete (Divergence Experiment)
+MODE: EXPLORATION (returning to VALIDATION next turn)
 BRANCH: v2-clan-experiment
-TAG: v2-turn-6-pass
+TAG: v2-turn-7-pass
 
-### What was built this turn
-- ClanSimulation wrapper (models/clan/clan_simulation.py) — 257 lines
-- Per-band Config in ClanEngine (band.society.config for intra-band ticks)
-- Fission config inheritance fix (daughters inherit parent's institutional regime)
-- 24 new tests (tests/test_clan_simulation.py)
-- Session memory files (Milestone 5)
-- Critic blocking issue + linter critical issue both fixed before commit
+### Key findings from Turn 7
+- Growth-rate fitness proxy DELIVERED (4-turn deferral resolved)
+- Divergence experiment: INCONCLUSIVE at n=2 bands, 50yr
+  - Seed 42: Free band went extinct
+  - Seeds 137, 271: Free cooperation ~0.04 higher (directional Bowles/Gintis)
+- Violence rate and trade volume still zero — interactions too rare
+- Institutional drift works: Free bands drift law_strength from 0.0 to ~0.15
 
-### Test status
-- 165 tests passing (141 existing + 24 new)
-- 3-seed anomaly check PASS (coop_std=0.023, agg_std=0.012)
-- No frozen v1 files touched
-
-### Metric baseline (first loop turn)
-- inter_band_violence_rate: 0.000 (target 0.02-0.15) — BELOW
-- trade_volume_per_band: 0.0 (target 0.10-0.40) — BELOW
-- between_group_sel_coeff: 0.633 (target 0.01-0.10) — ABOVE (n=2 degeneracy)
+### Metric status
+- inter_band_violence_rate: 0.000 (target 0.02-0.15) — BELOW TARGET
+- trade_volume_per_band: 0.0 (target 0.10-0.40) — BELOW TARGET
+- between_group_sel_coeff: 0.500 (target 0.01-0.10) — DEGENERATE (n=2)
 
 ### What next turn should do
-1. Run FREE_COMPETITION vs STRONG_STATE divergence experiment (Milestone 6)
-2. Measure cooperation divergence across institutional regimes
-3. Fix population-level → growth-rate fitness proxy (4 turns deferred)
-4. Add per-band trait snapshots to DataFrame export
+1. VALIDATION MODE — increase to n=4 bands (2 Free + 2 State)
+2. Investigate why inter-band interactions produce zero trade/violence metrics
+3. Consider increasing base_interaction_rate or reducing distance
+4. Run 200yr experiment with 4 bands for non-degenerate selection coefficients

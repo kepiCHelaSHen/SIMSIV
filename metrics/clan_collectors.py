@@ -188,6 +188,13 @@ class ClanMetricsCollector:
         # its fitness regression, then folded in at the next collect() call.
         self._pending_within_coeff: float = 0.0
         self._pending_between_coeff: float = 0.0
+        # Cumulative interaction counters (Turn 8).
+        # Per-tick metrics are noisy when most ticks have zero interactions.
+        # Cumulative counters give stable rates across the full run.
+        self._cum_trades: int = 0
+        self._cum_raids: int = 0
+        self._cum_interactions: int = 0
+        self._cum_trade_volume: float = 0.0
 
     # ── External setter called by clan_selection engine ───────────────────────
 
@@ -392,7 +399,28 @@ class ClanMetricsCollector:
         row["within_group_selection_coeff"] = self._pending_within_coeff
         row["between_group_selection_coeff"] = self._pending_between_coeff
 
-        # ── 6. Finalize ───────────────────────────────────────────────────────
+        # ── 6. Cumulative interaction metrics (Turn 8) ───────────────────────
+        # Stable rates across the full run, unaffected by per-tick noise.
+        self._cum_trades += trade_count
+        self._cum_raids += raid_count
+        self._cum_interactions += total_interactions
+        self._cum_trade_volume += row["total_trade_volume"]
+        row["cumulative_trades"] = self._cum_trades
+        row["cumulative_raids"] = self._cum_raids
+        row["cumulative_interactions"] = self._cum_interactions
+        row["cumulative_trade_volume"] = self._cum_trade_volume
+        row["cumulative_violence_rate"] = (
+            self._cum_raids / self._cum_interactions
+            if self._cum_interactions > 0 else 0.0
+        )
+        n_bands = len(band_ids)
+        n_pairs = max(n_bands * (n_bands - 1) // 2, 1)
+        row["cumulative_trade_volume_per_band"] = (
+            self._cum_trade_volume / (year * n_pairs)
+            if year > 0 else 0.0
+        )
+
+        # ── 7. Finalize ───────────────────────────────────────────────────────
         self._history.append(row)
         _log.debug(
             "ClanMetricsCollector: year=%d, bands=%d, total_pop=%d, "
@@ -418,4 +446,8 @@ class ClanMetricsCollector:
         self._history.clear()
         self._pending_within_coeff = 0.0
         self._pending_between_coeff = 0.0
+        self._cum_trades = 0
+        self._cum_raids = 0
+        self._cum_interactions = 0
+        self._cum_trade_volume = 0.0
         _log.debug("ClanMetricsCollector.reset() — history cleared.")

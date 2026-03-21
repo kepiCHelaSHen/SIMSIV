@@ -439,6 +439,9 @@ def test_inter_band_events_include_contact_events():
 def test_trade_events_have_year_stamped():
     """Trade events returned in result['inter_band_events'] have a non-zero year."""
     clan, engine, config, rng = _make_two_band_clan(seed=7, pop=50)
+    # Set trust high to ensure trade interactions occur reliably.
+    clan.bands[1].inter_band_trust[2] = 0.7
+    clan.bands[2].inter_band_trust[1] = 0.7
 
     trade_events: list[dict] = []
     for year in range(1, 21):

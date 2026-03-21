@@ -109,12 +109,19 @@ class Band:
     # ── Trust helpers ────────────────────────────────────────────────────────
 
     def trust_toward(self, other_band_id: int) -> float:
-        """Return trust score toward another band (default 0.5 if never set)."""
-        return self.inter_band_trust.get(other_band_id, 0.5)
+        """Return trust score toward another band (default 0.3 if never set).
+
+        Default 0.3 reflects ethnographic evidence that forager bands treat
+        unmet bands with moderate distrust (Bowles 2009).  This enables the
+        raid mechanism (raid_trust_suppression_threshold=0.4) to fire from
+        early ticks when resource scarcity is present, rather than requiring
+        50+ years of hostile contacts to erode trust from 0.5 below 0.4.
+        """
+        return self.inter_band_trust.get(other_band_id, 0.3)
 
     def update_trust(self, other_band_id: int, delta: float) -> None:
         """Apply an additive delta to trust toward another band, clamped [0, 1]."""
-        current = self.inter_band_trust.get(other_band_id, 0.5)
+        current = self.inter_band_trust.get(other_band_id, 0.3)
         self.inter_band_trust[other_band_id] = float(
             max(0.0, min(1.0, current + delta))
         )
