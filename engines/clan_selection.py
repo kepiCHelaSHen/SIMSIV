@@ -574,16 +574,29 @@ def _process_fission(
         daughter1.inter_band_trust[daughter_id_2] = 0.7
         daughter2.inter_band_trust[daughter_id_1] = 0.7
 
+        # Capture parent distances BEFORE removing the parent band.
+        # After remove_band(bid), any call to get_distance(bid, x) returns the
+        # default 0.5 because the distance_matrix entries are cleaned up as part
+        # of remove_band.  Capturing here ensures daughters inherit the correct
+        # geographic proximity to every existing band.
+        parent_distances: dict[int, float] = {
+            oid: clan_society.get_distance(bid, oid)
+            for oid in clan_society.bands
+            if oid != bid
+        }
+
         # ── Register daughters, remove parent ─────────────────────────────────
         clan_society.remove_band(bid)
         clan_society.add_band(daughter1)
         clan_society.add_band(daughter2)
 
-        # Distance: daughters share parent's distances to other bands
+        # Distance: daughters share parent's distances to other bands.
+        # Use the pre-captured parent_distances dict — do NOT call
+        # clan_society.get_distance(bid, ...) here; bid has been removed.
         for other_id in clan_society.bands:
             if other_id in (daughter_id_1, daughter_id_2):
                 continue
-            parent_dist = clan_society.get_distance(bid, other_id)
+            parent_dist = parent_distances.get(other_id, 0.5)
             # Small noise ±0.05 so daughters occupy slightly different territory
             noise = float(rng.uniform(-0.05, 0.05))
             clan_society.set_distance(daughter_id_1, other_id,

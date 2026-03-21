@@ -1,5 +1,88 @@
 # SIMSIV V2 Clan Simulator — Innovation Log
 
+## Turn 4 Bug Fix — 2026-03-20 (BLOCKING BUG from critic review)
+
+### What was fixed
+
+**Blocking bug: band fission distance-inheritance used stale default instead of parent geography**
+
+File: `engines/clan_selection.py`, function `_process_fission`.
+
+**Root cause:**
+In `_process_fission`, the call to `clan_society.remove_band(bid)` at the point now labelled
+"Register daughters, remove parent" deleted all distance_matrix entries involving the parent
+band ID from `ClanSociety.distance_matrix` (see `remove_band` implementation in
+`models/clan/clan_society.py` lines 66-76).  The loop that followed, which was supposed to
+copy the parent's distances to the two daughter bands, then called
+`clan_society.get_distance(bid, other_id)` — but since `bid` had already been removed,
+`get_distance` returned the fallback default of 0.5 for every query.  Every daughter band
+therefore inherited distance 0.5 to all existing bands regardless of the parent's actual
+geography, silently destroying geographic structure whenever fission occurred.
+
+**The fix (two-line change + 7-line capture block):**
+
+Captured the parent's distances to all current bands in a local dict BEFORE calling
+`remove_band`:
+
+```python
+parent_distances: dict[int, float] = {
+    oid: clan_society.get_distance(bid, oid)
+    for oid in clan_society.bands
+    if oid != bid
+}
+```
+
+Then replaced `clan_society.get_distance(bid, other_id)` in the inheritance loop with
+`parent_distances.get(other_id, 0.5)`.  The explicit comment explains why the live call
+must not be used after `remove_band`.
+
+**Regression test added:**
+`tests/test_clan_selection.py` — `test_fission_daughters_inherit_parent_distances`
+
+Three bands: A (id=1, pop=50), B (id=2, pop=10), C (id=3, pop=10).
+fission_threshold=20, so only A fissions.  Known distances set: A-B=0.2, A-C=0.8.
+After fission, both daughter bands are asserted to have distance to B within ±0.1 of 0.2
+and distance to C within ±0.1 of 0.8.  This test would have caught the bug immediately.
+Without the fix, both daughters would show distance 0.5 to B and 0.5 to C.
+
+**Test precondition guards added:** The test explicitly asserts that B and C remain below
+the fission threshold before calling `_process_fission`, ensuring the test cannot produce
+a false-negative by accidentally fissioning B or C (which would remove them from the
+distance matrix and make the distance queries return 0.5 for a different reason).
+
+**All 134 tests pass after the fix.**
+
+### Self-critique findings
+
+1. **First test iteration used equal-pop configs** — Initial regression test used
+   `pop=50` for all three bands with `fission_threshold=20`, causing all three bands to
+   fission.  After band 1 fissioned and band 2 subsequently fissioned and was removed,
+   `clan.get_distance(daughter_id, 2)` correctly returned 0.5 (band 2 no longer existed),
+   but the assertion expected ~0.2.  The fix was to give B and C `pop=10` configs so only
+   band A exceeds the threshold, keeping B and C intact throughout the test.
+
+2. **No existing file touched** — The fix modifies only `engines/clan_selection.py` and
+   `tests/test_clan_selection.py`, both of which are v2-only new files.  The v1.0 frozen
+   codebase is unchanged.
+
+### Known limitations (unchanged from Turn 4)
+
+- `fighter.die("raid", 0)` year=0 for raid casualties
+- `total_trade_volume` uses count as proxy (no per-event volume field)
+- Between-group fitness proxy unreliable in first ~20 ticks (empty event window)
+- `_process_fission` compute waste creating and discarding initial Band population
+
+### What the next turn should do
+
+Unchanged from Turn 4 roadmap:
+1. Marriage exchange events (`inter_band_marriage`)
+2. `ClanSimulation` wrapper + CSV exporter
+3. Institutional differentiation (per-band Config)
+4. Fix `total_trade_volume` (add volume field to trade events)
+5. Fix `fighter.die("raid", year)` year threading
+
+---
+
 ## Turn 4 — 2026-03-20
 
 ### What was built
@@ -682,3 +765,30 @@ nonblocking_issues:
 verdict: PASS
 
 next_turn_priority: Build metrics/clan_collectors.py before any other Turn 4 work -- deliver per-band snapshots of all 35 heritable trait means and SDs, a Jensen-Shannon divergence index across bands, and separate within-band vs between-band selection coefficient estimates (Fst-like decomposition); without this instrument the raiding engine has no validated output variable and the Bowles/Gintis vs North experiment cannot proceed.
+
+---
+
+## CRITIC REVIEW — Turn 4
+
+gate_1_frozen_compliance:  1.0 — Confirmed via `git diff 89b2362 d7f1e37 --name-only`: zero frozen v1 files (engines/conflict.py, engines/institutions.py, models/agent.py, config.py, simulation.py, etc.) were touched; all STATUS.md known bugs remain unmodified; new code is isolated to engines/clan_selection.py, engines/clan_base.py (v2 file), engines/clan_raiding.py (v2 file), metrics/clan_collectors.py, models/clan/clan_config.py.
+
+gate_2_architecture:  0.92 — No circular imports confirmed (all TYPE_CHECKING guards correct); no bare print() in any Turn 4 file (AST-verified); all 133 tests pass (22 v1 + 111 v2); all randomness via seeded rng parameter — no np.random.* leaks detected; sub-rng derivation in clan_base.py line 152 correctly consumes exactly one shared-rng integer per tick; deduction for one non-blocking impurity: `_process_fission` (clan_selection.py line 539) does `from models.clan.band import Band` as a deferred import inside the function body to avoid circular imports, which is architecturally valid but differs from the TYPE_CHECKING pattern used everywhere else.
+
+gate_3_scientific:  0.83 — Fst decomposition (clan_collectors.py line 109-145) is mathematically correct: verified analytically that `Fst = Var_between / Var_total = 1.0` for maximally divergent groups and `0.0` for identical groups, matching Wright (1951); within-group selection coefficient (Pearson r of trait vs fitness proxy across band adults, clan_selection.py line 173-226) is a standard quantitative-genetics approach and numerically stable under zero-variance conditions; between-group selection coefficient (clan_selection.py line 231-318) correctly uses population size and raid-win rate as fitness components; band extinction absorption confirmed working (refugees move, band removed, agents transferred); band fission confirmed creating genuine founder effect (daughter mean traits diverged); however two scientific deductions apply: (1) the between-group fitness proxy uses CURRENT population size (a size proxy) rather than delta-population growth rate — the theoretically correct Bowles/Gintis metric — as acknowledged in the code comment at line 245-247; (2) a confirmed BUG at clan_selection.py line 586 causes fission distance-inheritance to silently fail: `clan_society.remove_band(bid)` at line 578 deletes all distance entries before the loop at line 583 reads them via `clan_society.get_distance(bid, other_id)`, so all daughter bands receive the ClanSociety default distance of 0.5 regardless of actual parent proximity — verified by test showing daughters of a band at distance 0.3 from a neighbor receive distance 0.5.
+
+gate_4_drift:  0.95 — This turn is the most directly aligned with the central research question of all four turns: Fst per prosocial trait, separate within-group and between-group selection coefficients, demographic events (fission, extinction, migration) that create the conditions for between-group selection to operate — all four are the exact quantities Bowles (2006) uses to test whether between-group competition can favor prosocial traits against within-group defection; the metric infrastructure (ClanMetricsCollector) creates a clean time-series that will directly test North vs Bowles/Gintis when institutional differentiation is added in Turn 5 or 6; no extraneous complexity detected; the between_coeff instability at n=2 bands (always returns ±1 per trait due to n=2 Pearson r being degenerate) is a known statistical limitation that will self-correct as band count grows.
+
+blocking_issues:
+  - engines/clan_selection.py line 578 vs line 586: `clan_society.remove_band(bid)` executes BEFORE the distance-inheritance loop, which then reads `clan_society.get_distance(bid, other_id)` after all distance entries for `bid` have been deleted. Daughter bands always receive distance 0.5 to all other bands regardless of parent proximity. Fix: save the parent's distance dict before calling `remove_band`, e.g., `parent_distances = {oid: clan_society.get_distance(bid, oid) for oid in clan_society.bands if oid != bid}` before line 578, then use `parent_distances[other_id]` in the loop. The existing test suite does NOT catch this because `test_fission_creates_two_daughter_bands` only checks band existence, not daughter distances.
+
+nonblocking_issues:
+  - clan_selection.py line 196-197: Within-group selection filter includes ELDER agents (`a.life_stage in ("PRIME", "MATURE", "ELDER")`). ELDERs are post-reproductive; their offspring_ids reflect cumulative historical reproduction, not current fitness. This introduces upward bias in the offspring_count component of the fitness proxy for older agents. Recommended: filter to PRIME and MATURE only for a cleaner current-fitness signal. At Turn 4 population sizes (50 agents/band), ELDERs are rare (0 found in a 50-agent test band), so impact is minimal but should be corrected before long-run experiments.
+  - clan_selection.py line 452 (_move_agent): When an ID collision triggers agent.id reassignment (`agent.id = new_id`), any entries in OTHER agents' `offspring_ids`, `partner_ids`, or `parent_ids` that reference the old ID become dangling. At the default migration_rate_per_agent=0.005 with trust=0.5 and distance=0.2, per-agent p_migrate ≈ 0.001, so collisions are rare. Does not affect correctness at current scale but should be fixed before long-run experiments with elevated migration rates.
+  - clan_selection.py lines 535-536, 545, 549: Band objects created during fission call `Society.__init__` and `create_initial_population`, then their agents dict is immediately cleared and replaced (line 559-565). This allocates and discards O(population_size) Agent objects per fission event. Already documented as Known Limitation #5 — noting here for completeness.
+  - metrics/clan_collectors.py line 325: `total_trade_volume = float(trade_count)` — trade count used as volume proxy. Already documented in Known Limitations. Flag for Turn 5 fix alongside clan_trade.py event-volume field addition.
+  - With only 2 active bands, between_group_selection_coeff is statistically degenerate: Pearson r between 2 scalar values is always exactly ±1 per trait, making the mean of 4 traits take only the values {-1.0, -0.5, 0.0, +0.5, +1.0}. The metric is only reliable with n>=5 bands. Should be noted in any publication using this metric at low band counts.
+
+verdict: NEEDS_IMPROVEMENT
+
+next_turn_priority: Fix the fission distance-inheritance bug in engines/clan_selection.py (save parent distances before calling remove_band, then apply them after daughters are registered), then add per-Band Config support so that STRONG_STATE and FREE_COMPETITION institutional configurations can be assigned to individual bands — this is the experimental manipulation the entire v2 build has been constructing toward.
+

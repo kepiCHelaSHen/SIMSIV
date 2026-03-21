@@ -369,6 +369,97 @@ def test_fission_not_triggered_below_threshold():
     assert 1 in clan.bands, "Band 1 should still exist."
 
 
+def test_fission_daughters_inherit_parent_distances():
+    """Regression test for Turn 4 blocking bug: daughter bands must inherit the
+    parent's actual distances, not the default 0.5 that get_distance returns
+    after the parent has been removed.
+
+    Setup:
+        3 bands — A (id=1), B (id=2), C (id=3).
+        A-B distance = 0.2  (near)
+        A-C distance = 0.8  (far)
+        B and C each have pop=10, below fission_threshold=20, so only A fissions.
+
+    Trigger fission on A (pop=50, threshold=20).
+
+    Assert:
+        Both daughter bands have distance to B close to 0.2 (within ±0.1).
+        Both daughter bands have distance to C close to 0.8 (within ±0.1).
+
+    Before the fix, remove_band(A) was called before the distance-inheritance
+    loop, so get_distance(A, B) and get_distance(A, C) both returned the
+    default 0.5 — masking the real geography.
+    """
+    # Band A will fission; B and C must remain below fission_threshold=20
+    # so they are not also removed during this call.
+    config_a = _make_config(pop=50)   # band A — will fission (pop=50 > threshold=20)
+    config_bc = _make_config(pop=10)  # bands B and C — stay intact (pop=10 < threshold=20)
+    clan_config = ClanConfig(fission_threshold=20)
+
+    b_a = _make_band(1, config_a,  rng_seed=10)
+    b_b = _make_band(2, config_bc, rng_seed=20)
+    b_c = _make_band(3, config_bc, rng_seed=30)
+
+    clan = ClanSociety()
+    clan.add_band(b_a)
+    clan.add_band(b_b)
+    clan.add_band(b_c)
+
+    # Set known distances from A to its neighbours.
+    clan.set_distance(1, 2, 0.2)   # A near B
+    clan.set_distance(1, 3, 0.8)   # A far from C
+    clan.set_distance(2, 3, 0.5)   # B-C irrelevant for this test
+
+    # Confirm the precondition: only band A should exceed the threshold.
+    assert b_a.population_size() > clan_config.fission_threshold, (
+        "Precondition: band A must exceed fission_threshold."
+    )
+    assert b_b.population_size() <= clan_config.fission_threshold, (
+        "Precondition: band B must be at or below fission_threshold."
+    )
+    assert b_c.population_size() <= clan_config.fission_threshold, (
+        "Precondition: band C must be at or below fission_threshold."
+    )
+
+    rng = np.random.default_rng(99)
+    events = _process_fission(clan, year=1, rng=rng, config=config_a,
+                               clan_config=clan_config)
+
+    fission_event = next(
+        (e for e in events if e["type"] == "band_fission" and e["parent_band_id"] == 1),
+        None,
+    )
+    assert fission_event is not None, (
+        "Expected fission of band 1 (pop=50, threshold=20)."
+    )
+
+    d1_id = fission_event["daughter_band_id_1"]
+    d2_id = fission_event["daughter_band_id_2"]
+
+    # Bands B and C must still be in the clan (not fissioned).
+    assert 2 in clan.bands, "Band B (id=2) should still exist after only band A fissioned."
+    assert 3 in clan.bands, "Band C (id=3) should still exist after only band A fissioned."
+
+    # Noise tolerance: fission adds ±0.05 noise per daughter, so allow ±0.1.
+    noise_tol = 0.1
+
+    for daughter_id in (d1_id, d2_id):
+        dist_to_b = clan.get_distance(daughter_id, 2)
+        dist_to_c = clan.get_distance(daughter_id, 3)
+        assert abs(dist_to_b - 0.2) <= noise_tol, (
+            f"Daughter {daughter_id} distance to B should be ~0.2 "
+            f"(parent A-B=0.2), got {dist_to_b:.3f}.  "
+            f"If this is 0.5, the bug (remove_band before distance capture) "
+            f"has regressed."
+        )
+        assert abs(dist_to_c - 0.8) <= noise_tol, (
+            f"Daughter {daughter_id} distance to C should be ~0.8 "
+            f"(parent A-C=0.8), got {dist_to_c:.3f}.  "
+            f"If this is 0.5, the bug (remove_band before distance capture) "
+            f"has regressed."
+        )
+
+
 # ── Band extinction tests ──────────────────────────────────────────────────────
 
 def test_extinction_absorbs_tiny_band():
