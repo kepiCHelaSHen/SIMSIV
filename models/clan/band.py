@@ -55,6 +55,13 @@ class Band:
         self._name: str = name
         self._origin_year: int = origin_year
 
+        # Each Band owns its own seeded rng.  This rng is used for all intra-band
+        # engine calls (_tick_band passes band.rng to each engine step), so that
+        # band order in the clan tick does not influence any band's internal
+        # trajectory.  The shared clan-level rng is used only for inter-band
+        # scheduling and interactions.
+        self.rng: np.random.Generator = rng
+
         # Each Band owns its own isolated Society (and therefore its own IdCounter,
         # event window, agent dict, etc.)
         self.society: Society = Society(config, rng)

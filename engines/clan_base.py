@@ -31,6 +31,7 @@ from engines.conflict import ConflictEngine
 from engines.mortality import MortalityEngine
 from engines.reputation import ReputationEngine
 from engines.pathology import PathologyEngine
+from engines.clan_trade import trade_tick
 from metrics.collectors import MetricsCollector
 
 if TYPE_CHECKING:
@@ -106,9 +107,13 @@ class ClanEngine:
         all_inter_band_events: list[dict] = []
 
         # ── Step 1: Tick each band independently ─────────────────────────────
+        # Each band is ticked with its own per-band rng (band.rng) so that the
+        # internal trajectory of a band is independent of band count and band
+        # ordering in the clan.  The shared clan-level rng is reserved for
+        # inter-band scheduling and interactions only.
         for band_id in sorted(clan_society.bands.keys()):
             band = clan_society.bands[band_id]
-            metrics_row = self._tick_band(band, year, rng, config)
+            metrics_row = self._tick_band(band, year, band.rng, config)
             band_metrics[band_id] = metrics_row
 
         # ── Step 2: Schedule inter-band interactions ──────────────────────────
@@ -257,60 +262,138 @@ class ClanEngine:
         rng: np.random.Generator,
         config: Config,
     ) -> list[dict]:
-        """Stub: record inter-band contact and nudge trust.
+        """Process one inter-band interaction: contact record + trade session.
 
-        Full inter-band mechanics (trade, marriage exchange, raiding,
-        gene flow) are planned for subsequent turns.  For now:
-          - Record an inter_band_contact event on both societies.
-          - Slightly increase mutual trust (positive-contact default).
+        Interaction type is determined first by an interaction-type draw:
+          - "trade"   (probability proportional to bilateral trust)
+          - "neutral" (bands meet but do not exchange goods)
+          - "hostile" (low-tolerance contact; slight trust decrease)
+
+        For "trade" contacts, trade_tick() is called and its events appended.
+
+        Trust updates are modulated by the mean outgroup_tolerance of the
+        living adults in each band, so that trait composition affects the
+        inter-band relationship trajectory.
 
         Returns a list of event dicts describing what happened.
         """
         events: list[dict] = []
 
-        # Small trust bump from peaceful contact
-        trust_delta = float(rng.uniform(0.01, 0.05))
-        band_a.update_trust(band_b.band_id, trust_delta)
-        band_b.update_trust(band_a.band_id, trust_delta)
+        # ── Compute mean outgroup_tolerance across each band's adults ─────────
+        tol_a = _mean_outgroup_tolerance(band_a)
+        tol_b = _mean_outgroup_tolerance(band_b)
+        mean_tol = (tol_a + tol_b) / 2.0
 
-        contact_event_a: dict = {
-            "type": "inter_band_contact",
-            "year": year,
-            "agent_ids": [],
-            "description": (
-                f"Band {band_a.band_id} contacted Band {band_b.band_id} "
-                f"(trust delta +{trust_delta:.3f})"
-            ),
-            "outcome": "peaceful_contact",
-            "other_band_id": band_b.band_id,
-        }
-        contact_event_b: dict = {
-            "type": "inter_band_contact",
-            "year": year,
-            "agent_ids": [],
-            "description": (
-                f"Band {band_b.band_id} contacted Band {band_a.band_id} "
-                f"(trust delta +{trust_delta:.3f})"
-            ),
-            "outcome": "peaceful_contact",
-            "other_band_id": band_a.band_id,
-        }
+        # Bilateral trust (symmetric mean)
+        trust = (band_a.trust_toward(band_b.band_id) + band_b.trust_toward(band_a.band_id)) / 2.0
 
-        band_a.society.add_event(contact_event_a)
-        band_b.society.add_event(contact_event_b)
+        # ── Interaction-type draw ─────────────────────────────────────────────
+        # p_trade     = trust * mean_outgroup_tolerance
+        # p_neutral   = mean_outgroup_tolerance * (1 - trust)
+        # p_hostile   = 1 - mean_outgroup_tolerance
+        # (Probabilities sum to one because: trust*tol + tol*(1-trust) + (1-tol) = 1)
+        p_trade = trust * mean_tol
+        p_neutral = mean_tol * (1.0 - trust)
+        # p_hostile fills the remainder: 1 - p_trade - p_neutral = 1 - mean_tol
 
-        events.append(contact_event_a)
+        draw = float(rng.random())
+
+        if draw < p_trade:
+            interaction_type = "trade"
+        elif draw < p_trade + p_neutral:
+            interaction_type = "neutral"
+        else:
+            interaction_type = "hostile"
 
         _log.debug(
-            "Inter-band contact: Band %d <-> Band %d at year %d (trust delta=%.3f)",
-            band_a.band_id,
-            band_b.band_id,
-            year,
-            trust_delta,
+            "Inter-band interaction: Band %d <-> Band %d at year %d "
+            "type=%s (trust=%.2f, mean_tol=%.2f)",
+            band_a.band_id, band_b.band_id, year,
+            interaction_type, trust, mean_tol,
         )
+
+        # ── Dispatch on interaction type ──────────────────────────────────────
+        if interaction_type == "trade":
+            # Delegate to trade engine; stamp year on returned events.
+            trade_events = trade_tick(band_a, band_b, trust, rng, config)
+            for ev in trade_events:
+                ev["year"] = year
+                band_a.society.add_event(ev)
+                band_b.society.add_event(ev)
+            events.extend(trade_events)
+
+            # Record a summary contact event.
+            contact_event: dict = {
+                "type": "inter_band_contact",
+                "year": year,
+                "agent_ids": [],
+                "description": (
+                    f"Band {band_a.band_id} traded with Band {band_b.band_id} "
+                    f"({len(trade_events)} exchange(s))"
+                ),
+                "outcome": "trade",
+                "other_band_id": band_b.band_id,
+            }
+
+        elif interaction_type == "neutral":
+            # Neutral contact: small trust bump, no exchange.
+            # Delta is modulated by outgroup tolerance: tolerant bands gain more.
+            trust_delta = float(rng.uniform(0.005, 0.02)) * mean_tol
+            band_a.update_trust(band_b.band_id, trust_delta)
+            band_b.update_trust(band_a.band_id, trust_delta)
+
+            contact_event = {
+                "type": "inter_band_contact",
+                "year": year,
+                "agent_ids": [],
+                "description": (
+                    f"Band {band_a.band_id} neutral contact with Band {band_b.band_id} "
+                    f"(trust +{trust_delta:.3f})"
+                ),
+                "outcome": "neutral_contact",
+                "other_band_id": band_b.band_id,
+            }
+
+        else:  # hostile
+            # Hostile contact: trust decreases.  Magnitude scales with
+            # aggression pressure (1 - mean_tol): very intolerant bands lose more.
+            trust_loss = float(rng.uniform(0.01, 0.04)) * (1.0 - mean_tol)
+            band_a.update_trust(band_b.band_id, -trust_loss)
+            band_b.update_trust(band_a.band_id, -trust_loss)
+
+            contact_event = {
+                "type": "inter_band_contact",
+                "year": year,
+                "agent_ids": [],
+                "description": (
+                    f"Band {band_a.band_id} hostile contact with Band {band_b.band_id} "
+                    f"(trust -{trust_loss:.3f})"
+                ),
+                "outcome": "hostile_contact",
+                "other_band_id": band_b.band_id,
+            }
+
+        band_a.society.add_event(contact_event)
+        band_b.society.add_event(contact_event)
+        events.append(contact_event)
+
         return events
 
     # ── Helpers ──────────────────────────────────────────────────────────────
+
+    def reset(self) -> None:
+        """Clear accumulated per-band metrics history.
+
+        Call this between independent runs when reusing a ClanEngine instance
+        (e.g. in autosim parameter sweeps).  Without this call, get_band_history()
+        would return rows from previous runs mixed with the current run.
+
+        Note: this does NOT reset band Society state — that lives in the Band
+        objects themselves and must be reset by recreating the ClanSociety and
+        its Bands.
+        """
+        self._band_metrics.clear()
+        _log.debug("ClanEngine.reset() called — per-band metrics history cleared.")
 
     def _get_metrics_collector(self, band_id: int) -> MetricsCollector:
         """Return (creating if needed) the MetricsCollector for a band."""
@@ -324,3 +407,16 @@ class ClanEngine:
         if collector is None:
             return []
         return collector.rows
+
+
+# ── Module-level helper ───────────────────────────────────────────────────────
+
+def _mean_outgroup_tolerance(band: "Band") -> float:
+    """Return mean outgroup_tolerance across all living adults in the band.
+
+    Falls back to 0.5 (neutral) if no living agents exist.
+    """
+    living = band.get_living()
+    if not living:
+        return 0.5
+    return float(sum(a.outgroup_tolerance for a in living) / len(living))
