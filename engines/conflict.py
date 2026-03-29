@@ -348,24 +348,24 @@ class ConflictEngine:
         status_a = aggressor.dominance_score * dom_weight + aggressor.prestige_score * pres_weight
         status_t = target.dominance_score * dom_weight + target.prestige_score * pres_weight
 
-        agg_power = (aggressor.aggression_propensity * 0.20
-                     + status_a * 0.15
-                     + aggressor.health * 0.20
-                     + aggressor.risk_tolerance * 0.10
+        agg_power = (aggressor.aggression_propensity * 0.25       # DD03 spec
+                     + status_a * 0.20                             # DD03 spec
+                     + aggressor.health * 0.25                     # DD03 spec
+                     + aggressor.risk_tolerance * 0.15             # DD03 spec
                      + resource_edge_a * config.combat_resource_factor
-                     + aggressor.intelligence_proxy * 0.05
-                     + aggressor.physical_robustness * 0.10   # DD15
-                     + aggressor.dominance_drive * 0.10       # DD15
-                     + aggressor.pain_tolerance * 0.05)       # DD15
-        tgt_power = (target.aggression_propensity * 0.20
-                     + status_t * 0.15
-                     + target.health * 0.20
-                     + target.risk_tolerance * 0.10
+                     + aggressor.intelligence_proxy * 0.05         # DD03 spec
+                     + aggressor.physical_robustness * 0.05        # DD15 additive
+                     + aggressor.dominance_drive * 0.05            # DD15 additive
+                     + aggressor.pain_tolerance * 0.03)            # DD15 additive
+        tgt_power = (target.aggression_propensity * 0.25           # DD03 spec
+                     + status_t * 0.20                             # DD03 spec
+                     + target.health * 0.25                        # DD03 spec
+                     + target.risk_tolerance * 0.15                # DD03 spec
                      + resource_edge_t * config.combat_resource_factor
-                     + target.intelligence_proxy * 0.05
-                     + target.physical_robustness * 0.10      # DD15
-                     + target.dominance_drive * 0.10          # DD15
-                     + target.pain_tolerance * 0.05)          # DD15
+                     + target.intelligence_proxy * 0.05            # DD03 spec
+                     + target.physical_robustness * 0.05           # DD15 additive
+                     + target.dominance_drive * 0.05               # DD15 additive
+                     + target.pain_tolerance * 0.03)               # DD15 additive
 
         # DD27: Physical strength additive with sex differential
         for fighter, label in [(aggressor, 'agg'), (target, 'tgt')]:
