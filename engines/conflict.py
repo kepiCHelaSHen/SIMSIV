@@ -158,6 +158,7 @@ class ConflictEngine:
                     continue
 
             # ── DD11: Coalition defense — target's allies may intervene ──
+            # Bowles & Gintis (2011): coalition defense as between-group selection mechanism
             if config.coalition_defense_enabled:
                 defended = False
                 trust_thresh = config.coalition_defense_trust_threshold
@@ -559,6 +560,8 @@ class ConflictEngine:
         })
 
         # ── DD11: Third-party punishment ────────────────────────────
+        # Bowles (2006): altruistic punishment sustains cooperation in group-structured populations
+        # Fehr & Gächter (2002): altruistic punishment in humans — cooperation maintained by costly punishment
         # High-cooperation agents who trust the target punish the aggressor
         if config.third_party_punishment_enabled:
             willing_thresh = config.punishment_willingness_threshold
