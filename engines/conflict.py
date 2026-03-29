@@ -486,10 +486,10 @@ class ConflictEngine:
                               if a.id != aggressor.id and a.id != target.id
                               and a.alive]
             if bystander_pool and n_bystanders > 0:
-                bystanders = rng.choice(
-                    bystander_pool,
-                    size=min(n_bystanders, len(bystander_pool)),
-                    replace=False)
+                n_select = min(n_bystanders, len(bystander_pool))
+                bystander_indices = rng.choice(
+                    len(bystander_pool), size=n_select, replace=False)
+                bystanders = [bystander_pool[i] for i in bystander_indices]
                 for bystander in bystanders:
                     # Witnesses distrust the aggressor
                     bystander.remember(aggressor.id, -0.08)
