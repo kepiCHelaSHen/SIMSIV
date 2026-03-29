@@ -114,9 +114,9 @@ class ConflictEngine:
                     total_p *= (1.0 + va * 0.15)  # up to -15%
 
             # DD20: War leader inspiration — faction members fight more under active war leader
-            if (getattr(config, 'leadership_enabled', False)
+            if (config.leadership_enabled
                     and agent.faction_id is not None):
-                leaders = getattr(society, 'faction_leaders', {}).get(agent.faction_id)
+                leaders = society.faction_leaders.get(agent.faction_id)
                 if leaders and leaders.get('war_leader') is not None:
                     total_p *= (1.0 + config.war_leader_aggression_boost)
 
@@ -303,9 +303,9 @@ class ConflictEngine:
                 weights[i] *= getattr(config, 'out_group_conflict_multiplier', 1.0)
 
             # DD20: War leader deterrence — faction with war leader harder to target
-            if (getattr(config, 'leadership_enabled', False)
+            if (config.leadership_enabled
                     and c.faction_id is not None):
-                c_leaders = getattr(society, 'faction_leaders', {}).get(c.faction_id)
+                c_leaders = society.faction_leaders.get(c.faction_id)
                 if c_leaders and c_leaders.get('war_leader') is not None:
                     weights[i] *= (1.0 - config.war_leader_deterrence)
 
@@ -390,10 +390,10 @@ class ConflictEngine:
         tgt_power += tgt_allies
 
         # DD20: War leader combat bonus — fighting alongside faction war leader
-        if getattr(config, 'leadership_enabled', False):
+        if config.leadership_enabled:
             for fighter, power_ref in [(aggressor, 'agg'), (target, 'tgt')]:
                 if fighter.faction_id is not None:
-                    leaders = getattr(society, 'faction_leaders', {}).get(
+                    leaders = society.faction_leaders.get(
                         fighter.faction_id)
                     if leaders and leaders.get('war_leader') is not None:
                         wl = society.get_by_id(leaders['war_leader'])
