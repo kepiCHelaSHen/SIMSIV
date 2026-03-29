@@ -591,6 +591,29 @@ class MetricsCollector:
             row["avg_h2_all_traits"] = float(np.mean(list(h2_values.values())))
         else:
             row["avg_h2_all_traits"] = 0.0
+
+        # JASSS Req 4: Breeder's Equation — Selection Differential
+        coop_all = [a.cooperation_propensity for a in living]
+        row["mu_pop_cooperation"] = float(np.mean(coop_all)) if coop_all else None
+
+        females_elig, males_elig = society.get_mating_eligible()
+        eligible = females_elig + males_elig
+        coop_eligible = [a.cooperation_propensity for a in eligible]
+        row["mu_eligible_cooperation"] = float(np.mean(coop_eligible)) if coop_eligible else None
+
+        parents = [a for a in living if getattr(a, '_bred_this_tick', False)]
+        coop_parents = [a.cooperation_propensity for a in parents]
+        row["mu_parents_cooperation"] = float(np.mean(coop_parents)) if coop_parents else None
+
+        S = None
+        if row["mu_parents_cooperation"] is not None and row["mu_eligible_cooperation"] is not None:
+            S = row["mu_parents_cooperation"] - row["mu_eligible_cooperation"]
+        row["selection_differential_S"] = S
+
+        # Clear breeding flags for next tick
+        for a in living:
+            a._bred_this_tick = False
+
         self.rows.append(row)
         return row
 
