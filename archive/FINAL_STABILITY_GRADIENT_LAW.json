@@ -1,0 +1,869 @@
+[
+  {
+    "param": "law_strength",
+    "default": 0.0,
+    "conditions": {
+      "baseline": 0.0,
+      "plus_20pct": 0.0,
+      "minus_20pct": 0.0
+    },
+    "n_seeds": 5,
+    "stability": {
+      "resource_gini": {
+        "baseline_mean": 0.359306,
+        "plus20_mean": 0.359306,
+        "minus20_mean": 0.359306,
+        "sigma": 0.0,
+        "gate": "PASS"
+      },
+      "mating_inequality": {
+        "baseline_mean": 0.574458,
+        "plus20_mean": 0.574458,
+        "minus20_mean": 0.574458,
+        "sigma": 0.0,
+        "gate": "PASS"
+      },
+      "violence_death_fraction": {
+        "baseline_mean": 0.04,
+        "plus20_mean": 0.04,
+        "minus20_mean": 0.04,
+        "sigma": 0.0,
+        "gate": "PASS"
+      },
+      "pop_growth_rate": {
+        "baseline_mean": -8.3e-05,
+        "plus20_mean": -8.3e-05,
+        "minus20_mean": -8.3e-05,
+        "sigma": 0.0,
+        "gate": "PASS"
+      },
+      "child_survival_rate": {
+        "baseline_mean": 0.868889,
+        "plus20_mean": 0.868889,
+        "minus20_mean": 0.868889,
+        "sigma": 0.0,
+        "gate": "PASS"
+      },
+      "avg_lifetime_births": {
+        "baseline_mean": 3.129518,
+        "plus20_mean": 3.129518,
+        "minus20_mean": 3.129518,
+        "sigma": 0.0,
+        "gate": "PASS"
+      },
+      "violence_rate": {
+        "baseline_mean": 0.010886,
+        "plus20_mean": 0.010886,
+        "minus20_mean": 0.010886,
+        "sigma": 0.0,
+        "gate": "PASS"
+      },
+      "avg_cooperation": {
+        "baseline_mean": 0.5305,
+        "plus20_mean": 0.5305,
+        "minus20_mean": 0.5305,
+        "sigma": 0.0,
+        "gate": "PASS"
+      },
+      "avg_aggression": {
+        "baseline_mean": 0.482005,
+        "plus20_mean": 0.482005,
+        "minus20_mean": 0.482005,
+        "sigma": 0.0,
+        "gate": "PASS"
+      }
+    },
+    "tmc": {
+      "param": "law_strength",
+      "claude_worker": {
+        "verdict": "STABLE",
+        "failures": []
+      },
+      "gpt4o_auditor": "```json\n{\n  \"verdict\": \"STABLE\",\n  \"failures\": [],\n  \"reasoning\": \"The perturbation sweep results indicate that the parameter 'law_strength' at its default value of 0.0, and its \u00b120% perturbations, do not affect any of the metrics. All metrics remain constant across the baseline, +20%, and -20% perturbations, with a standard deviation of 0.0000, and all metrics pass the gate criteria. This suggests that the parameter 'law_strength' does not have an impact on the model's outcomes within the tested range, which could be expected if the parameter is not active or influential at the default setting of 0.0. Since there are no FAIL metrics, the model's stability is rated as STABLE under the given perturbations.\"\n}\n```",
+      "grok3_critic": "{\n    \"verdict\": \"FRACTURE_DETECTED\",\n    \"fractures\": [\n        \"Parameter insensitivity: law_strength perturbation (\u00b120%) results in zero change across all metrics, suggesting the parameter is disconnected or non-functional in the model.\"\n    ],\n    \"reasoning\": \"The perturbation of law_strength by \u00b120% from a baseline of 0.0 results in no variation across any of the observed metrics (resource_gini, mating_inequality, violence_death_fraction, etc.), with standard deviation (\u03c3) consistently at 0.0000. This indicates that the parameter law_strength has no impact on the model dynamics under the tested conditions. In an evolutionary biology context, a parameter intended to represent 'law strength' (presumably related to social order or conflict mitigation) should influence metrics like violence_rate, cooperation, or resource distribution. The complete lack of response suggests a potential fracture in the model implementation, such as the parameter not being integrated into the agent-based mechanics or being overridden by other factors. While population collapse risk is not observed, and non-linear responses or violated evolutionary constraints (e.g., cooperation extremes) are not evident, the insensitivity of the model to this parameter raises concerns about its structural validity and relevance. Further investigation is needed to determine if law_strength is correctly coded or if its baseline value of 0.0 renders it effectively inert.\"\n}"
+    }
+  },
+  {
+    "param": "violence_death_chance",
+    "default": 0.115422,
+    "conditions": {
+      "baseline": 0.115422,
+      "plus_20pct": 0.138506,
+      "minus_20pct": 0.092338
+    },
+    "n_seeds": 5,
+    "stability": {
+      "resource_gini": {
+        "baseline_mean": 0.368232,
+        "plus20_mean": 0.366321,
+        "minus20_mean": 0.37284,
+        "sigma": 0.002736,
+        "gate": "PASS"
+      },
+      "mating_inequality": {
+        "baseline_mean": 0.567796,
+        "plus20_mean": 0.546788,
+        "minus20_mean": 0.561907,
+        "sigma": 0.008848,
+        "gate": "PASS"
+      },
+      "violence_death_fraction": {
+        "baseline_mean": 0.033333,
+        "plus20_mean": 0.129947,
+        "minus20_mean": 0.005263,
+        "sigma": 0.053404,
+        "gate": "FAIL"
+      },
+      "pop_growth_rate": {
+        "baseline_mean": 0.005781,
+        "plus20_mean": -0.006782,
+        "minus20_mean": -0.023034,
+        "sigma": 0.011796,
+        "gate": "PASS"
+      },
+      "child_survival_rate": {
+        "baseline_mean": 0.866667,
+        "plus20_mean": 0.97345,
+        "minus20_mean": 0.911445,
+        "sigma": 0.043783,
+        "gate": "FAIL"
+      },
+      "avg_lifetime_births": {
+        "baseline_mean": 2.932999,
+        "plus20_mean": 2.795621,
+        "minus20_mean": 2.713578,
+        "sigma": 0.090523,
+        "gate": "FAIL"
+      },
+      "violence_rate": {
+        "baseline_mean": 0.004048,
+        "plus20_mean": 0.011961,
+        "minus20_mean": 0.008605,
+        "sigma": 0.003243,
+        "gate": "PASS"
+      },
+      "avg_cooperation": {
+        "baseline_mean": 0.5166,
+        "plus20_mean": 0.505991,
+        "minus20_mean": 0.50803,
+        "sigma": 0.004596,
+        "gate": "PASS"
+      },
+      "avg_aggression": {
+        "baseline_mean": 0.484108,
+        "plus20_mean": 0.490136,
+        "minus20_mean": 0.482063,
+        "sigma": 0.003427,
+        "gate": "PASS"
+      }
+    },
+    "tmc": {
+      "param": "violence_death_chance",
+      "claude_worker": {
+        "verdict": "SENSITIVE",
+        "failures": [
+          "violence_death_fraction",
+          "child_survival_rate",
+          "avg_lifetime_births"
+        ]
+      },
+      "gpt4o_auditor": "```json\n{\n  \"verdict\": \"SENSITIVE\",\n  \"failures\": [\n    {\n      \"metric\": \"violence_death_fraction\",\n      \"sensitivity_expected\": true,\n      \"direction_makes_sense\": true\n    },\n    {\n      \"metric\": \"child_survival_rate\",\n      \"sensitivity_expected\": true,\n      \"direction_makes_sense\": true\n    },\n    {\n      \"metric\": \"avg_lifetime_births\",\n      \"sensitivity_expected\": true,\n      \"direction_makes_sense\": true\n    }\n  ],\n  \"reasoning\": \"The 'violence_death_fraction' metric is highly sensitive to changes in the 'violence_death_chance' parameter, which is expected as this parameter directly influences the likelihood of death due to violence. The increase in violence death chance leads to a higher fraction of deaths from violence, which is biologically and socially logical. The 'child_survival_rate' is also sensitive, as increased violence likely reduces child survival, which is expected and makes sense. Similarly, 'avg_lifetime_births' decreases with increased violence, reflecting reduced reproductive success in more violent environments. Overall, the model shows sensitivity in metrics directly related to the parameter, indicating that while the model is not fragile, it is sensitive to changes in this parameter.\"\n}\n```",
+      "grok3_critic": "{\n    \"verdict\": \"FRACTURE_DETECTED\",\n    \"fractures\": [\n        {\n            \"metric\": \"violence_death_fraction\",\n            \"issue\": \"Extreme sensitivity to parameter perturbation\",\n            \"details\": \"A +20% increase in violence_death_chance (from 0.115422 to 0.138506) results in a ~290% increase in violence_death_fraction (from 0.0333 to 0.1299), while a -20% decrease results in a ~84% drop (from 0.0333 to 0.0053). The standard deviation (\u03c3 = 0.0534) is disproportionately large compared to the parameter change magnitude, indicating a non-linear response.\"\n        },\n        {\n            \"metric\": \"child_survival_rate\",\n            \"issue\": \"Unrealistic response and potential evolutionary constraint violation\",\n            \"details\": \"A +20% increase in violence_death_chance leads to an unexpected and unrealistic increase in child_survival_rate (from 0.8667 to 0.9735, a ~12% jump), while a -20% decrease results in a smaller increase (to 0.9114). The high \u03c3 (0.0438) suggests instability, and the near-1.0 survival rate at +20% may violate evolutionary constraints by reducing selective pressure.\"\n        },\n        {\n            \"metric\": \"avg_lifetime_births\",\n            \"issue\": \"Potential population collapse risk\",\n            \"details\": \"Both perturbations result in a decline in avg_lifetime_births (from 2.9330 to 2.7956 at +20% and 2.7136 at -20%), with a \u03c3 of 0.0905 indicating moderate variability. Combined with negative pop_growth_rate values (-0.0068 at +20%, -0.0230 at -20%), this suggests a risk of population collapse, especially under the -20% scenario where growth rate drops significantly.\"\n        }\n    ],\n    \"reasoning\": \"The model exhibits significant fractures under a \u00b120% perturbation of violence_death_chance. The violence_death_fraction shows extreme non-linear sensitivity, with changes far exceeding the proportional input perturbation, violating expectations of smooth response. Child_survival_rate displays an anomalous and biologically implausible increase under higher violence conditions, potentially undermining evolutionary realism by approaching a survival rate near 1.0. Additionally, the consistent decline in avg_lifetime_births and negative pop_growth_rate under both perturbations raise concerns about long-term population viability, particularly in the -20% scenario. While cooperation and aggression remain stable and within evolutionary bounds (not approaching 0 or 1), the combined effects on mortality, survival, and reproduction indicate model instability and potential fractures that could lead to unrealistic dynamics or collapse in extended simulations.\"\n}"
+    }
+  },
+  {
+    "param": "conflict_base_probability",
+    "default": 0.15,
+    "conditions": {
+      "baseline": 0.15,
+      "plus_20pct": 0.18,
+      "minus_20pct": 0.12
+    },
+    "n_seeds": 5,
+    "stability": {
+      "resource_gini": {
+        "baseline_mean": 0.383391,
+        "plus20_mean": 0.370905,
+        "minus20_mean": 0.357322,
+        "sigma": 0.010645,
+        "gate": "PASS"
+      },
+      "mating_inequality": {
+        "baseline_mean": 0.591637,
+        "plus20_mean": 0.574732,
+        "minus20_mean": 0.611083,
+        "sigma": 0.014852,
+        "gate": "PASS"
+      },
+      "violence_death_fraction": {
+        "baseline_mean": 0.0,
+        "plus20_mean": 0.048571,
+        "minus20_mean": 0.015385,
+        "sigma": 0.020268,
+        "gate": "PASS"
+      },
+      "pop_growth_rate": {
+        "baseline_mean": 0.003869,
+        "plus20_mean": -0.01802,
+        "minus20_mean": -0.008287,
+        "sigma": 0.008954,
+        "gate": "PASS"
+      },
+      "child_survival_rate": {
+        "baseline_mean": 0.990909,
+        "plus20_mean": 0.959069,
+        "minus20_mean": 0.84,
+        "sigma": 0.064948,
+        "gate": "FAIL"
+      },
+      "avg_lifetime_births": {
+        "baseline_mean": 2.780499,
+        "plus20_mean": 2.735544,
+        "minus20_mean": 2.862039,
+        "sigma": 0.052356,
+        "gate": "FAIL"
+      },
+      "violence_rate": {
+        "baseline_mean": 0.019759,
+        "plus20_mean": 0.021421,
+        "minus20_mean": 0.017802,
+        "sigma": 0.001479,
+        "gate": "PASS"
+      },
+      "avg_cooperation": {
+        "baseline_mean": 0.501195,
+        "plus20_mean": 0.496077,
+        "minus20_mean": 0.526412,
+        "sigma": 0.013259,
+        "gate": "PASS"
+      },
+      "avg_aggression": {
+        "baseline_mean": 0.501668,
+        "plus20_mean": 0.48802,
+        "minus20_mean": 0.492666,
+        "sigma": 0.005666,
+        "gate": "PASS"
+      }
+    },
+    "tmc": {
+      "param": "conflict_base_probability",
+      "claude_worker": {
+        "verdict": "SENSITIVE",
+        "failures": [
+          "child_survival_rate",
+          "avg_lifetime_births"
+        ]
+      },
+      "gpt4o_auditor": "```json\n{\n  \"verdict\": \"SENSITIVE\",\n  \"failures\": [\n    {\n      \"metric\": \"child_survival_rate\",\n      \"expected_sensitivity\": true,\n      \"direction_makes_sense\": true\n    },\n    {\n      \"metric\": \"avg_lifetime_births\",\n      \"expected_sensitivity\": true,\n      \"direction_makes_sense\": true\n    }\n  ],\n  \"reasoning\": \"The parameter 'conflict_base_probability' directly influences the level of conflict within the model, which can significantly impact metrics related to population dynamics and survival. The sensitivity of 'child_survival_rate' and 'avg_lifetime_births' is expected because increased conflict can lead to higher mortality rates and lower birth rates. The direction of change for both metrics is biologically and socially plausible: as conflict increases, child survival rates decrease due to higher mortality, and average lifetime births may decrease due to reduced population stability and increased mortality. Overall, the model is sensitive to changes in the conflict parameter, but the changes are consistent with expected social and biological dynamics.\"\n}\n```",
+      "grok3_critic": "{\n  \"verdict\": \"FRACTURE_DETECTED\",\n  \"fractures\": [\n    {\n      \"metric\": \"child_survival_rate\",\n      \"issue\": \"Significant drop in survival rate with parameter perturbation\",\n      \"details\": \"At -20% conflict_base_probability (0.12), child_survival_rate drops to 0.8400, a 15.1% decrease from baseline (0.9909), with a high standard deviation (0.0649) indicating instability. This fails the gate and suggests a potential population collapse risk.\"\n    },\n    {\n      \"metric\": \"pop_growth_rate\",\n      \"issue\": \"Negative growth rates under perturbation\",\n      \"details\": \"At +20% conflict_base_probability (0.18), pop_growth_rate becomes -0.0180, and at -20% (0.12), it is -0.0083, compared to a baseline of 0.0039. This indicates a shift to population decline under both perturbations, raising concerns about long-term extinction risk.\"\n    },\n    {\n      \"metric\": \"avg_lifetime_births\",\n      \"issue\": \"Non-linear response and gate failure\",\n      \"details\": \"avg_lifetime_births shows inconsistent behavior with perturbation (baseline: 2.7805, +20%: 2.7355, -20%: 2.8620) and fails the gate. The standard deviation (0.0524) is disproportionately high relative to the parameter change magnitude, suggesting potential non-linear dynamics or model sensitivity.\"\n    }\n  ],\n  \"reasoning\": \"The model exhibits fractures under the \u00b120% perturbation of conflict_base_probability. Key concerns include a sharp decline in child_survival_rate at lower conflict probability, which could destabilize population dynamics, and negative population growth rates under both perturbations, indicating a risk of collapse over extended simulations. Additionally, avg_lifetime_births shows non-linear responses and fails the stability gate, hinting at underlying model sensitivities. While cooperation and aggression metrics remain within reasonable evolutionary constraints (not approaching 0 or 1), the combined impact on survival and growth metrics suggests the model may not robustly handle conflict probability variations. Further investigation into feedback loops between conflict, survival, and reproduction is recommended.\"\n}"
+    }
+  },
+  {
+    "param": "pair_bond_dissolution_rate",
+    "default": 0.02,
+    "conditions": {
+      "baseline": 0.02,
+      "plus_20pct": 0.024,
+      "minus_20pct": 0.016
+    },
+    "n_seeds": 5,
+    "stability": {
+      "resource_gini": {
+        "baseline_mean": 0.369447,
+        "plus20_mean": 0.366802,
+        "minus20_mean": 0.36925,
+        "sigma": 0.001203,
+        "gate": "PASS"
+      },
+      "mating_inequality": {
+        "baseline_mean": 0.53659,
+        "plus20_mean": 0.600563,
+        "minus20_mean": 0.554863,
+        "sigma": 0.026905,
+        "gate": "PASS"
+      },
+      "violence_death_fraction": {
+        "baseline_mean": 0.0,
+        "plus20_mean": 0.022222,
+        "minus20_mean": 0.0,
+        "sigma": 0.010476,
+        "gate": "PASS"
+      },
+      "pop_growth_rate": {
+        "baseline_mean": -0.004915,
+        "plus20_mean": -0.031709,
+        "minus20_mean": -0.000794,
+        "sigma": 0.013706,
+        "gate": "PASS"
+      },
+      "child_survival_rate": {
+        "baseline_mean": 0.8,
+        "plus20_mean": 0.925984,
+        "minus20_mean": 0.928333,
+        "sigma": 0.059951,
+        "gate": "FAIL"
+      },
+      "avg_lifetime_births": {
+        "baseline_mean": 2.886387,
+        "plus20_mean": 2.94141,
+        "minus20_mean": 2.97277,
+        "sigma": 0.035704,
+        "gate": "FAIL"
+      },
+      "violence_rate": {
+        "baseline_mean": 0.01185,
+        "plus20_mean": 0.013324,
+        "minus20_mean": 0.010844,
+        "sigma": 0.001018,
+        "gate": "PASS"
+      },
+      "avg_cooperation": {
+        "baseline_mean": 0.51048,
+        "plus20_mean": 0.526976,
+        "minus20_mean": 0.519123,
+        "sigma": 0.006737,
+        "gate": "PASS"
+      },
+      "avg_aggression": {
+        "baseline_mean": 0.504346,
+        "plus20_mean": 0.473525,
+        "minus20_mean": 0.498683,
+        "sigma": 0.013395,
+        "gate": "PASS"
+      }
+    },
+    "tmc": {
+      "param": "pair_bond_dissolution_rate",
+      "claude_worker": {
+        "verdict": "SENSITIVE",
+        "failures": [
+          "child_survival_rate",
+          "avg_lifetime_births"
+        ]
+      },
+      "gpt4o_auditor": "```json\n{\n  \"verdict\": \"SENSITIVE\",\n  \"failures\": [\n    {\n      \"metric\": \"child_survival_rate\",\n      \"sensitivity_expected\": true,\n      \"direction_makes_sense\": true\n    },\n    {\n      \"metric\": \"avg_lifetime_births\",\n      \"sensitivity_expected\": true,\n      \"direction_makes_sense\": true\n    }\n  ],\n  \"reasoning\": \"The parameter 'pair_bond_dissolution_rate' directly affects family stability and resource allocation within pre-state societies. An increase in dissolution rate can lead to less stable family units, which could negatively impact child survival rates due to reduced parental investment and resource sharing. Conversely, a decrease in dissolution rate could enhance child survival due to more stable family structures. Similarly, avg_lifetime_births is sensitive to changes in pair bonding as stable pair bonds can lead to more successful reproduction over a lifetime. The direction of changes in both metrics aligns with biological and social expectations, indicating that the model is sensitive to changes in this parameter but not necessarily fragile.\"\n}\n```",
+      "grok3_critic": "{\n  \"verdict\": \"FRACTURE_DETECTED\",\n  \"fractures\": [\n    {\n      \"metric\": \"child_survival_rate\",\n      \"issue\": \"Non-linear response and implausible values\",\n      \"details\": \"A \u00b120% change in pair_bond_dissolution_rate results in child_survival_rate jumping from 0.8000 (baseline) to 0.9260 (+20%) and 0.9283 (-20%), with a high \u03c3 of 0.0600. This indicates a non-linear response far exceeding the perturbation magnitude. Additionally, survival rates above 0.9 are evolutionarily implausible in a pre-modern context likely modeled here, as they suggest near-perfect child survival inconsistent with historical or biological constraints.\"\n    },\n    {\n      \"metric\": \"avg_lifetime_births\",\n      \"issue\": \"Unexpected directional response\",\n      \"details\": \"A \u00b120% change in pair_bond_dissolution_rate leads to an increase in avg_lifetime_births in both directions (2.8864 baseline to 2.9414 at +20% and 2.9728 at -20%). This counterintuitive result\u2014where both higher and lower dissolution rates increase births\u2014suggests a model fracture, as one would expect higher dissolution to reduce births due to disrupted pair bonds. The \u03c3 of 0.0357 also indicates moderate variability relative to the perturbation.\"\n    }\n  ],\n  \"reasoning\": \"The model exhibits fractures in key demographic metrics under a \u00b120% perturbation of pair_bond_dissolution_rate. The child_survival_rate shows an exaggerated, non-linear response with implausibly high values that violate evolutionary realism for likely pre-modern settings. The avg_lifetime_births metric displays a counterintuitive directional response, increasing in both perturbation directions, which suggests a logical inconsistency in how dissolution impacts reproduction. While population collapse risk is not evident (pop_growth_rate remains negative but not catastrophic), and cooperation/aggression metrics stay within reasonable bounds (not approaching 0 or 1), the identified fractures in child survival and birth rates indicate underlying structural issues in the model's response to pair bond dynamics. These issues warrant further investigation into the causal pathways linking dissolution to survival and reproduction.\"\n}"
+    }
+  },
+  {
+    "param": "female_choice_strength",
+    "default": 0.339674,
+    "conditions": {
+      "baseline": 0.339674,
+      "plus_20pct": 0.407609,
+      "minus_20pct": 0.271739
+    },
+    "n_seeds": 5,
+    "stability": {
+      "resource_gini": {
+        "baseline_mean": 0.35221,
+        "plus20_mean": 0.374656,
+        "minus20_mean": 0.372274,
+        "sigma": 0.010067,
+        "gate": "PASS"
+      },
+      "mating_inequality": {
+        "baseline_mean": 0.575526,
+        "plus20_mean": 0.528821,
+        "minus20_mean": 0.558586,
+        "sigma": 0.019305,
+        "gate": "PASS"
+      },
+      "violence_death_fraction": {
+        "baseline_mean": 0.018182,
+        "plus20_mean": 0.0,
+        "minus20_mean": 0.041667,
+        "sigma": 0.017056,
+        "gate": "PASS"
+      },
+      "pop_growth_rate": {
+        "baseline_mean": -0.031266,
+        "plus20_mean": 0.006013,
+        "minus20_mean": 0.00943,
+        "sigma": 0.018432,
+        "gate": "PASS"
+      },
+      "child_survival_rate": {
+        "baseline_mean": 0.938889,
+        "plus20_mean": 0.975315,
+        "minus20_mean": 0.969289,
+        "sigma": 0.015942,
+        "gate": "PASS"
+      },
+      "avg_lifetime_births": {
+        "baseline_mean": 2.784786,
+        "plus20_mean": 3.199166,
+        "minus20_mean": 2.870589,
+        "sigma": 0.178586,
+        "gate": "FAIL"
+      },
+      "violence_rate": {
+        "baseline_mean": 0.013036,
+        "plus20_mean": 0.010045,
+        "minus20_mean": 0.014686,
+        "sigma": 0.001921,
+        "gate": "PASS"
+      },
+      "avg_cooperation": {
+        "baseline_mean": 0.511084,
+        "plus20_mean": 0.511225,
+        "minus20_mean": 0.502932,
+        "sigma": 0.003877,
+        "gate": "PASS"
+      },
+      "avg_aggression": {
+        "baseline_mean": 0.488934,
+        "plus20_mean": 0.49603,
+        "minus20_mean": 0.497149,
+        "sigma": 0.003638,
+        "gate": "PASS"
+      }
+    },
+    "tmc": {
+      "param": "female_choice_strength",
+      "claude_worker": {
+        "verdict": "SENSITIVE",
+        "failures": [
+          "avg_lifetime_births"
+        ]
+      },
+      "gpt4o_auditor": "```json\n{\n  \"verdict\": \"SENSITIVE\",\n  \"failures\": [\n    {\n      \"metric\": \"avg_lifetime_births\",\n      \"sensitivity_expected\": true,\n      \"direction_makes_sense\": true\n    }\n  ],\n  \"reasoning\": \"The 'avg_lifetime_births' metric is sensitive to changes in the 'female_choice_strength' parameter, which is expected given the parameter's role in influencing mating dynamics and reproductive success. The increase in 'avg_lifetime_births' with a 20% increase in 'female_choice_strength' aligns with the biological and social expectation that stronger female choice could lead to more successful mating outcomes and higher reproductive rates. Conversely, a decrease in 'female_choice_strength' results in fewer average lifetime births, which is also consistent with the idea that reduced female choice might lead to less optimal mating and lower reproductive success. Overall, the model shows sensitivity in this metric, but the changes are logical and consistent with the parameter's influence, indicating a SENSITIVE stability rating.\"\n}\n```",
+      "grok3_critic": "{\n  \"verdict\": \"FRACTURE_DETECTED\",\n  \"fractures\": [\n    {\n      \"metric\": \"avg_lifetime_births\",\n      \"issue\": \"Non-linear response and potential population instability\",\n      \"details\": \"A 20% increase in female_choice_strength (from 0.339674 to 0.407609) results in a disproportionate 14.9% increase in avg_lifetime_births (from 2.7848 to 3.1992), while a 20% decrease (to 0.271739) results in only a 3.1% increase (to 2.8706). The standard deviation (0.1786) is also notably high relative to the parameter change magnitude, indicating sensitivity and potential instability in reproductive dynamics.\"\n    },\n    {\n      \"metric\": \"violence_death_fraction\",\n      \"issue\": \"Extreme boundary behavior\",\n      \"details\": \"A 20% increase in female_choice_strength results in violence_death_fraction dropping to 0.0000, an unrealistic complete elimination of violence-related deaths. Conversely, a 20% decrease raises it to 0.0417, more than doubling the baseline (0.0182). This suggests the model may not handle edge cases well and could violate realistic evolutionary constraints on violence.\"\n    }\n  ],\n  \"reasoning\": \"While most metrics pass the stability gate, two critical fractures are detected. First, avg_lifetime_births shows a non-linear response to the perturbation in female_choice_strength, with a significant jump in the +20% case that could risk population overgrowth or collapse in longer simulations, especially given the high standard deviation. Second, violence_death_fraction exhibits extreme behavior, hitting an unrealistic zero in the +20% case, which suggests the model may lack robust mechanisms to prevent boundary conditions. No immediate population collapse is observed within the tested range, and cooperation/aggression metrics remain stable without violating evolutionary constraints (i.e., not approaching 0 or 1). However, the identified fractures indicate potential issues in reproductive and violence dynamics that could destabilize the model under broader conditions or longer timeframes.\"\n}"
+    }
+  },
+  {
+    "param": "mortality_base",
+    "default": 0.006212,
+    "conditions": {
+      "baseline": 0.006212,
+      "plus_20pct": 0.007454,
+      "minus_20pct": 0.00497
+    },
+    "n_seeds": 5,
+    "stability": {
+      "resource_gini": {
+        "baseline_mean": 0.364387,
+        "plus20_mean": 0.340181,
+        "minus20_mean": 0.353373,
+        "sigma": 0.009895,
+        "gate": "PASS"
+      },
+      "mating_inequality": {
+        "baseline_mean": 0.562759,
+        "plus20_mean": 0.590303,
+        "minus20_mean": 0.576619,
+        "sigma": 0.011245,
+        "gate": "PASS"
+      },
+      "violence_death_fraction": {
+        "baseline_mean": 0.044444,
+        "plus20_mean": 0.042698,
+        "minus20_mean": 0.016667,
+        "sigma": 0.012703,
+        "gate": "PASS"
+      },
+      "pop_growth_rate": {
+        "baseline_mean": 0.021435,
+        "plus20_mean": -0.009651,
+        "minus20_mean": 0.003502,
+        "sigma": 0.01274,
+        "gate": "PASS"
+      },
+      "child_survival_rate": {
+        "baseline_mean": 0.985749,
+        "plus20_mean": 0.780653,
+        "minus20_mean": 0.889473,
+        "sigma": 0.083782,
+        "gate": "FAIL"
+      },
+      "avg_lifetime_births": {
+        "baseline_mean": 2.616832,
+        "plus20_mean": 2.351093,
+        "minus20_mean": 2.384811,
+        "sigma": 0.118128,
+        "gate": "FAIL"
+      },
+      "violence_rate": {
+        "baseline_mean": 0.015073,
+        "plus20_mean": 0.023399,
+        "minus20_mean": 0.016625,
+        "sigma": 0.003615,
+        "gate": "PASS"
+      },
+      "avg_cooperation": {
+        "baseline_mean": 0.512342,
+        "plus20_mean": 0.522585,
+        "minus20_mean": 0.518578,
+        "sigma": 0.004215,
+        "gate": "PASS"
+      },
+      "avg_aggression": {
+        "baseline_mean": 0.484041,
+        "plus20_mean": 0.487673,
+        "minus20_mean": 0.497264,
+        "sigma": 0.005578,
+        "gate": "PASS"
+      }
+    },
+    "tmc": {
+      "param": "mortality_base",
+      "claude_worker": {
+        "verdict": "SENSITIVE",
+        "failures": [
+          "child_survival_rate",
+          "avg_lifetime_births"
+        ]
+      },
+      "gpt4o_auditor": "```json\n{\n  \"verdict\": \"SENSITIVE\",\n  \"failures\": [\n    {\n      \"metric\": \"child_survival_rate\",\n      \"expected_sensitivity\": true,\n      \"directional_sense\": true\n    },\n    {\n      \"metric\": \"avg_lifetime_births\",\n      \"expected_sensitivity\": true,\n      \"directional_sense\": true\n    }\n  ],\n  \"reasoning\": \"The 'mortality_base' parameter directly influences mortality rates, which are closely tied to child survival and average lifetime births. The sensitivity of these metrics is expected because changes in mortality rates naturally affect survival and reproductive outcomes. The direction of change is biologically sensible: increasing mortality decreases child survival and lifetime births, while decreasing mortality has the opposite effect. The model shows significant sensitivity to perturbations in mortality, indicating that it is sensitive to changes in this parameter.\"\n}\n```",
+      "grok3_critic": "{\n  \"verdict\": \"FRACTURE_DETECTED\",\n  \"fractures\": [\n    {\n      \"metric\": \"child_survival_rate\",\n      \"issue\": \"Non-linear response and failure to pass stability gate\",\n      \"details\": \"Child survival rate drops significantly from 0.9857 (baseline) to 0.7807 (+20% mortality) and 0.8895 (-20% mortality), with a high standard deviation (\u03c3 = 0.0838) relative to the parameter perturbation magnitude (\u00b120% of 0.006212 = \u00b10.001242). This indicates a non-linear response to mortality changes and fails the stability gate.\"\n    },\n    {\n      \"metric\": \"avg_lifetime_births\",\n      \"issue\": \"Failure to pass stability gate\",\n      \"details\": \"Average lifetime births decrease from 2.6168 (baseline) to 2.3511 (+20% mortality) and 2.3848 (-20% mortality), failing the stability gate with a standard deviation (\u03c3 = 0.1181) that suggests sensitivity to mortality changes.\"\n    },\n    {\n      \"metric\": \"pop_growth_rate\",\n      \"issue\": \"Potential population collapse risk\",\n      \"details\": \"Population growth rate shifts from positive (0.0214 at baseline) to negative (-0.0097 at +20% mortality), indicating a risk of population decline or collapse under increased mortality. While it passes the gate, the sign change is a red flag for long-term stability.\"\n    }\n  ],\n  \"reasoning\": \"The model exhibits fractures under the \u00b120% perturbation of mortality_base. Key concerns include the non-linear response in child_survival_rate, where small changes in mortality lead to disproportionately large drops in survival, and the failure of both child_survival_rate and avg_lifetime_births to pass stability gates. Additionally, the population growth rate turning negative at +20% mortality raises concerns about potential population collapse over longer simulations, even though it passes the gate. No violations of evolutionary constraints (e.g., cooperation or aggression going to 0 or 1) are observed, and other metrics like resource_gini, mating_inequality, and violence_rate remain stable. However, the identified fractures suggest the model may not robustly handle mortality perturbations, particularly in reproductive and survival dynamics, which are critical to evolutionary outcomes.\"\n}"
+    }
+  },
+  {
+    "param": "childhood_mortality_annual",
+    "default": 0.054119,
+    "conditions": {
+      "baseline": 0.054119,
+      "plus_20pct": 0.064943,
+      "minus_20pct": 0.043295
+    },
+    "n_seeds": 5,
+    "stability": {
+      "resource_gini": {
+        "baseline_mean": 0.380758,
+        "plus20_mean": 0.373377,
+        "minus20_mean": 0.343902,
+        "sigma": 0.015922,
+        "gate": "PASS"
+      },
+      "mating_inequality": {
+        "baseline_mean": 0.478072,
+        "plus20_mean": 0.404774,
+        "minus20_mean": 0.57001,
+        "sigma": 0.0676,
+        "gate": "FAIL"
+      },
+      "violence_death_fraction": {
+        "baseline_mean": 0.0,
+        "plus20_mean": 0.0,
+        "minus20_mean": 0.0,
+        "sigma": 0.0,
+        "gate": "PASS"
+      },
+      "pop_growth_rate": {
+        "baseline_mean": 0.01477,
+        "plus20_mean": -0.027129,
+        "minus20_mean": -0.030137,
+        "sigma": 0.020497,
+        "gate": "PASS"
+      },
+      "child_survival_rate": {
+        "baseline_mean": 1.0,
+        "plus20_mean": 0.8,
+        "minus20_mean": 0.733333,
+        "sigma": 0.113312,
+        "gate": "FAIL"
+      },
+      "avg_lifetime_births": {
+        "baseline_mean": 3.042402,
+        "plus20_mean": 2.630952,
+        "minus20_mean": 2.317684,
+        "sigma": 0.296769,
+        "gate": "FAIL"
+      },
+      "violence_rate": {
+        "baseline_mean": 0.001942,
+        "plus20_mean": 0.0,
+        "minus20_mean": 0.016967,
+        "sigma": 0.007582,
+        "gate": "PASS"
+      },
+      "avg_cooperation": {
+        "baseline_mean": 0.5411,
+        "plus20_mean": 0.526333,
+        "minus20_mean": 0.528429,
+        "sigma": 0.006524,
+        "gate": "PASS"
+      },
+      "avg_aggression": {
+        "baseline_mean": 0.49955,
+        "plus20_mean": 0.477614,
+        "minus20_mean": 0.508944,
+        "sigma": 0.013127,
+        "gate": "PASS"
+      }
+    },
+    "tmc": {
+      "param": "childhood_mortality_annual",
+      "claude_worker": {
+        "verdict": "SENSITIVE",
+        "failures": [
+          "mating_inequality",
+          "child_survival_rate",
+          "avg_lifetime_births"
+        ]
+      },
+      "gpt4o_auditor": "```json\n{\n  \"verdict\": \"SENSITIVE\",\n  \"failures\": [\n    {\n      \"metric\": \"mating_inequality\",\n      \"expected_sensitivity\": true,\n      \"direction_of_change\": true\n    },\n    {\n      \"metric\": \"child_survival_rate\",\n      \"expected_sensitivity\": true,\n      \"direction_of_change\": true\n    },\n    {\n      \"metric\": \"avg_lifetime_births\",\n      \"expected_sensitivity\": true,\n      \"direction_of_change\": true\n    }\n  ],\n  \"reasoning\": \"The parameter 'childhood_mortality_annual' directly affects metrics related to population dynamics and reproductive success. The sensitivity of 'mating_inequality' is expected because changes in childhood mortality can alter the population structure and mating opportunities. The direction of change is biologically plausible as higher mortality could lead to increased competition for mates. 'Child_survival_rate' is directly impacted by changes in childhood mortality, so its sensitivity is expected, and the direction of change is logical. 'Avg_lifetime_births' is also sensitive to childhood mortality as it affects the number of surviving offspring, and the direction of change is consistent with biological expectations. Overall, the model is sensitive to perturbations in childhood mortality, but the changes are consistent with the parameter's role.\"\n}\n```",
+      "grok3_critic": "{\n  \"verdict\": \"FRACTURE_DETECTED\",\n  \"fractures\": [\n    {\n      \"issue\": \"Non-linear response in mating_inequality\",\n      \"metric\": \"mating_inequality\",\n      \"details\": \"Standard deviation (\u03c3 = 0.0676) is disproportionately high compared to the \u00b120% perturbation in childhood_mortality_annual. A 20% change in mortality results in a shift from 0.4781 (baseline) to 0.4048 (+20%) and 0.5700 (-20%), indicating a highly sensitive and non-linear response.\"\n    },\n    {\n      \"issue\": \"Non-linear response and potential evolutionary constraint violation in child_survival_rate\",\n      \"metric\": \"child_survival_rate\",\n      \"details\": \"Child_survival_rate drops significantly from 1.0000 (baseline) to 0.8000 (+20%) and 0.7333 (-20%), with a high \u03c3 (0.1133). This suggests a non-linear response to mortality changes and raises concerns about population sustainability, as survival rates below certain thresholds could violate evolutionary constraints for viable reproduction.\"\n    },\n    {\n      \"issue\": \"Non-linear response in avg_lifetime_births\",\n      \"metric\": \"avg_lifetime_births\",\n      \"details\": \"Avg_lifetime_births decreases from 3.0424 (baseline) to 2.6310 (+20%) and 2.3177 (-20%), with a high \u03c3 (0.2968). This indicates a non-linear response to childhood mortality changes, potentially threatening population replacement rates.\"\n    },\n    {\n      \"issue\": \"Population collapse risk\",\n      \"metric\": \"pop_growth_rate\",\n      \"details\": \"Population growth rate shifts from positive (0.0148 at baseline) to negative values (-0.0271 at +20%, -0.0301 at -20%). While \u03c3 (0.0205) is within a reasonable range, sustained negative growth rates signal a risk of population collapse over longer time scales, especially under increased mortality.\"\n    }\n  ],\n  \"reasoning\": \"The model exhibits multiple fractures under a \u00b120% perturbation of childhood_mortality_annual. Key metrics such as mating_inequality, child_survival_rate, and avg_lifetime_births show non-linear responses with high standard deviations relative to the parameter change, indicating hypersensitivity. Additionally, the shift to negative population growth rates under both perturbations raises concerns about long-term population collapse risk, though extinction is not immediate within the tested timeframe. While cooperation and aggression remain stable and within evolutionary constraints (not approaching 0 or 1), the combined effects on reproductive metrics and growth rates suggest the model may not robustly handle mortality perturbations without violating realistic evolutionary dynamics. Further investigation into feedback loops between mortality, survival, and reproduction is recommended.\"\n}"
+    }
+  },
+  {
+    "param": "cooperation_network_bonus",
+    "default": 0.059346,
+    "conditions": {
+      "baseline": 0.059346,
+      "plus_20pct": 0.071215,
+      "minus_20pct": 0.047477
+    },
+    "n_seeds": 5,
+    "stability": {
+      "resource_gini": {
+        "baseline_mean": 0.369946,
+        "plus20_mean": 0.378615,
+        "minus20_mean": 0.367926,
+        "sigma": 0.004637,
+        "gate": "PASS"
+      },
+      "mating_inequality": {
+        "baseline_mean": 0.562715,
+        "plus20_mean": 0.5584,
+        "minus20_mean": 0.563426,
+        "sigma": 0.002221,
+        "gate": "PASS"
+      },
+      "violence_death_fraction": {
+        "baseline_mean": 0.040385,
+        "plus20_mean": 0.0,
+        "minus20_mean": 0.058333,
+        "sigma": 0.024395,
+        "gate": "PASS"
+      },
+      "pop_growth_rate": {
+        "baseline_mean": -0.000735,
+        "plus20_mean": -0.028681,
+        "minus20_mean": 0.002477,
+        "sigma": 0.013992,
+        "gate": "PASS"
+      },
+      "child_survival_rate": {
+        "baseline_mean": 0.935107,
+        "plus20_mean": 0.985185,
+        "minus20_mean": 0.95564,
+        "sigma": 0.020554,
+        "gate": "PASS"
+      },
+      "avg_lifetime_births": {
+        "baseline_mean": 2.856073,
+        "plus20_mean": 3.018722,
+        "minus20_mean": 2.577512,
+        "sigma": 0.182183,
+        "gate": "FAIL"
+      },
+      "violence_rate": {
+        "baseline_mean": 0.015693,
+        "plus20_mean": 0.011249,
+        "minus20_mean": 0.012507,
+        "sigma": 0.001871,
+        "gate": "PASS"
+      },
+      "avg_cooperation": {
+        "baseline_mean": 0.514786,
+        "plus20_mean": 0.511734,
+        "minus20_mean": 0.504368,
+        "sigma": 0.004373,
+        "gate": "PASS"
+      },
+      "avg_aggression": {
+        "baseline_mean": 0.491787,
+        "plus20_mean": 0.495629,
+        "minus20_mean": 0.49906,
+        "sigma": 0.002971,
+        "gate": "PASS"
+      }
+    },
+    "tmc": {
+      "param": "cooperation_network_bonus",
+      "claude_worker": {
+        "verdict": "SENSITIVE",
+        "failures": [
+          "avg_lifetime_births"
+        ]
+      },
+      "gpt4o_auditor": "```json\n{\n  \"verdict\": \"SENSITIVE\",\n  \"failures\": [\n    {\n      \"metric\": \"avg_lifetime_births\",\n      \"sensitivity_expected\": true,\n      \"direction_makes_sense\": true\n    }\n  ],\n  \"reasoning\": \"The parameter 'cooperation_network_bonus' is likely to have a significant impact on metrics related to reproduction and population dynamics. The 'avg_lifetime_births' metric is sensitive to changes in this parameter, which is expected because cooperation can influence resource sharing and social support, directly affecting reproductive success. The direction of change also makes sense: increasing cooperation (+20%) leads to more births, while decreasing cooperation (-20%) results in fewer births. This aligns with biological and social theories where cooperative societies tend to have better resource allocation, supporting higher reproductive rates. Overall, the model shows sensitivity in this metric, suggesting that the parameter plays a crucial role in population dynamics, but the other metrics remain stable, indicating that the model is not overly fragile.\"\n}\n```",
+      "grok3_critic": "{\n  \"verdict\": \"FRACTURE_DETECTED\",\n  \"fractures\": [\n    {\n      \"metric\": \"avg_lifetime_births\",\n      \"issue\": \"Significant variability and failure on gate\",\n      \"details\": \"Perturbation of cooperation_network_bonus by \u00b120% results in a substantial change in avg_lifetime_births (baseline: 2.8561, +20%: 3.0187, -20%: 2.5775) with a standard deviation (0.1822) that is disproportionately high relative to the parameter change magnitude. This indicates a non-linear response and fails the gate criterion.\"\n    },\n    {\n      \"metric\": \"violence_death_fraction\",\n      \"issue\": \"Extreme variability and potential instability\",\n      \"details\": \"Perturbation shows violence_death_fraction dropping to 0.0000 at +20% (from baseline 0.0404) while increasing to 0.0583 at -20%, with a high standard deviation (0.0244). This suggests a non-linear response and potential instability in the model dynamics under parameter stress.\"\n    },\n    {\n      \"metric\": \"pop_growth_rate\",\n      \"issue\": \"Potential population collapse risk\",\n      \"details\": \"At +20% perturbation, pop_growth_rate drops significantly to -0.0287 (from baseline -0.0007), indicating a potential risk of population collapse under increased cooperation bonus. Although it passes the gate, the magnitude of decline warrants concern for long-term stability.\"\n    }\n  ],\n  \"reasoning\": \"The model exhibits fractures under the \u00b120% perturbation of cooperation_network_bonus. Key concerns include the non-linear response in avg_lifetime_births, which fails the gate with high variability (\u03c3 = 0.1822), suggesting sensitivity to the parameter beyond expected bounds. Additionally, violence_death_fraction shows extreme swings, including a complete elimination of violence deaths at +20%, which is biologically implausible and indicates model instability. The significant negative shift in pop_growth_rate at +20% raises concerns about population collapse risk, even though it passes the gate. No direct violation of evolutionary constraints (e.g., cooperation going to 0 or 1) is observed, but the combined non-linear responses and potential instability in critical metrics suggest the model is not robust to this perturbation. Further investigation into the interaction between cooperation bonuses, reproductive outcomes, and violence dynamics is recommended.\"\n}"
+    }
+  },
+  {
+    "param": "aggression_production_penalty",
+    "default": 0.6,
+    "conditions": {
+      "baseline": 0.6,
+      "plus_20pct": 0.72,
+      "minus_20pct": 0.48
+    },
+    "n_seeds": 5,
+    "stability": {
+      "resource_gini": {
+        "baseline_mean": 0.366663,
+        "plus20_mean": 0.377962,
+        "minus20_mean": 0.36434,
+        "sigma": 0.00595,
+        "gate": "PASS"
+      },
+      "mating_inequality": {
+        "baseline_mean": 0.518555,
+        "plus20_mean": 0.560333,
+        "minus20_mean": 0.556421,
+        "sigma": 0.01884,
+        "gate": "PASS"
+      },
+      "violence_death_fraction": {
+        "baseline_mean": 0.018182,
+        "plus20_mean": 0.018182,
+        "minus20_mean": 0.04386,
+        "sigma": 0.012105,
+        "gate": "PASS"
+      },
+      "pop_growth_rate": {
+        "baseline_mean": -0.034858,
+        "plus20_mean": -0.002939,
+        "minus20_mean": -0.002452,
+        "sigma": 0.015163,
+        "gate": "PASS"
+      },
+      "child_survival_rate": {
+        "baseline_mean": 0.895,
+        "plus20_mean": 0.963492,
+        "minus20_mean": 0.993939,
+        "sigma": 0.041375,
+        "gate": "FAIL"
+      },
+      "avg_lifetime_births": {
+        "baseline_mean": 2.948198,
+        "plus20_mean": 3.008963,
+        "minus20_mean": 2.782692,
+        "sigma": 0.095617,
+        "gate": "FAIL"
+      },
+      "violence_rate": {
+        "baseline_mean": 0.011953,
+        "plus20_mean": 0.00793,
+        "minus20_mean": 0.010387,
+        "sigma": 0.001656,
+        "gate": "PASS"
+      },
+      "avg_cooperation": {
+        "baseline_mean": 0.511747,
+        "plus20_mean": 0.510581,
+        "minus20_mean": 0.522698,
+        "sigma": 0.005458,
+        "gate": "PASS"
+      },
+      "avg_aggression": {
+        "baseline_mean": 0.479797,
+        "plus20_mean": 0.481965,
+        "minus20_mean": 0.486773,
+        "sigma": 0.002915,
+        "gate": "PASS"
+      }
+    },
+    "tmc": {
+      "param": "aggression_production_penalty",
+      "claude_worker": {
+        "verdict": "SENSITIVE",
+        "failures": [
+          "child_survival_rate",
+          "avg_lifetime_births"
+        ]
+      },
+      "gpt4o_auditor": "```json\n{\n  \"verdict\": \"SENSITIVE\",\n  \"failures\": [\n    {\n      \"metric\": \"child_survival_rate\",\n      \"sensitivity_expected\": true,\n      \"direction_makes_sense\": true\n    },\n    {\n      \"metric\": \"avg_lifetime_births\",\n      \"sensitivity_expected\": true,\n      \"direction_makes_sense\": true\n    }\n  ],\n  \"reasoning\": \"The parameter 'aggression_production_penalty' is likely to influence metrics related to survival and reproduction, as increased aggression can lead to resource scarcity and higher mortality rates. The observed sensitivity in 'child_survival_rate' and 'avg_lifetime_births' is expected because changes in aggression levels can directly impact the availability of resources and the overall stability of the society, affecting both child survival and reproductive success. The direction of change is biologically and socially plausible: higher aggression penalties reduce resource availability, leading to lower child survival and fewer lifetime births. The model is sensitive to these changes, but the results are consistent with the expected behavior of pre-state societies under varying aggression penalties.\"\n}\n```",
+      "grok3_critic": "{\n  \"verdict\": \"FRACTURE_DETECTED\",\n  \"fractures\": [\n    {\n      \"metric\": \"child_survival_rate\",\n      \"issue\": \"Non-linear response and evolutionary implausibility\",\n      \"details\": \"Child survival rate jumps from 0.8950 (baseline) to 0.9635 (+20%) and 0.9939 (-20%), with \u03c3=0.0414 far exceeding the proportional parameter perturbation of \u00b10.12. A near-perfect survival rate (0.9939) at -20% aggression penalty is evolutionarily implausible under resource constraints and violence presence.\"\n    },\n    {\n      \"metric\": \"avg_lifetime_births\",\n      \"issue\": \"Inconsistent response direction\",\n      \"details\": \"Average lifetime births shows inconsistent behavior with perturbation: increases to 3.0090 at +20% but decreases to 2.7827 at -20%, despite child survival rate increasing in both cases. This suggests a model fracture in how aggression penalty interacts with reproductive outcomes.\"\n    }\n  ],\n  \"reasoning\": \"While population collapse risk is not evident (pop_growth_rate remains negative but stable, no extinction signal), the model exhibits fractures in child_survival_rate and avg_lifetime_births. The extreme jump in child survival rate, especially at -20% aggression penalty, is disproportionate to the parameter change and evolutionarily unrealistic given persistent violence (violence_rate non-zero). Additionally, avg_lifetime_births shows non-intuitive directional inconsistency, indicating potential issues in feedback loops between aggression, survival, and reproduction. Cooperation and aggression metrics remain stable and within evolutionary constraints (not approaching 0 or 1), but the flagged metrics suggest underlying mechanistic flaws in how aggression penalties scale with survival and reproductive outcomes.\"\n}"
+    }
+  },
+  {
+    "param": "epidemic_lethality_base",
+    "default": 0.254318,
+    "conditions": {
+      "baseline": 0.254318,
+      "plus_20pct": 0.305182,
+      "minus_20pct": 0.203454
+    },
+    "n_seeds": 5,
+    "stability": {
+      "resource_gini": {
+        "baseline_mean": 0.353835,
+        "plus20_mean": 0.356961,
+        "minus20_mean": 0.369584,
+        "sigma": 0.006808,
+        "gate": "PASS"
+      },
+      "mating_inequality": {
+        "baseline_mean": 0.523775,
+        "plus20_mean": 0.537059,
+        "minus20_mean": 0.58993,
+        "sigma": 0.028574,
+        "gate": "PASS"
+      },
+      "violence_death_fraction": {
+        "baseline_mean": 0.0,
+        "plus20_mean": 0.0,
+        "minus20_mean": 0.025,
+        "sigma": 0.011785,
+        "gate": "PASS"
+      },
+      "pop_growth_rate": {
+        "baseline_mean": 0.020194,
+        "plus20_mean": 0.01305,
+        "minus20_mean": -0.000214,
+        "sigma": 0.008455,
+        "gate": "PASS"
+      },
+      "child_survival_rate": {
+        "baseline_mean": 0.8,
+        "plus20_mean": 0.9,
+        "minus20_mean": 0.974118,
+        "sigma": 0.071345,
+        "gate": "FAIL"
+      },
+      "avg_lifetime_births": {
+        "baseline_mean": 3.171471,
+        "plus20_mean": 3.079224,
+        "minus20_mean": 2.500779,
+        "sigma": 0.296823,
+        "gate": "FAIL"
+      },
+      "violence_rate": {
+        "baseline_mean": 0.001481,
+        "plus20_mean": 0.004013,
+        "minus20_mean": 0.00769,
+        "sigma": 0.002549,
+        "gate": "PASS"
+      },
+      "avg_cooperation": {
+        "baseline_mean": 0.521278,
+        "plus20_mean": 0.504041,
+        "minus20_mean": 0.518431,
+        "sigma": 0.007545,
+        "gate": "PASS"
+      },
+      "avg_aggression": {
+        "baseline_mean": 0.507184,
+        "plus20_mean": 0.477597,
+        "minus20_mean": 0.49083,
+        "sigma": 0.012101,
+        "gate": "PASS"
+      }
+    },
+    "tmc": {
+      "param": "epidemic_lethality_base",
+      "claude_worker": {
+        "verdict": "SENSITIVE",
+        "failures": [
+          "child_survival_rate",
+          "avg_lifetime_births"
+        ]
+      },
+      "gpt4o_auditor": "```json\n{\n  \"verdict\": \"SENSITIVE\",\n  \"failures\": [\n    {\n      \"metric\": \"child_survival_rate\",\n      \"expected_sensitivity\": true,\n      \"direction_of_change\": true\n    },\n    {\n      \"metric\": \"avg_lifetime_births\",\n      \"expected_sensitivity\": true,\n      \"direction_of_change\": true\n    }\n  ],\n  \"reasoning\": \"The parameter 'epidemic_lethality_base' directly influences mortality rates, which in turn affects child survival and average lifetime births. The observed sensitivity in these metrics is expected, as higher lethality would naturally lead to lower child survival and fewer lifetime births. The direction of change is biologically and socially plausible, as increased lethality reduces population growth and reproductive success. While the model shows sensitivity to changes in lethality, the other metrics remain stable, indicating that the model is sensitive but not fragile overall.\"\n}\n```",
+      "grok3_critic": "{\n    \"verdict\": \"FRACTURE_DETECTED\",\n    \"fractures\": [\n        {\n            \"metric\": \"child_survival_rate\",\n            \"issue\": \"Non-linear response and unrealistic evolutionary outcome\",\n            \"details\": \"Child survival rate increases dramatically from 0.8000 (baseline) to 0.9741 (-20% lethality), with a standard deviation (0.0713) far exceeding the proportional change in the parameter (20%). This suggests a non-linear amplification in the model dynamics. Additionally, a survival rate of 0.9741 is evolutionarily unrealistic in pre-modern settings, as it implies near-perfect survival without corresponding resource or environmental constraints.\"\n        },\n        {\n            \"metric\": \"avg_lifetime_births\",\n            \"issue\": \"Significant drop in reproductive output\",\n            \"details\": \"Average lifetime births drop from 3.1715 (baseline) to 2.5008 (-20% lethality), with a high standard deviation (0.2968) relative to the parameter perturbation. This indicates potential instability in reproductive dynamics, possibly tied to the child survival rate anomaly, and risks long-term population decline if births fall below replacement levels.\"\n        },\n        {\n            \"metric\": \"pop_growth_rate\",\n            \"issue\": \"Potential population collapse risk\",\n            \"details\": \"Population growth rate drops to -0.0002 at -20% lethality, indicating a near-zero or negative growth scenario. While not immediate extinction, this suggests a trajectory toward population collapse under sustained conditions, especially when coupled with reduced lifetime births.\"\n        }\n    ],\n    \"reasoning\": \"The model exhibits fractures under the \u00b120% perturbation of epidemic_lethality_base. Key issues include a non-linear and evolutionarily implausible spike in child survival rate at lower lethality, which likely drives downstream effects on population growth and reproductive metrics. The near-zero population growth rate at -20% lethality signals a collapse risk, violating expected stability in population dynamics. While cooperation and aggression remain within reasonable bounds, the reproductive and survival metrics suggest the model fails to enforce realistic evolutionary constraints under perturbation. Further investigation into the child survival rate mechanism and its interaction with lethality is warranted to address these fractures.\"\n}"
+    }
+  }
+]

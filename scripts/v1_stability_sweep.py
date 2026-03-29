@@ -45,6 +45,13 @@ TIER1_COEFFICIENTS = {
         "absolute_perturb": [0.0, 0.1, 0.2],  # test 0, 0.1, 0.2 law strength
         "note": "Institutional suppression — directly controls institution-gene claim",
     },
+    # Institutional micro-gradient (hard floor detection)
+    "law_strength_micro": {
+        "file": "engines/institutions.py", "line": 114,
+        "param": "law_strength", "default": 0.0,
+        "absolute_perturb": [0.0, 0.01, 0.02],
+        "note": "Micro-sweep: detect hard floor in violence suppression at low law_strength",
+    },
     # Violence death chance (AutoSIM calibrated)
     "violence_death_chance": {
         "file": "config.py", "line": 91,
@@ -144,10 +151,12 @@ def perturbation_sweep(
     default_value: float,
     n_seeds: int = 10,
     perturbation: float = 0.20,
+    tier1_key: str = "",
 ) -> dict:
     """Run baseline, +20%, -20% conditions and compute cross-condition σ."""
     # Check for absolute perturbation override (for zero-default params)
-    spec = TIER1_COEFFICIENTS.get(param_name, {})
+    # Look up by tier1 dict key, not config param name
+    spec = TIER1_COEFFICIENTS.get(tier1_key, {})
     if "absolute_perturb" in spec:
         vals = spec["absolute_perturb"]
         conditions = {"baseline": vals[0], "mid": vals[1], "high": vals[2]}
@@ -326,6 +335,7 @@ def main():
         result = perturbation_sweep(
             param_name=spec["param"],
             default_value=spec["default"],
+            tier1_key=name,
             n_seeds=args.seeds,
         )
         elapsed = time.time() - t0
