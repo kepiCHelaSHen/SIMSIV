@@ -315,6 +315,175 @@ Both predator strategies go extinct. The immune response is multi-layered: insti
 
 ---
 
+## 7. INITIALIZATION
+
+**Implementation:** `models/agent.py:create_initial_population()` → `models/society.py:Society.__init__()`
+
+### 7.1 Population Generation
+
+A founding population of *N* agents (default 500) is generated in a single call to `create_initial_population()`:
+
+1. **Sex assignment**: First *N*/2 agents female, remainder male (deterministic split, stochastic within traits).
+
+2. **Age distribution**: Each agent assigned age ∈ [0, `config.init_max_age`) uniformly at random.
+
+3. **Trait initialization**: 35 heritable traits drawn from a multivariate normal distribution:
+
+$$\mathbf{T} \sim \mathcal{N}(\boldsymbol{\mu}, \Sigma)$$
+
+where:
+- $\boldsymbol{\mu}$: Mean vector. Most traits $\mu_i = 0.5$. Exception: pathology risk traits (cardiovascular_risk, mental_illness_risk, autoimmune_risk, metabolic_risk, degenerative_risk) and psychopathy_tendency use $\mu_i = 0.2$ to initialize a healthy population.
+- $\Sigma = \mathbf{C} \cdot \sigma^2$ where $\sigma = 0.15$ and $\mathbf{C}$ is a 35×35 genetic correlation matrix with 22 non-zero off-diagonal elements (e.g., aggression ↔ cooperation $r = -0.4$, empathy ↔ cooperation $r = +0.2$, psychopathy ↔ empathy $r = -0.5$).
+- $\mathbf{C}$ is forced symmetric positive-semidefinite via eigenvalue clipping ($\lambda_i \leftarrow \max(\lambda_i, 10^{-6})$).
+
+4. **Clipping**: All trait values clipped to $[0.0, 1.0]$ post-generation.
+
+5. **Genotype storage**: Each agent's birth trait values stored as an immutable `genotype` dictionary. The genotype is the inheritance source (not the phenotype, which may be modified by developmental plasticity).
+
+6. **Non-heritable state**: health = 1.0 (scaled down for agents initialized age > 40), reputation = 0.5 (neutral), initial resources proportional to age (older agents have more accumulated wealth: 60% subsistence, 30% tools, 10% prestige goods).
+
+7. **Belief initialization**: Adults (age ≥ 15) receive beliefs derived from their traits with Gaussian noise ($\sigma = 0.15$). Children develop beliefs at maturation (year 15) during Step 6 (mortality engine, developmental plasticity).
+
+### 7.2 Demographic Burn-In
+
+No explicit burn-in phase is required in the default protocol. The AutoSIM calibration (816 experiments, SA Run 3) was performed on 150-year runs starting from this initialization, and the held-out validation used 200-year runs from the same starting conditions.
+
+However, for experiments requiring equilibrium baseline measurements, a 50-year burn-in is recommended before introducing perturbations (as used in the V2-INTERFERENCE infection experiments, where Malicious Agents were injected at year 10 after the demographic structure had stabilized).
+
+### 7.3 Deterministic Seeding
+
+The entire initialization pipeline is deterministic given `config.seed`:
+
+```python
+rng = numpy.random.default_rng(config.seed)
+society = Society(config, rng)  # creates population via create_initial_population(rng, ...)
+```
+
+Same seed → identical population → identical 200-year trajectory. Verified by automated test.
+
+---
+
+## 8. SUBMODELS — REPRODUCTION (Inheritance Engine)
+
+**Implementation:** `models/agent.py:breed()`, called from `engines/reproduction.py` (Step 5)
+
+### 8.1 Conception and Birth
+
+A female agent conceives if:
+- She passes `can_mate()` (alive, fertile age, health criteria)
+- She has not given birth within `birth_interval_years` (default 2)
+- A stochastic conception check passes: $p = \text{base\_conception\_chance} \times f_{\text{fertility}} \times f_{\text{health}} \times f_{\text{resources}} \times f_{\text{bond}}$
+
+The genetic father is determined by paternity tracking (social father may differ due to extra-pair copulation).
+
+### 8.2 Quantitative Genetic Inheritance (Falconer 1981)
+
+For each of the 35 heritable traits, the offspring value is computed:
+
+$$G_{\text{child},i} = h^2_i \cdot \text{blend}_i + (1 - h^2_i) \cdot \mu_{\text{pop},i} + \epsilon_i$$
+
+where:
+- $h^2_i$: Trait-specific heritability (range 0.25–0.65; see Section 1.2)
+- $\text{blend}_i = w \cdot G_{\text{parent1},i} + (1-w) \cdot G_{\text{parent2},i}$: Weighted parental midpoint. $w \sim \mathcal{N}(0.5, \text{pwv})$ where `parent_weight_variance` = 0.1 (clipped to [0.1, 0.9])
+- $\mu_{\text{pop},i}$: Current population mean for trait $i$ (regression toward mean)
+- $\epsilon_i$: Mutation noise
+
+**Note on notation:** The directive specified $G_{\text{offspring}} = 0.4 \times G_{\text{parents}} + 0.6 \times \mu_{\text{pop}}$. This corresponds to a trait with $h^2 = 0.4$. In SIMSIV, $h^2$ varies per trait (0.25–0.65), so the general form above is used. For cooperation_propensity specifically, $h^2 = 0.40$, matching the directive exactly.
+
+### 8.3 Mutation
+
+Standard agents:
+$$\epsilon_i \sim \begin{cases} \mathcal{N}(0, 0.15) & \text{with probability } 0.05 \text{ (rare large mutation)} \\ \mathcal{N}(0, \sigma_m) & \text{otherwise} \end{cases}$$
+
+where $\sigma_m = 0.05$ (amplified during environmental stress by factor up to 1.5×, and by parental epigenetic stress load).
+
+### 8.4 MA Trait Locking (Genetic Integrity)
+
+If either parent carries the `_is_ma = True` flag:
+
+```python
+if getattr(parent1, '_is_ma', False) or getattr(parent2, '_is_ma', False):
+    ma_parent = parent1 if getattr(parent1, '_is_ma', False) else parent2
+    child_val = ma_parent.genotype[trait_name]  # exact copy, zero mutation
+    child._is_ma = True  # flag propagates
+```
+
+**Effect:** $\sigma_m = 0$ for MA offspring. The MA genotype is cloned without mutation, regression, or blending. This ensures that infection experiments (V2-INTERFERENCE) test the population's social immune response to a fixed-strategy invader, not the erosion of the invader strategy through mutation drift.
+
+### 8.5 Genotype vs. Phenotype
+
+After all 35 traits are computed, the child's **genotype** is stored as an immutable snapshot:
+
+```python
+child.genotype = {t: getattr(child, t) for t in HERITABLE_TRAITS}
+```
+
+The genotype is the inheritance source for future generations. The **phenotype** (the live trait values on the agent) may subsequently be modified by developmental plasticity (Step 6) and skill acquisition (Step 10), but these modifications do not affect the genotype and are not heritable.
+
+### 8.6 Parent Tagging for Selection Differential
+
+Both parents are tagged `_bred_this_tick = True` at the moment of successful birth. This flag is read by the MetricsCollector in Step 12 to compute $\mu_{\text{parents}}$ and cleared after collection.
+
+---
+
+## 9. SUBMODELS — INSTITUTIONAL DRIFT
+
+**Implementation:** `engines/institutions.py:_drift_institutions()`, called in Step 9
+
+### 9.1 Drift Mechanics
+
+Institutional strength (`law_strength` ∈ [0, 1]) evolves each tick based on the balance between cooperative pressure and violence erosion:
+
+$$\Delta_{\text{law}} = r \cdot (F_{\text{coop}} - F_{\text{violence}} + F_{\text{belief}}) \cdot R$$
+
+where:
+- $r$: `institutional_drift_rate` (default 0.01, maximum change per tick)
+- $F_{\text{coop}} = \max(0, \bar{c} - 0.4) \times b_{\text{coop}} \times (1 + \bar{\phi} \times 0.3) + F_{\text{norm}} + F_{\text{future}}$
+  - $\bar{c}$: population mean cooperation_propensity
+  - $b_{\text{coop}} = 2.0$: cooperation institution boost
+  - $\bar{\phi}$: mean conformity_bias (Henrich & Boyd 1998 amplification)
+  - $F_{\text{norm}} = \bar{\ell} \times 0.1 + \bar{\kappa} \times 0.08$: group loyalty and conscientiousness bonus
+  - $F_{\text{future}} = \bar{f} \times 0.05$: future orientation investment
+- $F_{\text{violence}} = v_{\text{rate}} \times b_{\text{violence}}$
+  - $v_{\text{rate}}$: conflict events / population this tick
+  - $b_{\text{violence}} = 3.0$: violence institution decay
+- $F_{\text{belief}}$: aggregate belief influence (cooperation_norm accelerates, violence_acceptability erodes)
+- $R$: resistance factor incorporating inertia (0.8), elder norm anchoring, and tradition adherence
+
+### 9.2 Institutional Inertia
+
+Resistance to change depends on current law_strength:
+
+$$R = \begin{cases} 1 - \alpha \cdot L & \text{if growing (coop > violence)} \\ 1 - \alpha \cdot (1 - L) & \text{if eroding (violence > coop)} \end{cases}$$
+
+where $\alpha = 0.8$ (institutional inertia) and $L$ = current law_strength. This creates path dependency: strong institutions resist erosion, weak institutions resist growth.
+
+Elder agents (life_stage = ELDER, reputation > 0.4) amplify resistance by up to 30% (norm anchor).
+
+### 9.3 Coupled Institutional Parameters
+
+When `law_strength` changes, three downstream parameters track proportionally:
+
+| Parameter | Tracking Formula | Effect |
+|-----------|-----------------|--------|
+| `violence_punishment_strength` | $L \times 0.7$ | Institutional deterrence of violence |
+| `property_rights_strength` | $L \times 0.5$ | Protection of resources from conflict looting |
+| `elite_privilege_multiplier` | Drifts with hierarchy_belief ±0.01 | Resource advantage for high-status agents |
+
+### 9.4 Emergent Institution Formation
+
+If no institutions exist (`law_strength` = 0), they can emerge spontaneously:
+
+1. **Punishment emergence**: If `violence_rate > 0.08` for 5 consecutive years (Bowles & Gintis 2011), `violence_punishment_strength` jumps to 0.1 and `law_strength` floors at 0.1.
+
+2. **Mate restriction emergence**: If reproductive skew (top 10% males have 3× offspring of bottom 50%) persists for 8 years (Bowles 2006), `max_mates_per_male` decreases (minimum 3).
+
+### 9.5 Cooperation Threshold
+
+The directive specified threshold 0.6. The implementation uses **0.4**: cooperation above $\bar{c} = 0.4$ drives institutional growth. This lower threshold was calibrated by AutoSIM Run 3 to match the empirical cooperation range (0.25–0.70, Henrich et al. 2001). At the model's equilibrium cooperation of ~0.51, the effective cooperation pressure is $(0.51 - 0.4) \times 2.0 = 0.22$, modulated by conformity and resistance.
+
+---
+
 ## 6. REFERENCES
 
 Archer, J. (2009). Does sexual selection explain human sex differences in aggression? *Behavioral and Brain Sciences*, 32(3-4), 249–266.
