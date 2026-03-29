@@ -45,6 +45,13 @@ TIER1_COEFFICIENTS = {
         "absolute_perturb": [0.0, 0.1, 0.2],  # test 0, 0.1, 0.2 law strength
         "note": "Institutional suppression — directly controls institution-gene claim",
     },
+    # Population scale sensitivity
+    "initial_pop_size": {
+        "file": "config.py", "line": 14,
+        "param": "population_size", "default": 500,
+        "absolute_perturb": [250, 500, 1000],
+        "note": "Scale sensitivity: cooperation and violence stability across N",
+    },
     # Institutional micro-gradient (hard floor detection)
     "law_strength_micro": {
         "file": "engines/institutions.py", "line": 114,
@@ -125,7 +132,9 @@ METRICS = [
 
 def run_simulation(seed: int, **overrides) -> dict:
     """Run a single simulation and return final metrics."""
-    cfg = Config(years=100, population_size=200, seed=seed, **overrides)
+    defaults = {"years": 100, "population_size": 200, "seed": seed}
+    defaults.update(overrides)
+    cfg = Config(**defaults)
     sim = Simulation(cfg)
     sim.run()
 
