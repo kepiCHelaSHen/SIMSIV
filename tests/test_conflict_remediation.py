@@ -82,6 +82,10 @@ def test_conflict_bond_break_emits_event():
 
     # With 200 agents, 50 years, no death, and strong bonds, conflict bond breaks
     # should occur. If zero, the event emission is broken.
+    # NOTE: _event_window is a rolling 500-event buffer. Late-simulation events
+    # could evict earlier bond_dissolved entries. The high conflict rate (0.3)
+    # ensures bond breaks occur throughout the run, including the final ticks,
+    # so at least some survive in the window.
     assert len(bond_events) > 0, (
         f"No conflict bond_dissolved events found despite {conflict_count} conflicts. "
         f"Event emission is broken.")
