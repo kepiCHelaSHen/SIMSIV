@@ -158,7 +158,7 @@ class ConflictEngine:
                     continue
 
             # ── DD11: Coalition defense — target's allies may intervene ──
-            if getattr(config, 'coalition_defense_enabled', False):
+            if config.coalition_defense_enabled:
                 defended = False
                 trust_thresh = config.coalition_defense_trust_threshold
                 for other in living:
@@ -194,10 +194,10 @@ class ConflictEngine:
                     continue  # conflict averted
 
             # ── DD20: Peace chief arbitration — intra-faction conflict mediation
-            if (getattr(config, 'leadership_enabled', False)
+            if (config.leadership_enabled
                     and agent.faction_id is not None
-                    and agent.faction_id == getattr(target, 'faction_id', None)):
-                leaders = getattr(society, 'faction_leaders', {}).get(agent.faction_id)
+                    and agent.faction_id == target.faction_id):
+                leaders = society.faction_leaders.get(agent.faction_id)
                 if leaders and leaders.get('peace_chief') is not None:
                     chief = society.get_by_id(leaders['peace_chief'])
                     if (chief and chief.alive
@@ -546,7 +546,7 @@ class ConflictEngine:
 
         # ── DD11: Third-party punishment ────────────────────────────
         # High-cooperation agents who trust the target punish the aggressor
-        if getattr(config, 'third_party_punishment_enabled', False):
+        if config.third_party_punishment_enabled:
             willing_thresh = config.punishment_willingness_threshold
             for punisher in living:
                 if (punisher.id != aggressor.id
