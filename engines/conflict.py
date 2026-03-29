@@ -454,8 +454,9 @@ class ConflictEngine:
 
         # ── Death check for loser ────────────────────────────────────
         death = False
-        # Death chance scales with power differential (stomps are more lethal)
-        effective_death_chance = config.violence_death_chance * (0.5 + power_diff)
+        # Keeley (1996): violence death fraction target 0.05-0.15 of male deaths
+        # Baseline 0.6 calibrated to reach lower bound with AutoSIM violence_death_chance
+        effective_death_chance = config.violence_death_chance * (0.6 + power_diff)
         if rng.random() < effective_death_chance:
             loser.die("violence", society.year)
             death = True
