@@ -187,8 +187,8 @@ class InstitutionEngine:
             return events
 
         inertia = getattr(config, 'institutional_inertia', 0.8)
-        coop_boost = getattr(config, 'cooperation_institution_boost', 0.01)
-        vio_decay = getattr(config, 'violence_institution_decay', 0.02)
+        coop_boost = getattr(config, 'cooperation_institution_boost', 2.0)
+        vio_decay = getattr(config, 'violence_institution_decay', 3.0)
 
         pop = len(living)
         avg_coop = float(np.mean([a.cooperation_propensity for a in living]))
