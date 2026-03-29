@@ -509,6 +509,19 @@ class ConflictEngine:
                             partner.remove_bond(fighter.id)
                             society._unindex_bond(fighter.id, pid)
                             partner.remember(fighter.id, -0.25)
+                            events.append({
+                                "type": "bond_dissolved",
+                                "year": society.year,
+                                "agent_ids": [fighter.id, pid],
+                                "description": (
+                                    f"Pair bond dissolved by conflict: "
+                                    f"{fighter.id} & {pid}"),
+                                "outcome": {
+                                    "reason": "conflict_break",
+                                    "fighter": fighter.id,
+                                    "partner": pid,
+                                },
+                            })
                             break
 
         # ── Institutional punishment ─────────────────────────────────
