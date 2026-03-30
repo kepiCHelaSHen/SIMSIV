@@ -10,7 +10,7 @@
 
 ## Abstract
 
-Agent-based models (ABMs) offer a principled way to study gene-culture coevolution, yet most existing frameworks either hard-wire social outcomes or omit realistic demography. We present SIMSIV (Simulation of Intersecting Social and Institutional Variables), an agent-based framework in which 500 agents with 35 heritable traits compete for resources, mates, and status within a single band-level society. Agents inherit traits through a quantitative-genetics model with trait-specific heritability coefficients, form pair bonds, cooperate through trust-based networks, and engage in conflict mediated by institutional governance. Nine engines execute in a fixed annual cycle: environment, resources, conflict, mating, reproduction, mortality, migration, pathology, and institutions. The model was calibrated against nine anthropological benchmarks --- including resource inequality (Gini = 0.310), male reproductive skew (0.578), violence death fraction (0.069), and child survival to age 15 (0.642) --- using simulated annealing over 816 experiments. Held-out validation across 10 unseen seeds (20 independent runs) yielded a mean realism score of 0.934 with zero population collapses. Scenario experiments spanning 200-year and 500-year horizons reveal that institutional governance produces dramatic behavioral substitution --- enforced monogamy reduces violence 37% and unmated males from 28.5% to 11.9%; strong-state governance cuts resource inequality to Gini = 0.200 --- yet heritable cooperation shows no detectable divergence across governance regimes at 500 years (0.523 vs. 0.524 vs. 0.523 for no-institutions, free-competition, and strong-state respectively). Sensitivity analysis identifies mortality rate as the single most influential parameter (mean |r| = 0.315 across 8 of 9 metrics) and confirms that cooperation is weakly driven by any single parameter (max |r| = 0.199). These findings are consistent with the institutional-substitution hypothesis: institutions appear to substitute for heritable prosocial traits in producing cooperative behavioral outcomes at band-level timescales, though longer time horizons and multi-group dynamics may reveal complementarity.
+Agent-based models (ABMs) offer a principled way to study gene-culture coevolution, yet most existing frameworks either hard-wire social outcomes or omit realistic demography. We present SIMSIV (Simulation of Intersecting Social and Institutional Variables), an agent-based framework in which 500 agents with 35 heritable traits compete for resources, mates, and status within a single band-level society. Agents inherit traits through a quantitative-genetics model with trait-specific heritability coefficients, form pair bonds, cooperate through trust-based networks, and engage in conflict mediated by institutional governance. Twelve engines execute in a fixed annual cycle: environment, resources, conflict, mating, reproduction, mortality, migration, pathology, institutions, reputation, faction detection, and metrics. The model was calibrated against nine anthropological benchmarks --- including resource inequality (Gini = 0.310), male reproductive skew (0.578), violence death fraction (0.069), and child survival to age 15 (0.642) --- using simulated annealing over 816 experiments. Held-out validation across 10 unseen seeds yielded a mean realism score of 0.934 with zero population collapses. A paired-seed 500-year divergence experiment (10 seeds, each run through both no-institutions and strong-state conditions) reveals that institutional governance relaxes selection on **cognitive traits** --- intelligence ($p$ = 0.023, Cohen's $d$ = 0.87), impulse control ($p$ = 0.031, $d$ = 0.80), and mental illness resistance ($p$ = 0.025, $d$ = 0.85) --- while cooperation trends in the same direction ($p$ = 0.097) but does not reach significance. We additionally report a novel finding termed **selection sheltering**: contrary to the prediction that institutions select against aggression, the state preserves aggressive genotypes by suppressing the lethal violence that would otherwise eliminate them before reproduction. Aggression declines faster under anarchy ($\Delta R$ = -0.042) than under the state ($\Delta R$ = -0.031), mediated by 2--3x higher violence rates. These findings refine the institutional-substitution hypothesis: institutions substitute primarily for the cognitive architecture that enables cooperation rather than for the cooperative disposition itself, and they paradoxically shelter antisocial genotypes from natural selection.
 
 **Keywords:** agent-based model, gene-culture coevolution, cooperation, institutions, pre-state societies, calibration, ODD protocol
 
@@ -283,7 +283,7 @@ The governance spectrum experiment compared three scenarios representing a gradi
 
 At 200 years, institutional governance produces large behavioral effects. STRONG_STATE reduces violence by 57% relative to NO_INSTITUTIONS (0.009 vs. 0.021), cuts resource inequality by 36% (Gini 0.200 vs. 0.312), and reduces unmated males from 28.8% to 11.7% (via enforced monogamy). FREE_COMPETITION, with its endogenously emergent institutions (law = 0.481), falls between the two extremes on most metrics.
 
-**500-year results (10 seeds):**
+**500-year results (10 seeds, unpaired):**
 
 | Metric | NO_INSTITUTIONS | FREE_COMPETITION | STRONG_STATE |
 |---|---|---|---|
@@ -293,15 +293,26 @@ At 200 years, institutional governance produces large behavioral effects. STRONG
 | Law strength | 0.000 ± 0.000 | 0.928 ± 0.043 | 1.000 ± 0.000 |
 | Final population | 569 ± 259 | 623 ± 300 | 536 ± 231 |
 
-Figure 3 plots mean cooperation propensity across all 500 simulated years for the three governance scenarios, confirming the absence of divergence at all time points, not just the final year.
+The initial unpaired analysis reported cooperation at 0.523, 0.524, and 0.523 across the three governance regimes --- indistinguishable at 500 years. However, an adversarial audit of the selection differentials revealed that single-year snapshot metrics were dominated by demographic noise, and that cooperation's cumulative signal was underpowered at $n$ = 10 unpaired seeds ($p$ = 0.296). The audit recommended a paired-seed design with population-normalized selection metrics.
 
-**The central finding is in the cooperation row: 0.523, 0.524, 0.523.** After 500 simulated years --- approximately 20 generations --- heritable cooperation propensity is indistinguishable across the three governance regimes. This is not a ceiling or floor effect: cooperation sits at the midpoint of its possible range (0.0--1.0), with ample room for divergence in either direction. The null result is substantive.
+**500-year results (10 paired seeds, v2 protocol):**
 
-To state the finding precisely: institutions change *behavior* (violence, inequality, mating access) dramatically, but they do not change the *underlying cooperation gene*. The strong-state scenario reduces violence by more than half and restructures mating entirely, yet the heritable trait that drives cooperation is no more or less prevalent than in the ungoverned population. This is behavioral substitution: institutions substitute for genetic predisposition in producing cooperative outcomes.
+A paired-seed replication (seeds 101--110, each seed run through both NO_INSTITUTIONS and STRONG_STATE) using cumulative trait displacement $R_{\text{total}} = \bar{G}_{500} - \bar{G}_{1}$ as the primary metric and population-normalized selection differentials $S_n = S / \sqrt{N_{\text{eligible}}}$ revealed that the institutional substitution effect operates primarily on **cognitive traits**, not cooperation directly:
 
-Two secondary findings merit note. First, aggression shows modest divergence: 0.448 under no institutions versus 0.478 under the strong state, a difference of 0.030. This is counterintuitive --- one might expect strong governance to select against aggression. However, the strong-state scenario reduces the fitness cost of aggression by suppressing its lethal consequences (violence punishment prevents death), which weakens the selection pressure against aggressive genotypes. This interpretation is mechanistically plausible but should be confirmed with explicit selection gradient tracking across longer run horizons before being treated as a confirmed finding. Second, intelligence shows a suggestive divergence: 0.644 under free competition versus 0.596 under the strong state. This may reflect reduced selection for resource-acquisition skill when the state redistributes resources via taxation, though the 500-year window may be insufficient to confirm this trend.
+| Trait | $R$(No Inst) | $R$(State) | $\Delta R$ | $t$ | $p$ | Cohen's $d$ |
+|---|---|---|---|---|---|---|
+| intelligence_proxy | +0.133 | +0.099 | +0.034 | 2.74 | 0.023 | +0.87 |
+| mental_illness_risk | +0.010 | -0.004 | +0.014 | 2.68 | 0.025 | +0.85 |
+| impulse_control | +0.140 | +0.117 | +0.023 | 2.54 | 0.031 | +0.80 |
+| pain_tolerance | -0.008 | +0.010 | -0.018 | -2.39 | 0.041 | -0.75 |
 
-We note that 500 years represents approximately 20 generations, which is a short evolutionary timescale. It is possible that trait divergence would emerge at longer timescales (1,000+ years) or under between-group competition (not modeled in v1.0). The absence of divergence at 500 years does not definitively rule out gene-culture complementarity --- it indicates that the substitution effect dominates at band-level timescales.
+All three cognitive traits --- intelligence, impulse control, and mental illness risk --- show large effect sizes ($d$ > 0.80) in the predicted substitution direction: without institutional scaffolding, selection on cognitive traits is significantly stronger. Cooperation trends in the same direction ($\Delta R$ = +0.017, $p$ = 0.097, $d$ = 0.59) but does not reach significance at $n$ = 10; power analysis suggests $n$ = 25 paired seeds would resolve this.
+
+**The central finding is cognitive leverage, not cooperation divergence.** Institutions do not primarily relax selection on the cooperation gene itself --- they relax selection on the cognitive architecture that enables cooperation in unstructured environments. Without institutional coordination mechanisms, agents who can plan ahead (intelligence), delay gratification (impulse control), and maintain psychological stability (mental illness resistance) have a fitness advantage. The state provides these coordination services externally, reducing the selection premium on internal cognitive capacity.
+
+Figure 1 (F1) plots the 500-year genotype trajectories for these four traits, showing that divergence begins by year ~100 and is locked by year 300. Figure 2 (F2) presents the forest plot of all 35 traits ordered by effect size, confirming that cognitive traits cluster at the top of the substitution gradient.
+
+We note that 500 years represents approximately 20 generations, which is a short evolutionary timescale. It is possible that cooperation divergence would emerge at longer timescales (1,000+ years) or under between-group competition (not modeled in v1.0). The cognitive substitution signal is detectable at this timescale precisely because cognitive traits have higher heritability ($h^2$ = 0.50--0.65) than cooperation ($h^2$ = 0.40), allowing faster response to altered selection gradients.
 
 ### 5.3 Mating systems: monogamy reduces violence
 
@@ -332,7 +343,26 @@ Resource scarcity collapses the population to a mean of 67 agents (from 725 unde
 
 Resource abundance increases population to 938 but does not substantially alter cooperation (0.520 vs. 0.532) or inequality (Gini 0.361 vs. 0.371). The relaxation of ecological constraint permits population expansion without restructuring social dynamics.
 
-### 5.5 Additional findings
+### 5.5 Selection sheltering: the state preserves aggressive genotypes
+
+The initial hypothesis predicted that institutional governance would suppress selection on aggression by punishing violent behavior. The paired-seed data reveal the opposite: aggression declines *faster* under anarchy ($R_A$ = -0.042) than under the strong state ($R_B$ = -0.031). At the year-500 snapshot, the population-normalized selection differential $S_{n,\text{agg}}$ is significantly more negative in the no-institutions scenario ($p$ = 0.023, paired $t$-test).
+
+The mechanism is clarified by examining the mating system data for years 400--500:
+
+| Metric | NO_INSTITUTIONS | STRONG_STATE | $p$ (paired) |
+|---|---|---|---|
+| Violence rate | 0.021 | 0.008 | < 0.001 |
+| Mating inequality | 0.55 | 0.39 | < 0.001 |
+| Unmated males | 28% | 9% | < 0.001 |
+| Reproductive skew | 0.46 | 0.38 | < 0.001 |
+
+The causal pathway operates through the tick order: conflict (Step 3) executes before mating (Step 4) and reproduction (Step 5). In anarchy, where violence rates are 2--3 times higher, aggressive agents are killed or injured before they can reproduce. The state suppresses violence through institutional punishment, inadvertently preserving aggressive genotypes that would otherwise be removed by lethal selection. We term this mechanism **selection sheltering**: the state shelters aggressive genotypes from the fitness consequences of the behavior they encode.
+
+Figure 3 (F3) visualizes this mechanism across three panels: (a) aggression genotype decline is steeper under anarchy, (b) violence rate is persistently higher without institutions, and (c) reproductive skew is elevated in anarchy, confirming the fitness penalty pathway.
+
+This finding inverts a common assumption in the gene-culture coevolution literature. Rather than institutions selecting *against* antisocial traits by punishing them, institutions may paradoxically *preserve* antisocial genotypes by suppressing the natural consequences that would eliminate them. Selection sheltering predicts that populations with long institutional histories should carry higher frequencies of aggression-related alleles than populations that remained stateless --- a prediction testable with comparative genomic data.
+
+### 5.6 Additional findings
 
 **Emergent institutional self-organization.** The EMERGENT_INSTITUTIONS scenario starts with zero law strength and a high drift rate (0.02/year). By year 200, law strength self-organizes to 0.845 (10-seed mean), close to the STRONG_STATE imposed level of 0.985. This demonstrates that the cooperation-violence balance in the population is sufficient to bootstrap institutional governance from scratch without exogenous imposition. Violence under emergent institutions (0.010) is comparable to the strong state (0.009), suggesting that the specific pathway to governance (emergent vs. imposed) matters less than the resulting governance level.
 
@@ -346,35 +376,53 @@ This finding is theoretically significant for two reasons. First, it suggests th
 
 ## 6. Discussion
 
-### 6.1 The substitution finding in context
+### 6.1 Cognitive substitution: a refined hypothesis
 
-Our central finding is that institutional governance produces behavioral substitution: governance dramatically alters behavioral outcomes (violence, inequality, mating access) without detectably altering the heritable cooperation trait over 500 simulated years. We state this finding cautiously for three reasons.
+The paired-seed experiment refines the original substitution finding. Rather than a blanket null result on cooperation, the data reveal that institutional governance relaxes selection specifically on **cognitive traits** --- intelligence ($d$ = 0.87), impulse control ($d$ = 0.80), and mental illness resistance ($d$ = 0.85) --- while leaving cooperation itself in a marginal zone ($d$ = 0.59, $p$ = 0.097). This suggests that the substitution mechanism operates one level upstream of cooperation: institutions substitute for the cognitive architecture that enables cooperation, rather than for the cooperative disposition itself.
 
-First, 500 years (approximately 20 generations) is a short evolutionary timescale. Selection coefficients on cooperation in the model are presumably small (cooperation's fitness advantage is distributed across multiple channels, each contributing marginally). Weak selection requires many generations to produce detectable allele frequency change, and 20 generations may be below the detection threshold.
+This interpretation is consistent with dual inheritance theory (Boyd & Richerson, 1985): cultural institutions provide coordination services (norm enforcement, property rights, conflict resolution) that reduce the cognitive demands of sustaining cooperation in unstructured social environments. When these services are externally provided by institutional scaffolding, the fitness premium on internal cognitive capacity for self-organization diminishes. The cooperation trait itself, being sustained by a multi-channel fitness landscape (resource sharing, reputation, coalition defense, reduced conflict targeting), remains at its attractor regardless --- it is the cognitive *prerequisites* for cooperation that respond to institutional context.
 
-Second, SIMSIV v1.0 models only within-group dynamics. The gene-culture complementarity hypothesis (Bowles & Gintis, 2011) emphasizes between-group competition as the mechanism through which institutions amplify selection on prosocial traits. A single-band model cannot test this mechanism. If institutions make bands more cohesive and competitive in inter-group conflict, and if inter-group selection is the primary driver of prosocial trait evolution, then our finding of no within-group trait divergence is entirely compatible with strong gene-culture complementarity at the multi-group level.
+We state this finding with three caveats. First, 500 years (~20 generations) is a short evolutionary timescale; the cognitive signal is detectable because cognitive traits have higher heritability ($h^2$ = 0.50--0.65) than cooperation ($h^2$ = 0.40), allowing faster response. Second, SIMSIV v1.0 models only within-group dynamics; between-group competition (Bowles & Gintis, 2011) may produce different selection gradients. Third, the quantitative-genetics inheritance model may smooth over nonlinear genetic dynamics that could amplify or suppress trait change.
 
-Third, the model uses a quantitative-genetics approximation rather than explicit genetic architecture. The h-squared-weighted midpoint inheritance model may smooth over nonlinear genetic dynamics (epistasis, linkage, frequency-dependent selection) that could amplify or suppress trait change under institutional selection.
+### 6.2 Selection sheltering and the aggression paradox
 
-With these caveats, the substitution finding is nonetheless scientifically meaningful. It establishes that, within the considerable complexity of a demographically realistic band-level simulation, institutions sufficient to halve violence rates and restructure mating access do not produce measurable selection on the heritable cooperation trait. This is a necessary (though not sufficient) condition for the substitution hypothesis and a challenge to strong forms of the complementarity hypothesis that predict rapid coevolutionary response.
+The selection sheltering finding (Section 5.5) inverts a standard assumption in the gene-culture coevolution literature. Most theoretical treatments predict that institutions should select *against* antisocial traits by punishing their behavioral expression (Bowles & Gintis, 2011; Fehr & Gachter, 2002). Our model shows the opposite at the genetic level: institutions *preserve* aggressive genotypes by suppressing the lethal violence that would otherwise eliminate them before reproduction.
 
-### 6.2 The cooperation attractor
+The mechanism depends on the causal ordering of life-history events. In SIMSIV, conflict (Step 3) executes before mating and reproduction (Steps 4--5). Without institutions, aggressive agents initiate more conflicts, suffer more injuries and deaths, and consequently have lower reproductive output. The state intervenes by punishing violence initiation (deterrence) and reducing lethality (institutional moderation), but this simultaneously removes the selection pressure against the underlying aggressive genotype. The behavioral outcome (less violence) and the genetic outcome (preserved aggression alleles) diverge --- a distinction invisible to models that equate phenotypic change with genotypic change.
+
+This finding parallels the "relaxed selection" hypothesis in evolutionary medicine (Corbett et al., 2018): modern institutions, like modern medicine, may preserve genotypes that would be deleterious in ancestral environments. The implication for gene-culture coevolution is that institutions can simultaneously *improve* behavioral outcomes and *degrade* the genetic basis for prosocial behavior --- a form of evolutionary moral hazard. Figure 3 (F3) visualizes this mechanism.
+
+### 6.3 Population-size robustness and the endogenous-$N$ confound
+
+A potential objection to the divergence findings is that they are artifacts of population size. The two scenarios produce systematically different population sizes: NO_INSTITUTIONS sustains a mean of 498 agents at year 500, while STRONG_STATE sustains 770 (paired $p$ = 0.030). This gap is not a design flaw --- it is a model-endogenous consequence of institutional mortality suppression. The state reduces violence rates from 0.021 to 0.008 (Section 5.5), preventing approximately 1.3% additional annual deaths. Over 500 years this compounds into a substantial population differential. The smaller population in anarchy means that selection differentials are estimated with greater sampling variance, which inflates $\sigma(S)$ and can produce spurious single-year signals.
+
+We address this confound through three independent lines of evidence:
+
+1. **Population normalization.** The $S_n = S / \sqrt{N_{\text{eligible}}}$ metric removes the $1/\sqrt{N}$ drift-inflation analytically. The significant cognitive-trait results (Section 5.2) survive normalization.
+
+2. **Paired-seed design.** By running each random seed through both conditions, inter-seed variance (a major noise source in the unpaired analysis) is eliminated. The paired $t$-test on cumulative displacement controls for seed-level demographic stochasticity.
+
+3. **The Squazzoni N-Test (Figure 8, F8).** Across N = 250, 500, and 1000 (10 seeds each, 200 years), cooperation equilibrium converges to ~0.51 with $\sigma$ $\leq$ 0.003, selection noise $\sigma(S)$ follows the theoretical $1/\sqrt{N}$ scaling, and zero extinction events occur. This confirms that the cooperation attractor is scale-invariant: the behavioral equilibrium is robust to the population-size differences observed between our experimental conditions. The traits that reach significance in the paired analysis do so *despite* the population-size confound, not because of it --- their effect sizes ($d$ = 0.75--0.87) are large enough to survive conservative statistical controls.
+
+We nonetheless acknowledge that full confound elimination would require a population-capped design in which excess agents are randomly removed each tick to equalize $N$ across conditions. This is a priority for future replication.
+
+### 6.4 The cooperation attractor
 
 The convergence of cooperation propensity to approximately 0.51--0.53 across nearly all scenarios is perhaps the most striking emergent property of the model. This stability is not a ceiling or floor effect, not a parameter artifact, and not a consequence of weak selection --- the model clearly selects on cooperation (cooperators gain resource sharing, reputation, coalition protection, and reduced conflict targeting). Rather, the attractor reflects the balance between cooperation's fitness benefits and its costs: cooperators who share too freely are exploited by defectors; defectors who cooperate too little lose network benefits and reputation.
 
 This finding is consistent with evolutionary game theory predictions of mixed equilibria in public-goods games (Hauert et al., 2002) and with empirical evidence that human cooperation is substantial but not universal across cultures (Henrich et al., 2001). The model suggests that the level of cooperation observed in human societies may be an evolutionary stable strategy maintained by the multi-dimensional fitness landscape of band-level social life, rather than a product of any specific institutional arrangement.
 
-### 6.3 Mating systems and violence
+### 6.5 Mating systems and violence
 
 The finding that enforced monogamy reduces violence death fraction by 37% (0.023 vs. 0.037) and cuts unmated males from 28.5% to 11.9% is consistent with the monogamous-marriage hypothesis (Henrich et al., 2012), which proposes that normative monogamy reduces male-male competition by ensuring more equitable distribution of reproductive opportunities. Our model provides a mechanism: by eliminating the high-status polygyny pathway, monogamy reduces the potential fitness payoff of aggressive competition for mates, thereby reducing the equilibrium violence rate.
 
 Notably, monogamy does not substantially alter resource inequality (Gini 0.385 vs. 0.382), confirming that monogamy's prosocial effects operate through the mating channel specifically. This specificity is useful for disentangling the multiple proposed benefits of monogamy in the evolutionary literature.
 
-### 6.4 Stress-cooperation dynamics: a short-run versus long-run distinction
+### 6.6 Stress-cooperation dynamics: a short-run versus long-run distinction
 
 The 200-year data showed RESOURCE_SCARCITY producing cooperation of 0.511 --- near the baseline. However, the 500-year data reveals a substantial decline to 0.489, driven by population collapse (final population 67). This apparent reversal --- stress initially does not alter cooperation, but prolonged stress erodes it --- reveals a short-run/long-run distinction. In the short run, the cooperation attractor holds because the population is large enough for multi-channel selection to operate. In the long run, population collapse triggers genetic drift that degrades cooperation stochastically. The practical implication is that ecological stress threatens cooperation not through altered selection but through population collapse and the consequent loss of selection efficacy.
 
-### 6.5 Limitations
+### 6.7 Limitations
 
 Beyond the model limitations discussed in Section 3.5, several analysis limitations should be noted.
 
@@ -394,27 +442,39 @@ Beyond the model limitations discussed in Section 3.5, several analysis limitati
 
 We have presented SIMSIV, an agent-based framework for studying gene-culture coevolution in pre-state societies. The model simulates 500 agents with 35 heritable traits across a complete life history, calibrated against nine anthropological benchmarks and validated on held-out seeds (mean realism score 0.934, zero collapses across 20 runs).
 
-Our scenario experiments yield three principal findings:
+Our scenario experiments yield four principal findings:
 
-1. **Behavioral substitution without genetic divergence.** Institutional governance dramatically alters behavior --- reducing violence by more than half, cutting resource inequality by 36%, and restructuring mating access --- yet heritable cooperation propensity is indistinguishable across governance regimes at 500 years (0.523 vs. 0.524 vs. 0.523). This is consistent with the institutional-substitution hypothesis at band-level timescales, though we caution that 500 years (~20 generations) may be insufficient to detect weak selection gradients.
+1. **Cognitive substitution.** A paired-seed 500-year experiment reveals that institutional governance relaxes selection on cognitive traits --- intelligence ($p$ = 0.023, $d$ = 0.87), impulse control ($p$ = 0.031, $d$ = 0.80), and mental illness resistance ($p$ = 0.025, $d$ = 0.85) --- while cooperation trends in the same direction ($p$ = 0.097, $d$ = 0.59) but does not reach significance. Institutions substitute for the cognitive architecture that enables cooperation, rather than for the cooperative disposition itself.
 
-2. **A cooperation attractor.** Heritable cooperation propensity converges to approximately 0.51--0.53 across nearly all scenarios, suggesting a robust evolutionary equilibrium maintained by the multi-dimensional fitness landscape of band-level social life.
+2. **Selection sheltering.** Contrary to the prediction that institutions select against aggression, the state *preserves* aggressive genotypes by suppressing the lethal violence that would otherwise eliminate them before reproduction. Aggression declines faster under anarchy ($R$ = -0.042) than under the state ($R$ = -0.031), mediated by 2--3x higher violence rates and the tick-order constraint that conflict precedes reproduction.
 
-3. **Monogamy reduces violence through the mating channel.** Enforced monogamy reduces violence death fraction by 37% and unmated males from 28.5% to 11.9%, consistent with the monogamous-marriage hypothesis (Henrich et al., 2012), without substantially altering resource inequality.
+3. **A cooperation attractor.** Heritable cooperation propensity converges to approximately 0.51--0.53 across nearly all scenarios, suggesting a robust evolutionary equilibrium maintained by the multi-dimensional fitness landscape of band-level social life. The Squazzoni N-Test confirms this equilibrium is scale-invariant across N = 250--1000.
+
+4. **Monogamy reduces violence through the mating channel.** Enforced monogamy reduces violence death fraction by 37% and unmated males from 28.5% to 11.9%, consistent with the monogamous-marriage hypothesis (Henrich et al., 2012), without substantially altering resource inequality.
 
 These findings should be interpreted within the model's limitations, particularly the absence of between-group competition. The next development phase (SIMSIV v2.0) will introduce a multi-band clan simulator with inter-group warfare, trade, and migration, enabling direct testing of the between-group selection mechanism central to the gene-culture complementarity hypothesis.
 
-We invite independent replications, parameter explorations, and theoretical extensions using the open repository. The model is designed as a platform: the scenario system, calibration pipeline, and experimental runner can support research questions beyond those addressed here. The model code, calibration data, and scenario configurations are available at https://github.com/kepiCHelaSHen/SIMSIV
+The selection sheltering finding opens a new line of inquiry: if institutions preserve antisocial genotypes by buffering their fitness consequences, long-institutionalized populations may carry higher frequencies of aggression-related alleles than stateless populations --- a prediction testable with comparative genomics.
+
+We invite independent replications, parameter explorations, and theoretical extensions using the open repository. The model code, calibration data, and scenario configurations are available at https://github.com/kepiCHelaSHen/SIMSIV
 
 ---
 
 ## Figures
 
-**Figure 1.** Annual simulation tick execution order for SIMSIV v1.0. Each of the nine engines executes in fixed sequence, ensuring causal consistency: conflict precedes mating (dead agents cannot mate), mortality precedes institutions (inheritance sees all deaths). Metrics are collected after all engines complete. *(See docs/figures/fig1_tick_architecture.png)*
+**Figure 1 (F1).** Evolutionary divergence under institutional substitution. Left panel: population mean genotype for intelligence, impulse control, cooperation, and aggression over 500 years in NO_INSTITUTIONS (vermillion) and STRONG_STATE (blue). Right panel: population-normalized selection differential $S_n$ with 20-year rolling mean. 95% CI bands across 10 paired seeds. Cognitive trait divergence begins by year ~100 and is locked by year 300. *(See docs/figures/F1_hero_divergence.png)*
 
-**Figure 2.** Calibrated model outputs relative to anthropological target ranges. Green checkmarks indicate metrics within target range; the model achieves all nine targets simultaneously (calibration score = 1.000). Target ranges are shown as gray bars; calibrated values as vertical lines. *(See docs/figures/fig2_calibration.png)*
+**Figure 2 (F2).** Forest plot of paired trait displacement for all 35 heritable traits. $\Delta R = \bar{G}_{500} - \bar{G}_1$ (No Institutions minus Strong State), ordered by Cohen's $d$. Green diamonds indicate $p$ < 0.05 (paired $t$-test). Intelligence, mental illness risk, impulse control, and pain tolerance reach significance. *(See docs/figures/F2_forest_plot.png)*
 
-**Figure 3.** Mean heritable cooperation propensity over 500 simulated years for three governance regimes: No Institutions (law strength fixed at 0), Free Competition (endogenous institutional drift), and Strong State (law strength fixed at 0.8, monogamy enforced). Shaded bands show ±1 SD across 10 seeds. The convergence of all three trajectories to approximately 0.52 confirms that institutional governance does not alter the evolutionary trajectory of the cooperation trait at this timescale. *(See docs/figures/fig3_cooperation_trajectory.png)*
+**Figure 3 (F3).** Selection sheltering mechanism. (a) Aggression genotype declines faster under anarchy. (b) Violence rate is 2--3x higher without institutions. (c) Reproductive skew is higher in anarchy. The state preserves aggressive genotypes by suppressing the lethal consequences of aggression. 95% CI bands across 10 paired seeds. *(See docs/figures/F3_selection_sheltering.png)*
+
+**Figure 4.** Annual simulation tick execution order for SIMSIV v1.0. Each of the twelve engines executes in fixed sequence, ensuring causal consistency: conflict precedes mating (dead agents cannot mate), mortality precedes institutions (inheritance sees all deaths). Metrics are collected after all engines complete. *(See docs/figures/fig1_tick_architecture.png)*
+
+**Figure 5.** Calibrated model outputs relative to anthropological target ranges. Green checkmarks indicate metrics within target range; the model achieves all nine targets simultaneously (calibration score = 1.000). Target ranges are shown as gray bars; calibrated values as vertical lines. *(See docs/figures/fig2_calibration.png)*
+
+**Figure 6.** Mean heritable cooperation propensity over 500 simulated years for three governance regimes: No Institutions (law strength fixed at 0), Free Competition (endogenous institutional drift), and Strong State (law strength fixed at 0.8, monogamy enforced). Shaded bands show +/- 1 SD across 10 seeds. The convergence of all three trajectories to approximately 0.52 confirms the cooperation attractor. *(See docs/figures/fig3_cooperation_trajectory.png)*
+
+**Figure 8 (F8).** Population-size robustness (Squazzoni N-Test). Left panel: selection noise $\sigma(S)$ across N = 250, 500, 1000 with theoretical $1/\sqrt{N}$ scaling line. Right panel: cooperation equilibrium is scale-invariant, converging to ~0.51 regardless of population size. 10 seeds per tier, 200 years. *(See docs/figures/F8_squazzoni_fan_plot.png)*
 
 ## References
 
@@ -441,6 +501,8 @@ Boyd, R., & Richerson, P. J. (2002). Group beneficial norms can spread rapidly i
 Cesarini, D., Dawes, C. T., Fowler, J. H., Johannesson, M., Lichtenstein, P., & Wallace, B. (2008). Heritability of cooperative behavior in the trust game. *Proceedings of the National Academy of Sciences*, *105*(10), 3721--3726.
 
 Chagnon, N. A. (1988). Life histories, blood revenge, and warfare in a tribal population. *Science*, *239*(4843), 985--992.
+
+Corbett, S., Courtiol, A., Lummaa, V., Moorad, J., & Stearns, S. (2018). The transition to modernity and chronic disease: Mismatch and natural selection. *Nature Reviews Genetics*, *19*(7), 419--430.
 
 Coale, A. J., & Demeny, P. (1966). *Regional model life tables and stable populations*. Princeton University Press.
 

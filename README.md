@@ -8,8 +8,12 @@ institutional economics. Every agent is a complete simulated person with a
 genome, developmental history, medical biography, earned skills, culturally
 transmitted beliefs, and a life story from birth to death.
 
-**Band-level simulator v1.0 — 35 heritable traits, 9 engines, calibrated to
+**Band-level simulator v1.0 — 35 heritable traits, 12 engines, calibrated to
 score 1.000 against 9 anthropological benchmarks.**
+
+**v2.0 JASSS Resubmission** — Paired-seed 500-year divergence experiment
+confirms cognitive substitution (intelligence p=0.023, impulse control p=0.031)
+and discovers selection sheltering (the state preserves aggressive genotypes).
 
 All findings are emergent. Nothing is scripted.
 
@@ -99,13 +103,22 @@ cardiovascular_risk, autoimmune_risk, metabolic_risk, degenerative_risk
 
 These arise from interaction rules — not scripted outcomes:
 
+### v2.0 Paired-Seed Divergence (500yr, 10 paired seeds)
+
+- **Cognitive substitution:** Intelligence (p=0.023, d=0.87) and impulse control
+  (p=0.031, d=0.80) are displaced significantly more under anarchy than the state
+- **Selection sheltering:** The state *preserves* aggressive genotypes by suppressing
+  the lethal violence that would otherwise eliminate them before reproduction
+- **Cooperation attractor:** Cooperation converges to ~0.51 regardless of governance
+  regime — scale-invariant across N=250-1000 (Squazzoni N-Test)
+
+### v1.0 Scenario Experiments
+
 - Cooperation and intelligence reliably selected for across all scenarios
 - Aggression reliably selected against (5 independent fitness cost channels)
 - ENFORCED_MONOGAMY reduces violence 37%, unmated males 65%
 - STRONG_STATE reduces Gini 40%, violence 49% — without changing cooperation trait
 - Law strength self-organizes from 0 → 0.83 in EMERGENT_INSTITUTIONS over 200yr
-- Resource scarcity produces the highest cooperation (stress-interdependence)
-- Elite polygyny paradox: highest lifespan, near-zero population growth
 - Cooperation trait is a robust emergent attractor (max sensitivity r = 0.20)
 
 ---
@@ -146,14 +159,16 @@ SIMSIV/
 ├── config.py              # ~257 tunable parameters
 ├── simulation.py          # Annual tick orchestrator
 ├── models/               # Agent, Society, Environment
-├── engines/              # 9 simulation subsystems
+├── engines/              # 12 simulation subsystems
 ├── metrics/              # ~130 tracked metrics per tick
 ├── experiments/          # Scenario runner and definitions
 ├── autosim/              # Calibration engine + results
-├── scripts/              # Validation, experiments, sensitivity analysis
+├── scripts/              # Validation, experiments, divergence scripts
+├── results/              # RESULTS_SUMMARY.md (definitive data manifest)
 ├── dashboard/            # Streamlit visualization
-├── tests/                # 22 test cases
-├── docs/                 # Architecture, validation, calibration docs
+├── tests/                # Test suite
+├── docs/                 # ODD Protocol, manuscript, figures, validation
+│   └── figures/          # 7 publication figures (F1-F8 + originals)
 ├── devlog/               # Full development history
 └── prompts/              # Executable build prompts
 ```

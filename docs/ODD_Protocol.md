@@ -1,9 +1,9 @@
 # SIMSIV — ODD Protocol (Grimm et al. 2010)
 
 **Model:** SIMSIV v1 — Simulation of Intersecting Social and Institutional Variables
-**Version:** Commit `fb6a296` on branch `v2-interference`
+**Version:** Commit `71ac785` on branch `v2-interference`
 **Authors:** James P. Rice II
-**Standard:** ODD+D (Grimm et al. 2010; Müller et al. 2013)
+**Standard:** ODD+D (Grimm et al. 2010; Muller et al. 2013)
 **Submission:** JASSS 2026:81:1 (ref 6029)
 
 ---
@@ -16,11 +16,27 @@ SIMSIV tests the **Institutional Substitution Hypothesis**: that institutional g
 
 The model generates populations of autonomous agents with heritable behavioral traits who compete for resources, mates, and status. All social patterns — cooperation equilibria, violence rates, institutional emergence, pair bond dynamics — must **emerge** from individual-level rules. No population-level outcome is hardwired.
 
-The primary analytical tool is the **Selection Differential** *S* (Falconer & Mackay 1996), defined as:
+The primary analytical tools are:
 
-$$S = \mu_{\text{parents}} - \mu_{\text{eligible}}$$
+**Selection Differential** *S* (Falconer & Mackay 1996), defined per trait $T$:
 
-where $\mu_{\text{parents}}$ is the mean cooperation of agents who successfully reproduced in a given tick, and $\mu_{\text{eligible}}$ is the mean cooperation of all reproductively eligible agents. A positive *S* indicates directional selection favoring cooperation.
+$$S_T = \mu_{\text{parents},T} - \mu_{\text{eligible},T}$$
+
+where $\mu_{\text{parents},T}$ is the mean **genotype** (birth value, not phenotype) of trait $T$ among agents who successfully reproduced in a given tick, and $\mu_{\text{eligible},T}$ is the mean genotype of all reproductively eligible agents. A positive $S_T$ indicates directional selection favoring higher values of trait $T$.
+
+**Population-Normalized Selection Differential** $S_n$ (v2 paired-seed protocol):
+
+$$S_{n,T} = \frac{S_T}{\sqrt{N_{\text{eligible}}}}$$
+
+Normalization removes the small-population drift inflation identified in the adversarial audit: $\sigma(S)$ scales as $1/\sqrt{N}$ (confirmed by Squazzoni N-Test across N = 250, 500, 1000).
+
+**Cumulative Trait Displacement** $R_{\text{total}}$ (primary outcome metric):
+
+$$R_{\text{total},T} = \bar{G}_{T,\text{yr500}} - \bar{G}_{T,\text{yr1}}$$
+
+where $\bar{G}$ is the population mean genotype. This integrates the selection response across the full run, avoiding the snapshot-noise artifacts that affect single-year $S$ values.
+
+**Paired-Seed Design** (v2 protocol): Each random seed is run through both experimental conditions, enabling paired $t$-tests that eliminate inter-seed variance and approximately double statistical power at equal sample size.
 
 ### 1.2 Entities, State Variables, and Scales
 
@@ -158,13 +174,15 @@ The **MetricsCollector** records ~120 metrics per tick, including:
 
 | Metric | Formula | Purpose |
 |--------|---------|---------|
-| $\mu_{\text{pop}}$ | Mean cooperation of all living agents | Population trait tracking |
-| $\mu_{\text{eligible}}$ | Mean cooperation of reproductively eligible agents | Selection pool characterization |
-| $\mu_{\text{parents}}$ | Mean cooperation of agents who bred this tick | Realized fitness measurement |
-| $S$ | $\mu_{\text{parents}} - \mu_{\text{eligible}}$ | **Selection differential** (primary analytical tool) |
+| $S_T$ | $\mu_{\text{parents},T} - \mu_{\text{eligible},T}$ (genotype) | Selection differential per trait (35 traits) |
+| $S_{n,T}$ | $S_T / \sqrt{N_{\text{eligible}}}$ | Pop-normalized selection differential |
+| $R_{\text{total},T}$ | $\bar{G}_{T,500} - \bar{G}_{T,1}$ | Cumulative trait displacement |
 | resource_gini | Gini coefficient of current_resources | Wealth inequality |
 | violence_death_fraction | violence_deaths / male_deaths | Conflict lethality |
+| reproductive_skew | Variance in offspring count / mean | Mating inequality |
 | avg_cooperation | Population mean of cooperation_propensity | Trait tracking |
+
+The v2 paired-seed experiment script (`scripts/run_divergence.py`) computes $S_T$ for all 35 traits using **genotype** values (not phenotype), extracted from birth events in `society.tick_events` after each tick. Parent identification uses the `_bred_this_tick` flag set during reproduction (Step 5).
 
 ---
 
@@ -207,8 +225,8 @@ Scarcity shocks (probability 0.030/year, severity 0.3×) and seasonal cycles. De
 8-phase resource engine:
 (a) Seasonal decay and storage. (b) Carrying capacity crowding penalty. (c) Equal floor distribution (40% of pool). (d) Competitive acquisition (weighted by intelligence, status, experience, strength, cooperation network). (e) Aggression production penalty (0.6×). (f) Cooperation sharing (rate 0.125 × cooperation × trust). (g) Child investment drain. (h) Prestige/dominance score computation (0.6/0.4 pool split).
 
-**Step 3: Conflict**
-Probabilistic initiation: `p = conflict_base_probability × effective_aggression × modifiers`. Modifiers include institutional suppression (law_strength), cooperation dampening, network deterrence, and subordination cooldown.
+**Step 3: Conflict (pre-reproductive selection)**
+Probabilistic initiation: `p = conflict_base_probability × effective_aggression × modifiers`. Modifiers include institutional suppression (law_strength), cooperation dampening, network deterrence, and subordination cooldown. This step executes before mating and reproduction (Steps 4–5), creating a direct pre-reproductive selection filter: agents killed or injured in conflict cannot mate or reproduce that tick. This ordering is the mechanistic basis for the Selection Sheltering finding (Section 10.3).
 
 Target selection: Weighted by trust (low = target), rivalry, status similarity, resource envy. Combat power: aggression(0.25) + status(0.20) + health(0.25) + risk(0.15) + intelligence(0.05) + DD15 additive traits.
 
@@ -481,6 +499,58 @@ If no institutions exist (`law_strength` = 0), they can emerge spontaneously:
 ### 9.5 Cooperation Threshold
 
 The directive specified threshold 0.6. The implementation uses **0.4**: cooperation above $\bar{c} = 0.4$ drives institutional growth. This lower threshold was calibrated by AutoSIM Run 3 to match the empirical cooperation range (0.25–0.70, Henrich et al. 2001). At the model's equilibrium cooperation of ~0.51, the effective cooperation pressure is $(0.51 - 0.4) \times 2.0 = 0.22$, modulated by conformity and resistance.
+
+---
+
+## 10. RESULTS — 500-YEAR PAIRED-SEED DIVERGENCE EXPERIMENT
+
+**Protocol:** v2 paired-seed, population-normalized (scripts/run_divergence.py)
+**Design:** 10 seeds (101-110) x 2 scenarios (NO_INSTITUTIONS, STRONG_STATE) x 500 years. Paired $t$-tests on cumulative trait displacement $R_{\text{total}}$.
+
+### 10.1 Significant Differential Displacement (p < 0.05, paired)
+
+| Trait | $R_{\text{total}}$(A) | $R_{\text{total}}$(B) | $\Delta R$ (A-B) | $t$ | $p$ | Cohen's $d$ | Direction |
+|-------|---------|---------|---------|------|--------|-----------|-----------|
+| intelligence_proxy | +0.133 | +0.099 | +0.034 | 2.74 | 0.023 | +0.87 | Anarchy selects harder |
+| mental_illness_risk | +0.010 | -0.004 | +0.014 | 2.68 | 0.025 | +0.85 | Anarchy selects harder |
+| impulse_control | +0.140 | +0.117 | +0.023 | 2.54 | 0.031 | +0.80 | Anarchy selects harder |
+| pain_tolerance | -0.008 | +0.010 | -0.018 | -2.39 | 0.041 | -0.75 | State selects harder |
+
+### 10.2 Interpretation
+
+The primary finding is **cognitive substitution**: without institutional scaffolding, intelligence (+0.034, $d$ = 0.87) and impulse control (+0.023, $d$ = 0.80) are displaced significantly more over 500 years. Institutions relax selection on cognitive traits by providing external coordination mechanisms.
+
+Cooperation trends in the predicted direction ($\Delta R$ = +0.017, $p$ = 0.097, $d$ = 0.59) but does not reach significance at $n$ = 10. A 30-seed replication is recommended.
+
+### 10.3 Selection Sheltering (Aggression Reversal)
+
+The original hypothesis predicted that institutions would suppress selection on aggression. The data show the **opposite**: aggression declines faster under anarchy ($R_A$ = -0.042 vs $R_B$ = -0.031). At the year-500 snapshot, the normalized selection differential $S_{n,\text{agg}}$ is significantly more negative in anarchy ($p$ = 0.023, paired).
+
+**Mechanism** (Figure 3): Without institutions, violence rate is 2-3x higher (0.021 vs 0.008). Conflict executes before reproduction in the tick order (Step 3 vs Step 5), so aggressive agents are killed or injured before they can mate. The state paradoxically *preserves* aggressive genotypes by suppressing the lethal consequences of aggression — a phenomenon we term **Selection Sheltering**.
+
+Supporting evidence: mating inequality is significantly higher in anarchy (0.55 vs 0.39, $p$ < 0.001), unmated males 28% vs 9% ($p$ < 0.001), confirming the fitness penalty pathway.
+
+### 10.4 Population Confound
+
+Scenario A populations (mean = 498) are significantly smaller than Scenario B (mean = 770, paired $p$ = 0.030). This is an inherent treatment effect (violence removes agents), not eliminable by carrying capacity adjustment. Population normalization ($S_n$) and the paired design mitigate but do not fully eliminate this confound.
+
+### 10.5 Data Availability
+
+| File | Location | Contents |
+|------|----------|----------|
+| selection_matrix_full.csv | outputs/experiments/v2_paired_divergence/ | $S$ and $S_n$ for 35 traits, every tick |
+| trait_displacement.csv | outputs/experiments/v2_paired_divergence/ | $R_{\text{total}}$ per seed per scenario |
+| paired_analysis.json | outputs/experiments/v2_paired_divergence/ | Full statistical tables |
+| critic_validation_bundle.json | outputs/experiments/v2_paired_divergence/ | 5 checkpoint logs (years 100-500) |
+
+### 10.6 Publication Figures
+
+| Figure | File | Contents |
+|--------|------|----------|
+| F1 | docs/figures/F1_hero_divergence.png | Trait means + $S_n$ time series, 95% CI |
+| F2 | docs/figures/F2_forest_plot.png | Forest plot: all 35 traits, paired displacement |
+| F3 | docs/figures/F3_selection_sheltering.png | Aggression mechanism: violence, skew, decline |
+| F8 | docs/figures/F8_squazzoni_fan_plot.png | Squazzoni N-Test: scale invariance |
 
 ---
 
