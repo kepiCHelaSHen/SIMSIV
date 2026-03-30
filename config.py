@@ -23,27 +23,27 @@ class Config:
 
     # ── DD01: Mating system ──────────────────────────────────────────
     mating_system: str = "unrestricted"  # "unrestricted", "monogamy", "elite_polygyny"
-    female_choice_strength: float = 0.6  # 0=random, 1=pure best-available
+    female_choice_strength: float = 0.339674  # 0=random, 1=pure best-available
     male_competition_intensity: float = 0.7
-    pair_bond_strength: float = 0.5
-    pair_bond_dissolution_rate: float = 0.1  # per year probability of bond breaking
+    pair_bond_strength: float = 0.679299
+    pair_bond_dissolution_rate: float = 0.02  # per year probability of bond breaking
     max_mates_per_male: int = 999  # effectively unlimited for unrestricted
     mating_pool_fraction: float = 0.7  # fraction of eligible agents who attempt mating each tick
     max_mates_per_female: int = 1  # default monandrous
     female_choosiness_age_effect: float = -0.01  # choosiness per year past 30
     male_contest_injury_risk: float = 0.05  # health damage to loser in mating contest
     infidelity_enabled: bool = True
-    infidelity_base_rate: float = 0.05  # annual EPC probability for bonded females
+    infidelity_base_rate: float = 0.034349  # annual EPC probability for bonded females
     jealousy_detection_rate: float = 0.4  # base probability of detecting infidelity
     paternity_certainty_threshold: float = 0.7  # below this, male reduces investment
-    widowhood_mourning_years: int = 1  # years before re-entering mating pool
+    widowhood_mourning_years: int = 0  # years before re-entering mating pool
 
     # ── Reproduction (base) ──────────────────────────────────────────
-    age_first_reproduction: int = 15
-    age_max_reproduction_female: int = 45
+    age_first_reproduction: int = 14
+    age_max_reproduction_female: int = 49
     age_max_reproduction_male: int = 65
     child_dependency_years: int = 5
-    base_conception_chance: float = 0.5  # per mating attempt per year (pre-industrial ~5-7 children/woman)
+    base_conception_chance: float = 0.8  # per mating attempt per year (pre-industrial ~5-7 children/woman)
     mutation_sigma: float = 0.05  # Gaussian noise on heritable traits
     child_survival_base: float = 0.85  # baseline child survival to adulthood
 
@@ -56,43 +56,43 @@ class Config:
 
     # ── DD06: Household and childhood ──────────────────────────────
     birth_interval_years: int = 2              # minimum years between births per female
-    childhood_mortality_annual: float = 0.02   # annual death risk for children 0-15
-    orphan_mortality_multiplier: float = 2.0   # mortality multiplier for parentless children
-    grandparent_survival_bonus: float = 0.05   # child survival bonus if grandparent alive
+    childhood_mortality_annual: float = 0.054119   # annual death risk for children 0-15
+    orphan_mortality_multiplier: float = 1.2   # mortality multiplier for parentless children
+    grandparent_survival_bonus: float = 0.083311   # child survival bonus if grandparent alive
     sibling_trust_growth: float = 0.01         # annual trust growth between co-living siblings
     max_lifetime_births: int = 12              # hard cap on births per female
-    maternal_health_cost: float = 0.03         # health cost per birth to mother
-    maternal_age_fertility_decline: float = 0.03  # fertility decline per year past 30 (female)
+    maternal_health_cost: float = 0.027407         # health cost per birth to mother
+    maternal_age_fertility_decline: float = 0.033  # fertility decline per year past 30 (female)
 
     # ── DD02: Resource model ────────────────────────────────────────
-    resource_abundance: float = 1.0  # multiplier on base per-agent resources
+    resource_abundance: float = 0.984895  # multiplier on base per-agent resources
     resource_volatility: float = 0.2  # year-to-year random variation
     carrying_capacity: int = 800
     base_resource_per_agent: float = 10.0  # base survival resources per tick
     status_resource_fraction: float = 0.3  # fraction of total resources as status-type
     inheritance_model: str = "equal_split"  # "equal_split", "primogeniture", "none"
 
-    resource_equal_floor: float = 0.25  # fraction of survival pool as equal share
+    resource_equal_floor: float = 0.4  # fraction of survival pool as equal share
     resource_decay_rate: float = 0.5  # fraction of resources retained year-to-year
-    aggression_production_penalty: float = 0.3  # competitive weight penalty for aggression
-    cooperation_network_bonus: float = 0.05  # competitive weight bonus per trusted ally
-    cooperation_sharing_rate: float = 0.08  # max fraction shared with allies
+    aggression_production_penalty: float = 0.6  # competitive weight penalty for aggression
+    cooperation_network_bonus: float = 0.059346  # competitive weight bonus per trusted ally
+    cooperation_sharing_rate: float = 0.124631  # max fraction shared with allies
     cooperation_trust_threshold: float = 0.5  # min trust to share / count as ally
     cooperation_min_propensity: float = 0.25  # min cooperation to participate in sharing
-    wealth_diminishing_power: float = 0.7  # exponent for diminishing returns on wealth
-    subsistence_floor: float = 1.0  # minimum resources after all calculations
+    wealth_diminishing_power: float = 0.736977  # exponent for diminishing returns on wealth
+    subsistence_floor: float = 1.17297  # minimum resources after all calculations
     tax_rate: float = 0.0  # fraction taken from top earners (0 = no redistribution)
-    child_investment_per_year: float = 0.5  # resources per dependent child per year
-    scarcity_severity: float = 0.6  # resource multiplier during scarcity events
+    child_investment_per_year: float = 0.349974  # resources per dependent child per year
+    scarcity_severity: float = 0.3  # resource multiplier during scarcity events
 
     # ── DD03: Conflict model ────────────────────────────────────────
-    violence_cost_health: float = 0.15  # health cost per conflict (to loser)
-    violence_cost_resources: float = 0.1  # resource fraction lost by loser
-    violence_death_chance: float = 0.05  # chance of death per conflict (loser)
-    conflict_base_probability: float = 0.05  # random baseline conflict chance per agent
+    violence_cost_health: float = 0.176399  # health cost per conflict (to loser)
+    violence_cost_resources: float = 0.14208  # resource fraction lost by loser
+    violence_death_chance: float = 0.115422  # chance of death per conflict (loser)
+    conflict_base_probability: float = 0.15  # random baseline conflict chance per agent
     jealousy_conflict_multiplier: float = 2.0  # multiplier when jealousy triggers conflict
 
-    flee_threshold: float = 0.3           # risk_tolerance below this → chance to flee
+    flee_threshold: float = 0.293889           # risk_tolerance below this → chance to flee
     network_deterrence_factor: float = 0.1  # per ally, reduces targeting weight
     bystander_trust_update: bool = True   # witnesses to violence update trust
     bystander_count: int = 3              # max witnesses per conflict
@@ -105,8 +105,8 @@ class Config:
     # ── DD13: Mortality and demographics ────────────────────────────
     age_death_base: int = 60  # mean natural death age
     age_death_variance: int = 15  # standard deviation of natural death age
-    mortality_base: float = 0.02  # background annual death rate (accidents, disease)
-    health_decay_per_year: float = 0.01  # base health decay rate
+    mortality_base: float = 0.006212  # background annual death rate (accidents, disease)
+    health_decay_per_year: float = 0.01025  # base health decay rate
     min_health_survival: float = 0.05  # below this health, agent dies
 
     # ── DD05: Institutions ─────────────────────────────────────────
@@ -140,8 +140,8 @@ class Config:
     dead_agent_ledger_cleanup: bool = True    # remove dead agents from ledgers each tick
     max_reputation_ledger_size: int = 100     # configurable ledger cap
 
-    male_risk_mortality_multiplier: float = 1.8   # extra male mortality age 15-40
-    childbirth_mortality_rate: float = 0.02       # per-birth female mortality risk
+    male_risk_mortality_multiplier: float = 2.120117   # extra male mortality age 15-40
+    childbirth_mortality_rate: float = 0.01       # per-birth female mortality risk
     adolescent_fertility_fraction: float = 0.6    # fertility multiplier age 15-19
     fertility_peak_age: int = 24                  # age of peak fertility
 
@@ -170,12 +170,12 @@ class Config:
     seasonal_cycle_length: int = 3             # years per full cycle (1=annual, 3=triennial)
     resource_storage_cap: float = 20.0         # max resources an agent can store
     storage_intelligence_bonus: float = 0.2    # intelligence reduces storage decay
-    seasonal_conflict_boost: float = 0.2       # conflict boost during lean cycle phase
+    seasonal_conflict_boost: float = 0.29409       # conflict boost during lean cycle phase
     birth_timing_sensitivity: float = 0.2      # how much cycle affects conception
 
     # ── DD09: Disease and epidemics ─────────────────────────────────
-    epidemic_base_probability: float = 0.02       # annual chance of epidemic starting
-    epidemic_lethality_base: float = 0.15         # base mortality during epidemic year
+    epidemic_base_probability: float = 0.029977       # annual chance of epidemic starting
+    epidemic_lethality_base: float = 0.254318         # base mortality during epidemic year
     epidemic_duration_years: int = 2              # peak epidemic duration
     epidemic_child_vulnerability: float = 3.0     # mortality multiplier for age 0-10
     epidemic_elder_vulnerability: float = 2.0     # mortality multiplier for age 55+

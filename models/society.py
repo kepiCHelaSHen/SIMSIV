@@ -3,6 +3,7 @@ Society model — holds all agents, environment, and coordinates the simulation 
 """
 
 from __future__ import annotations
+from collections import deque
 from typing import Optional
 
 import numpy as np
@@ -23,8 +24,7 @@ class Society:
         self.year = 0
         self.agents: dict[int, Agent] = {}
         self.environment = Environment(config, rng)
-        self._event_window: list[dict] = []        # rolling buffer, last N events
-        self._event_window_size: int = 500          # configurable cap
+        self._event_window: deque[dict] = deque(maxlen=500)  # rolling buffer, last N events
         self.event_type_counts: dict[str, int] = {} # running totals by type
         self.tick_events: list[dict] = []  # events from current tick only
         self.equilibrium_flagged: bool = False
@@ -79,10 +79,7 @@ class Society:
         if "year" not in event:
             event["year"] = self.year
         self.tick_events.append(event)
-        # Rolling window — trim from front when over cap
         self._event_window.append(event)
-        if len(self._event_window) > self._event_window_size:
-            self._event_window.pop(0)
         # Accumulate type counts (never trimmed — cheap summary)
         etype = event.get("type", "unknown")
         self.event_type_counts[etype] = self.event_type_counts.get(etype, 0) + 1

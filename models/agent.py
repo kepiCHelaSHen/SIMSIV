@@ -694,6 +694,13 @@ def breed(parent1: Agent, parent2: Agent, rng: np.random.Generator,
             pop_mean = pop_trait_means[trait_name]
         genetic_val = h2 * blend + (1.0 - h2) * pop_mean
 
+        # JASSS Req 2: MA trait locking — malicious agents pass exact genotype
+        if getattr(parent1, '_is_ma', False) or getattr(parent2, '_is_ma', False):
+            ma_parent = parent1 if getattr(parent1, '_is_ma', False) else parent2
+            child_val = ma_parent.genotype.get(trait_name, genetic_val)
+            setattr(child, trait_name, float(np.clip(child_val, 0.0, 1.0)))
+            continue
+
         # Mutation: rare large jumps or normal noise
         if rare_rate > 0 and rng.random() < rare_rate:
             mutation = rng.normal(0, rare_sigma)
@@ -705,6 +712,10 @@ def breed(parent1: Agent, parent2: Agent, rng: np.random.Generator,
 
     # DD16: Store genotype (original genetic values, never modified)
     child.genotype = {t: getattr(child, t) for t in HERITABLE_TRAITS}
+
+    # Propagate MA flag to offspring
+    if getattr(parent1, '_is_ma', False) or getattr(parent2, '_is_ma', False):
+        child._is_ma = True
 
     # DD16: Store parental trait environment for developmental modeling
     child.developmental_parent_aggression = (

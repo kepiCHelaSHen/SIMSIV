@@ -15,7 +15,7 @@ def test_event_window_does_not_exceed_cap():
     soc, _, _ = _make_society()
     for i in range(2000):
         soc.add_event({"type": "test", "description": f"e{i}"})
-    assert len(soc._event_window) <= soc._event_window_size
+    assert len(soc._event_window) <= soc._event_window.maxlen
 
 
 def test_event_type_counts_accumulate_without_cap():
@@ -30,11 +30,11 @@ def test_event_type_counts_accumulate_without_cap():
 
 def test_event_window_preserves_most_recent():
     soc, _, _ = _make_society()
-    soc._event_window_size = 5
-    for i in range(10):
-        soc.add_event({"type": "test", "n": i})
-    ns = [e["n"] for e in soc._event_window]
-    assert ns == [5, 6, 7, 8, 9], f"Expected last 5 events, got {ns}"
+    for i in range(600):
+        soc.add_event({"type": "test", "description": f"e{i}"})
+    assert len(soc._event_window) == 500
+    assert soc._event_window[-1]["description"] == "e599"
+    assert soc._event_window[0]["description"] == "e100"
 
 
 def test_partner_index_bond_creation():

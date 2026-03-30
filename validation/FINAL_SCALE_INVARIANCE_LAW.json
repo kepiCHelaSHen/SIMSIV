@@ -1,0 +1,77 @@
+[
+  {
+    "param": "population_size",
+    "default": 500,
+    "conditions": {
+      "baseline": 250,
+      "mid": 500,
+      "high": 1000
+    },
+    "n_seeds": 10,
+    "stability": {
+      "resource_gini": {
+        "baseline_mean": 0.351879,
+        "plus20_mean": 0.352006,
+        "minus20_mean": 0.354163,
+        "sigma": 0.001048,
+        "gate": "PASS"
+      },
+      "mating_inequality": {
+        "baseline_mean": 0.589576,
+        "plus20_mean": 0.55718,
+        "minus20_mean": 0.566856,
+        "sigma": 0.013578,
+        "gate": "PASS"
+      },
+      "violence_death_fraction": {
+        "baseline_mean": 0.0,
+        "plus20_mean": 0.042424,
+        "minus20_mean": 0.0,
+        "sigma": 0.019999,
+        "gate": "PASS"
+      },
+      "pop_growth_rate": {
+        "baseline_mean": -0.008501,
+        "plus20_mean": -0.008791,
+        "minus20_mean": -0.000465,
+        "sigma": 0.003858,
+        "gate": "PASS"
+      },
+      "child_survival_rate": {
+        "baseline_mean": 0.941197,
+        "plus20_mean": 0.967944,
+        "minus20_mean": 0.919299,
+        "sigma": 0.019892,
+        "gate": "PASS"
+      },
+      "avg_lifetime_births": {
+        "baseline_mean": 2.573183,
+        "plus20_mean": 2.749575,
+        "minus20_mean": 2.750383,
+        "sigma": 0.083343,
+        "gate": "FAIL"
+      },
+      "violence_rate": {
+        "baseline_mean": 0.017689,
+        "plus20_mean": 0.01683,
+        "minus20_mean": 0.012668,
+        "sigma": 0.002193,
+        "gate": "PASS"
+      },
+      "avg_cooperation": {
+        "baseline_mean": 0.516704,
+        "plus20_mean": 0.509908,
+        "minus20_mean": 0.51562,
+        "sigma": 0.002981,
+        "gate": "PASS"
+      },
+      "avg_aggression": {
+        "baseline_mean": 0.491471,
+        "plus20_mean": 0.49103,
+        "minus20_mean": 0.492801,
+        "sigma": 0.000753,
+        "gate": "PASS"
+      }
+    }
+  }
+]

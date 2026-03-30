@@ -1,0 +1,47 @@
+SIMSIV v1-perfect — Institutional Micro-Sweep Provenance Log
+=============================================================
+Experiment: law_strength_micro
+Date: 2026-03-29
+Branch: v1-perfect (commit 54d4fc4+)
+Protocol: Triple-Model Consensus (TMC)
+
+Configuration:
+  Population: 200 agents
+  Duration: 100 years per run
+  Parameter: law_strength
+  Conditions: [0.0, 0.01, 0.02] (absolute perturbation)
+  Seeds per condition: 20
+  Total simulation runs: 60
+
+Seeds Used (20):
+  42, 43, 44, 45, 46, 47, 48, 49, 50, 51,
+  52, 53, 54, 55, 56, 57, 58, 59, 60, 61
+
+TMC Verdicts:
+  Claude (Worker):  SENSITIVE (1/9 metric failures)
+  GPT-4o (Auditor): SENSITIVE (flagged avg_lifetime_births)
+  Grok-3 (Critic):  FRACTURE_DETECTED (flagged avg_lifetime_births non-linearity)
+
+Gate Results (sigma <= 0.030):
+  resource_gini:           0.0027  PASS
+  mating_inequality:       0.0071  PASS
+  violence_death_fraction: 0.0086  PASS
+  pop_growth_rate:         0.0044  PASS
+  child_survival_rate:     0.0052  PASS
+  avg_lifetime_births:     0.0505  FAIL
+  violence_rate:           0.0005  PASS
+  avg_cooperation:         0.0011  PASS
+  avg_aggression:          0.0031  PASS
+
+Key Finding:
+  No hard floor detected. violence_death_fraction scales monotonically:
+    law_strength=0.00 -> vdf=0.0000
+    law_strength=0.01 -> vdf=0.0167
+    law_strength=0.02 -> vdf=0.0196
+  Gradient is smooth. Institutional punishment creates conflict events
+  at low law_strength without sufficient deterrence to suppress them.
+
+Files:
+  FINAL_STABILITY_GRADIENT_LAW.json — Raw sweep data (10-param full sweep)
+  law_strength_gradient.png — 4-panel visualization
+  PROVENANCE_LOG.txt — This file

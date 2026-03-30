@@ -201,11 +201,12 @@ class MatingEngine:
                     social_boost = 1.0 + female.social_skill * 0.2
                 weights[i] *= (0.6 + trust * 0.8) * ei_boost * social_boost
 
-                # Aggression penalty (STRONG — key sexual selection driver)
+                # Archer (2009): sexual selection explains sex differences in aggression
+                # Chagnon (1988): Yanomamo — aggression costly to male reproductive fitness
                 agg_penalty = 1.0 - m.aggression_propensity * 0.5  # [0.5, 1.0]
                 weights[i] *= agg_penalty
 
-                # Cooperation bonus (STRONG)
+                # Henrich et al. (2001): cooperation positively correlated with fitness
                 coop_bonus = 1.0 + m.cooperation_propensity * 0.4  # [1.0, 1.4]
                 weights[i] *= coop_bonus
 

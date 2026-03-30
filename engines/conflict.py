@@ -114,9 +114,9 @@ class ConflictEngine:
                     total_p *= (1.0 + va * 0.15)  # up to -15%
 
             # DD20: War leader inspiration — faction members fight more under active war leader
-            if (getattr(config, 'leadership_enabled', False)
+            if (config.leadership_enabled
                     and agent.faction_id is not None):
-                leaders = getattr(society, 'faction_leaders', {}).get(agent.faction_id)
+                leaders = society.faction_leaders.get(agent.faction_id)
                 if leaders and leaders.get('war_leader') is not None:
                     total_p *= (1.0 + config.war_leader_aggression_boost)
 
@@ -158,7 +158,8 @@ class ConflictEngine:
                     continue
 
             # ── DD11: Coalition defense — target's allies may intervene ──
-            if getattr(config, 'coalition_defense_enabled', False):
+            # Bowles & Gintis (2011): coalition defense as between-group selection mechanism
+            if config.coalition_defense_enabled:
                 defended = False
                 trust_thresh = config.coalition_defense_trust_threshold
                 for other in living:
@@ -194,10 +195,10 @@ class ConflictEngine:
                     continue  # conflict averted
 
             # ── DD20: Peace chief arbitration — intra-faction conflict mediation
-            if (getattr(config, 'leadership_enabled', False)
+            if (config.leadership_enabled
                     and agent.faction_id is not None
-                    and agent.faction_id == getattr(target, 'faction_id', None)):
-                leaders = getattr(society, 'faction_leaders', {}).get(agent.faction_id)
+                    and agent.faction_id == target.faction_id):
+                leaders = society.faction_leaders.get(agent.faction_id)
                 if leaders and leaders.get('peace_chief') is not None:
                     chief = society.get_by_id(leaders['peace_chief'])
                     if (chief and chief.alive
@@ -303,9 +304,9 @@ class ConflictEngine:
                 weights[i] *= getattr(config, 'out_group_conflict_multiplier', 1.0)
 
             # DD20: War leader deterrence — faction with war leader harder to target
-            if (getattr(config, 'leadership_enabled', False)
+            if (config.leadership_enabled
                     and c.faction_id is not None):
-                c_leaders = getattr(society, 'faction_leaders', {}).get(c.faction_id)
+                c_leaders = society.faction_leaders.get(c.faction_id)
                 if c_leaders and c_leaders.get('war_leader') is not None:
                     weights[i] *= (1.0 - config.war_leader_deterrence)
 
@@ -348,24 +349,24 @@ class ConflictEngine:
         status_a = aggressor.dominance_score * dom_weight + aggressor.prestige_score * pres_weight
         status_t = target.dominance_score * dom_weight + target.prestige_score * pres_weight
 
-        agg_power = (aggressor.aggression_propensity * 0.20
-                     + status_a * 0.15
-                     + aggressor.health * 0.20
-                     + aggressor.risk_tolerance * 0.10
+        agg_power = (aggressor.aggression_propensity * 0.25       # DD03 spec
+                     + status_a * 0.20                             # DD03 spec
+                     + aggressor.health * 0.25                     # DD03 spec
+                     + aggressor.risk_tolerance * 0.15             # DD03 spec
                      + resource_edge_a * config.combat_resource_factor
-                     + aggressor.intelligence_proxy * 0.05
-                     + aggressor.physical_robustness * 0.10   # DD15
-                     + aggressor.dominance_drive * 0.10       # DD15
-                     + aggressor.pain_tolerance * 0.05)       # DD15
-        tgt_power = (target.aggression_propensity * 0.20
-                     + status_t * 0.15
-                     + target.health * 0.20
-                     + target.risk_tolerance * 0.10
+                     + aggressor.intelligence_proxy * 0.05         # DD03 spec
+                     + aggressor.physical_robustness * 0.05        # DD15 additive
+                     + aggressor.dominance_drive * 0.05            # DD15 additive
+                     + aggressor.pain_tolerance * 0.03)            # DD15 additive
+        tgt_power = (target.aggression_propensity * 0.25           # DD03 spec
+                     + status_t * 0.20                             # DD03 spec
+                     + target.health * 0.25                        # DD03 spec
+                     + target.risk_tolerance * 0.15                # DD03 spec
                      + resource_edge_t * config.combat_resource_factor
-                     + target.intelligence_proxy * 0.05
-                     + target.physical_robustness * 0.10      # DD15
-                     + target.dominance_drive * 0.10          # DD15
-                     + target.pain_tolerance * 0.05)          # DD15
+                     + target.intelligence_proxy * 0.05            # DD03 spec
+                     + target.physical_robustness * 0.05           # DD15 additive
+                     + target.dominance_drive * 0.05               # DD15 additive
+                     + target.pain_tolerance * 0.03)               # DD15 additive
 
         # DD27: Physical strength additive with sex differential
         for fighter, label in [(aggressor, 'agg'), (target, 'tgt')]:
@@ -390,10 +391,10 @@ class ConflictEngine:
         tgt_power += tgt_allies
 
         # DD20: War leader combat bonus — fighting alongside faction war leader
-        if getattr(config, 'leadership_enabled', False):
+        if config.leadership_enabled:
             for fighter, power_ref in [(aggressor, 'agg'), (target, 'tgt')]:
                 if fighter.faction_id is not None:
-                    leaders = getattr(society, 'faction_leaders', {}).get(
+                    leaders = society.faction_leaders.get(
                         fighter.faction_id)
                     if leaders and leaders.get('war_leader') is not None:
                         wl = society.get_by_id(leaders['war_leader'])
@@ -454,8 +455,9 @@ class ConflictEngine:
 
         # ── Death check for loser ────────────────────────────────────
         death = False
-        # Death chance scales with power differential (stomps are more lethal)
-        effective_death_chance = config.violence_death_chance * (0.5 + power_diff)
+        # Keeley (1996): violence death fraction target 0.05-0.15 of male deaths
+        # Baseline 0.6 calibrated to reach lower bound with AutoSIM violence_death_chance
+        effective_death_chance = config.violence_death_chance * (0.6 + power_diff)
         if rng.random() < effective_death_chance:
             loser.die("violence", society.year)
             death = True
@@ -486,10 +488,10 @@ class ConflictEngine:
                               if a.id != aggressor.id and a.id != target.id
                               and a.alive]
             if bystander_pool and n_bystanders > 0:
-                bystanders = rng.choice(
-                    bystander_pool,
-                    size=min(n_bystanders, len(bystander_pool)),
-                    replace=False)
+                n_select = min(n_bystanders, len(bystander_pool))
+                bystander_indices = rng.choice(
+                    len(bystander_pool), size=n_select, replace=False)
+                bystanders = [bystander_pool[i] for i in bystander_indices]
                 for bystander in bystanders:
                     # Witnesses distrust the aggressor
                     bystander.remember(aggressor.id, -0.08)
@@ -509,6 +511,19 @@ class ConflictEngine:
                             partner.remove_bond(fighter.id)
                             society._unindex_bond(fighter.id, pid)
                             partner.remember(fighter.id, -0.25)
+                            events.append({
+                                "type": "bond_dissolved",
+                                "year": society.year,
+                                "agent_ids": [fighter.id, pid],
+                                "description": (
+                                    f"Pair bond dissolved by conflict: "
+                                    f"{fighter.id} & {pid}"),
+                                "outcome": {
+                                    "reason": "conflict_break",
+                                    "fighter": fighter.id,
+                                    "partner": pid,
+                                },
+                            })
                             break
 
         # ── Institutional punishment ─────────────────────────────────
@@ -545,8 +560,10 @@ class ConflictEngine:
         })
 
         # ── DD11: Third-party punishment ────────────────────────────
+        # Bowles (2006): altruistic punishment sustains cooperation in group-structured populations
+        # Fehr & Gächter (2002): altruistic punishment in humans — cooperation maintained by costly punishment
         # High-cooperation agents who trust the target punish the aggressor
-        if getattr(config, 'third_party_punishment_enabled', False):
+        if config.third_party_punishment_enabled:
             willing_thresh = config.punishment_willingness_threshold
             for punisher in living:
                 if (punisher.id != aggressor.id

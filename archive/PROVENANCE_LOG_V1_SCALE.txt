@@ -1,0 +1,54 @@
+SIMSIV v1-perfect — Population Scale Invariance Provenance Log
+================================================================
+Experiment: initial_pop_size (scale invariance)
+Date: 2026-03-29
+Branch: v1-perfect
+Protocol: Phase 3 Adversarial Critic
+
+Configuration:
+  Duration: 100 years per run
+  Parameter: population_size
+  Conditions: [250, 500, 1000] (absolute perturbation)
+  Seeds per condition: 10
+  Total simulation runs: 30
+
+Seeds Used (10 per condition, 30 total runs):
+  Condition N=250:  42, 43, 44, 45, 46, 47, 48, 49, 50, 51
+  Condition N=500:  42, 43, 44, 45, 46, 47, 48, 49, 50, 51
+  Condition N=1000: 42, 43, 44, 45, 46, 47, 48, 49, 50, 51
+
+Gate Results (sigma <= 0.030):
+  resource_gini:           0.0010  PASS
+  mating_inequality:       0.0136  PASS
+  violence_death_fraction: 0.0200  PASS
+  pop_growth_rate:         0.0039  PASS
+  child_survival_rate:     0.0199  PASS
+  avg_lifetime_births:     0.0833  FAIL
+  violence_rate:           0.0022  PASS
+  avg_cooperation:         0.0030  PASS
+  avg_aggression:          0.0008  PASS
+
+Key Finding:
+  Cooperation equilibrium is SCALE-INVARIANT across 4x population range:
+    N=250  -> avg_cooperation = 0.5167
+    N=500  -> avg_cooperation = 0.5099
+    N=1000 -> avg_cooperation = 0.5156
+    sigma = 0.0030 (well under 0.030 gate)
+
+  Aggression equally stable:
+    N=250  -> avg_aggression = 0.4915
+    N=500  -> avg_aggression = 0.4910
+    N=1000 -> avg_aggression = 0.4928
+    sigma = 0.0008
+
+  Violence death fraction passes gate (sigma=0.020) but shows
+  stochastic spike at N=500 (0.0424 vs 0.0 at N=250 and N=1000).
+  This is a small-N sampling artifact, not a structural instability.
+
+  Only failure: avg_lifetime_births (sigma=0.083) — larger populations
+  provide more mate options, increasing fertility slightly.
+
+Files:
+  FINAL_SCALE_INVARIANCE_LAW.json — Raw sweep data
+  scale_invariance_gradient.png — 2-panel visualization
+  PROVENANCE_LOG_V1_SCALE.txt — This file

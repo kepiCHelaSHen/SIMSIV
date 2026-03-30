@@ -123,6 +123,9 @@ class ReproductionEngine:
                 social_father.offspring_ids.append(child.id)
             society.add_agent(child)
             births += 1
+            # JASSS Req 4: Tag parents for selection differential calculation
+            female._bred_this_tick = True
+            genetic_father._bred_this_tick = True
 
             # DD06: Track reproduction state
             female.last_birth_year = society.year
